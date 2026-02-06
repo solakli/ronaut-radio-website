@@ -1,0 +1,1883 @@
+<!DOCTYPE html>
+<html data-wf-domain="ronautradio.la" data-wf-page="5f4bdfc87623ea7b20d24cf4" data-wf-site="5f4bdfc87623ea5cc5d24cf3">
+<head>
+    <meta charset="utf-8" />
+    <title>Ronaut Radio</title>
+    <meta content="Ronaut Radio - Los Angeles-based independent radio station dedicated to vinyl-only curation. Broadcasting live shows, rare finds, and timeless classics straight from the City of Angels." name="description" />
+    <meta content="Ronaut Radio" property="og:title" />
+    <meta content="Ronaut Radio - Los Angeles-based independent radio station dedicated to vinyl-only curation. Broadcasting live shows, rare finds, and timeless classics straight from the City of Angels." property="og:description" />
+    <meta content="https://via.placeholder.com/1200x630/000000/FFFFFF?text=RONAUT+RADIO+%7C+Los+Angeles+Vinyl+Only" property="og:image" />
+    <meta content="Ronaut Radio" property="twitter:title" />
+    <meta content="Ronaut Radio - Los Angeles-based independent radio station dedicated to vinyl-only curation. Broadcasting live shows, rare finds, and timeless classics straight from the City of Angels." property="twitter:description" />
+    <meta content="https://via.placeholder.com/1200x630/000000/FFFFFF?text=RONAUT+RADIO+%7C+Los+Angeles+Vinyl+Only" property="twitter:image" />
+    <meta property="og:type" content="website" />
+    <meta content="summary_large_image" name="twitter:card" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="0JM6yM9qSeoDRG89r3oa7rtHD8znpZcMgbPh_98fWhs" name="google-site-verification" />
+    <link href="css/thelotradio.webflow.shared.ad08a83f6.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/" rel="preconnect" />
+    <link href="https://fonts.gstatic.com/" rel="preconnect" crossorigin="anonymous" />
+    <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        WebFont.load({ google: { families: ["Oswald:200,300,400,500,600,700"] } });
+    </script>
+    <script type="text/javascript">
+        ! function(o, c) { var n = c.documentElement, t = " w-mod-"; n.className += t + "js", ("ontouchstart" in o || o.DocumentTouch && c instanceof DocumentTouch) && (n.className += t + "touch") }(window, document);
+    </script>
+    <link href="606da810a9bccc3e0a150586_fav.png" rel="shortcut icon" type="image/x-icon" />
+    <link href="606da84551eef3d5fa8c0cb9_icon.png" rel="apple-touch-icon" />
+    <link href="index.html" rel="canonical" />
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2P249Q3KZP"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-2P249Q3KZP');
+    </script>
+    <meta name="apple-itunes-app" content="app-id=1091128189">
+    <meta property="og:video" content="http://localhost:8080/live/hls/stream.m3u8" />
+    <meta property="og:video:type" content="application/x-mpegURL" />
+    <meta property="og:video:width" content="1280" />
+    <meta property="og:video:height" content="720" />
+    <meta property="og:type" content="video">
+    
+    <link href="https://vjs.zencdn.net/8.5.2/video-js.css" rel="stylesheet" />
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css' rel='stylesheet' />
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Oswald, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+
+        .w-container {
+            max-width: 940px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+        }
+
+        .w-inline-block {
+            max-width: 100%;
+            display: inline-block;
+        }
+        
+        .w-layout-blockcontainer {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        h1, h2, h3 {
+            font-family: Oswald, sans-serif;
+            text-align: center;
+            margin: 20px auto;
+        }
+        
+        .main-title {
+            font-size: 48px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        #top-player-container {
+            width: 100%;
+            background: black;
+            position: relative;
+            z-index: 1000;
+        }
+
+        #player-container {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            background: black;
+            padding-top: 56.25%;
+        }
+
+        #ronaut-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Ensure Video.js doesn't cover our overlays on iOS */
+        .video-js {
+            z-index: 1 !important;
+        }
+        .video-js .vjs-tech {
+            z-index: 1 !important;
+        }
+        .video-js .vjs-control-bar {
+            z-index: 90 !important;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            /* Safari/iOS: force overlay above video element */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+
+        /* Audio-reactive visuals */
+        #audio-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            /* Safari/iOS: force GPU layer */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+
+        #grain-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.08;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+
+        #edge-pulse {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            box-shadow: inset 0 0 60px rgba(255, 255, 255, 0);
+            transition: box-shadow 0.1s ease-out;
+        }
+
+        /* Energy meter - thin bar below ticker */
+        #energy-meter {
+            position: absolute;
+            bottom: 8px;
+            left: 20px;
+            width: 120px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            border-radius: 2px;
+        }
+
+        #energy-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #fff, #ff6b6b);
+            transition: width 0.05s ease-out;
+            border-radius: 2px;
+        }
+
+        /* AM-style waveform visualizer - bottom right, above controls */
+        #waveform-container {
+            position: absolute;
+            bottom: 60px;
+            right: 20px;
+            width: 280px;
+            height: 70px;
+            pointer-events: none;
+            z-index: 9999;
+            /* Safari/iOS: force GPU layer to appear above video */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+
+        #waveform-canvas {
+            width: 100%;
+            height: 100%;
+            opacity: 0.9;
+            /* Safari: ensure canvas renders */
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+
+        /* Energy meter also needs higher z-index for Safari */
+        #energy-meter {
+            z-index: 9998;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+        }
+
+        /* Mobile: adjust waveform position and size */
+        @media (max-width: 767px) {
+            #waveform-container {
+                bottom: 55px;
+                right: 10px;
+                width: 160px;
+                height: 45px;
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+
+            #waveform-canvas {
+                display: block !important;
+                opacity: 1 !important;
+            }
+
+            #energy-meter {
+                display: block !important;
+                visibility: visible !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #waveform-container {
+                bottom: 50px;
+                right: 8px;
+                width: 120px;
+                height: 35px;
+            }
+        }
+
+        #ticker {
+            color: white;
+            font-size: 16px;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: none;
+            white-space: nowrap;
+            overflow: hidden;
+            animation: scroll-left 15s linear infinite;
+        }
+
+        @keyframes scroll-left {
+            from { transform: translateX(100%); }
+            to { transform: translateX(-100%); }
+        }
+
+        .share-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #btn-share {
+            font-family: Oswald, sans-serif;
+            margin-top: 0;
+            padding-left: 15px;
+            padding-right: 15px;
+            height: 52px;
+            background: grey;
+            border: 1px solid #000;
+            font-size: 16px;
+            color: #000;
+            font-weight: 500;
+            text-transform: uppercase;
+            width: auto;
+            cursor: pointer;
+        }
+
+        #btn-share:disabled {
+            background: #000;
+            color: #fff;
+        }
+
+        .social-links {
+            max-width: 200px;
+            margin: 20px auto;
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .social-links img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .paragraph {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding-left: 20px;
+            padding-right: 20px;
+            font-family: Oswald, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        /* Calendar Styling */
+        .fc { font-family: Oswald, sans-serif !important; }
+        .fc-toolbar { margin-bottom: 20px !important; }
+        .fc-toolbar-title { font-size: 24px !important; font-weight: 300 !important; letter-spacing: 1px !important; color: #333 !important; }
+        .fc-button { background: #000 !important; border: 1px solid #000 !important; color: white !important; font-family: Oswald, sans-serif !important; font-weight: 400 !important; letter-spacing: 1px !important; text-transform: uppercase !important; }
+        .fc-button:hover { background: #333 !important; border-color: #333 !important; }
+        .fc-event { background: #000 !important; color: white !important; border: none !important; font-family: Oswald, sans-serif !important; font-weight: 400 !important; }
+        .fc-event:hover { background: #333 !important; color: white !important; }
+        .fc-daygrid-day-number { font-family: Oswald, sans-serif !important; font-weight: 400 !important; }
+        .fc-col-header-cell { font-family: Oswald, sans-serif !important; font-weight: 400 !important; letter-spacing: 1px !important; text-transform: uppercase !important; }
+        .fc-daygrid-event, .fc-event-title, .fc-event-time { color: white !important; }
+        
+        /* LIVE Badge */
+        #live-badge {
+            display: none;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1001;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ff0000;
+            font-family: Oswald, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border: 1px solid #ff0000;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #live-badge.active {
+            display: flex;
+        }
+
+        #live-dot {
+            width: 10px;
+            height: 10px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        /* Programme + Chat Stacked Layout */
+        #programme-chat-row {
+            max-width: 800px;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            padding: 0 10px;
+        }
+
+        #programme-section {
+            width: 100%;
+            text-align: center;
+            font-family: Oswald, sans-serif;
+        }
+
+        #programme-section h2 {
+            font-size: 36px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        #programme-date {
+            font-family: Oswald, sans-serif;
+            font-size: 14px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .programme-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 18px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .programme-item:first-child {
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .programme-item.now-playing {
+            background: #000;
+            color: #fff;
+            font-weight: 400;
+            position: relative;
+        }
+
+        .programme-item .track-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .programme-item .track-time {
+            flex-shrink: 0;
+            font-size: 16px;
+            opacity: 0.7;
+        }
+
+        .programme-item.now-playing .track-time {
+            opacity: 1;
+        }
+
+        .programme-item.now-playing .progress-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff0000;
+            transition: left 1s linear;
+        }
+
+        .programme-item.programme-past {
+            opacity: 0.5;
+            background: #f8f8f8;
+        }
+
+        .programme-item.programme-past .track-time {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .now-playing-dot {
+            width: 10px;
+            height: 10px;
+            background: #ff0000;
+            border-radius: 50%;
+            flex-shrink: 0;
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        #programme-live-message {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            padding: 20px;
+            display: none;
+        }
+
+        /* Chat column */
+        #chat-column {
+            width: 343px;
+        }
+
+        #chat-column h3 {
+            font-family: Oswald, sans-serif;
+            font-size: 20px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        #chat-toggle {
+            display: block;
+            font-family: Oswald, sans-serif;
+            font-size: 14px;
+            font-weight: 300;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            background: none;
+            border: 1px solid #ccc;
+            color: #555;
+            padding: 8px 20px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+
+        #chat-toggle:hover {
+            border-color: #000;
+            color: #000;
+        }
+
+        #chat-body {
+            overflow: hidden;
+            display: none;
+        }
+
+        #chat-body.open {
+            display: block;
+        }
+
+        /* Custom Chat Widget */
+        #chat-widget {
+            width: 343px;
+            border: 1px solid #ddd;
+            font-family: Oswald, sans-serif;
+            background: #fff;
+        }
+
+        #chat-header {
+            background: #000;
+            color: #fff;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        #chat-messages {
+            height: 200px;
+            overflow-y: auto;
+            padding: 8px;
+            font-size: 13px;
+            font-weight: 300;
+        }
+
+        .chat-msg {
+            margin-bottom: 4px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .chat-msg .chat-nick {
+            font-weight: 500;
+            margin-right: 6px;
+        }
+
+        #chat-input-row {
+            display: flex;
+            border-top: 1px solid #ddd;
+        }
+
+        #chat-nick {
+            width: 70px;
+            border: none;
+            border-right: 1px solid #ddd;
+            padding: 8px;
+            font-family: Oswald, sans-serif;
+            font-size: 12px;
+            font-weight: 300;
+            outline: none;
+        }
+
+        #chat-msg {
+            flex: 1;
+            border: none;
+            padding: 8px;
+            font-family: Oswald, sans-serif;
+            font-size: 13px;
+            font-weight: 300;
+            outline: none;
+        }
+
+        #chat-send {
+            border: none;
+            background: #000;
+            color: #fff;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #chat-send:hover {
+            background: #333;
+        }
+
+        #chat-discord-link {
+            margin-top: 8px;
+        }
+
+        #chat-discord-link a {
+            font-family: Oswald, sans-serif;
+            font-size: 11px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #999;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        #chat-discord-link a:hover {
+            color: #000;
+        }
+
+        /* Staff Picks */
+        #staff-picks {
+            max-width: 1200px;
+            margin: 40px auto 20px;
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        #staff-picks h2 {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+        }
+
+        #picks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        @media (min-width: 1024px) {
+            #picks-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .pick-card {
+            cursor: pointer;
+            text-align: left;
+            transition: opacity 0.2s;
+        }
+
+        .pick-card:hover {
+            opacity: 0.8;
+        }
+
+        .pick-card img {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            display: block;
+            background: #ddd;
+        }
+
+        .pick-card .pick-title {
+            font-family: Oswald, sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+
+        .pick-card .pick-desc {
+            font-family: Oswald, sans-serif;
+            font-size: 13px;
+            font-weight: 300;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .pick-card .pick-genres {
+            font-family: Oswald, sans-serif;
+            font-size: 11px;
+            font-weight: 300;
+            color: #666;
+            margin-top: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pick-card .pick-tracklist-toggle {
+            font-family: Oswald, sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            color: #000;
+            margin-top: 8px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .pick-card .pick-tracklist-toggle:hover {
+            color: #666;
+        }
+
+        .pick-card .pick-tracklist {
+            display: none;
+            font-family: Oswald, sans-serif;
+            font-size: 11px;
+            font-weight: 300;
+            color: #333;
+            margin-top: 6px;
+            padding: 8px;
+            background: #f5f5f5;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .pick-card .pick-tracklist.open {
+            display: block;
+        }
+
+        .pick-card .pick-tracklist .track {
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .pick-card .pick-tracklist .track-time {
+            color: #888;
+            margin-right: 6px;
+            cursor: pointer;
+        }
+
+        .pick-card .pick-tracklist .track-time:hover {
+            color: #000;
+            text-decoration: underline;
+        }
+
+        .pick-card .pick-tracklist .track.unidentified {
+            color: #999;
+            font-style: italic;
+            border-left: 2px solid #ff6600;
+            padding-left: 6px;
+            margin-left: -8px;
+        }
+
+        .pick-card .pick-tracklist .track.unidentified .help-id {
+            color: #ff6600;
+            font-weight: 400;
+            font-style: normal;
+            cursor: pointer;
+        }
+
+        .pick-card .pick-tracklist .track.unidentified .help-id:hover {
+            text-decoration: underline;
+        }
+
+        /* Help ID Modal */
+        #help-id-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #help-id-modal.open {
+            display: flex;
+        }
+
+        #help-id-form {
+            background: #fff;
+            padding: 25px;
+            max-width: 400px;
+            width: 90%;
+            font-family: Oswald, sans-serif;
+        }
+
+        #help-id-form h3 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        #help-id-form .help-id-time {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        #help-id-form input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            font-family: Oswald, sans-serif;
+            font-size: 14px;
+            font-weight: 300;
+            box-sizing: border-box;
+        }
+
+        #help-id-form input:focus {
+            outline: none;
+            border-color: #000;
+        }
+
+        #help-id-form .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        #help-id-form button {
+            flex: 1;
+            padding: 10px;
+            font-family: Oswald, sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border: 1px solid #000;
+        }
+
+        #help-id-form button.submit-btn {
+            background: #000;
+            color: #fff;
+        }
+
+        #help-id-form button.cancel-btn {
+            background: #fff;
+            color: #000;
+        }
+
+        #help-id-form .success-msg {
+            color: #090;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* Back to Live banner */
+        #back-to-live {
+            display: none;
+            background: #000;
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            font-family: Oswald, sans-serif;
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            z-index: 1002;
+        }
+
+        #back-to-live:hover {
+            background: #333;
+        }
+
+        /* Responsive */
+        @media (max-width: 767px) {
+            .main-title {
+                font-size: 32px;
+                letter-spacing: 1px;
+            }
+            #chat-column {
+                width: 100%;
+            }
+            #chat-widget {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="top-player-container">
+        <div id="player-container">
+            <video id="ronaut-player" class="video-js vjs-default-skin" controls autoplay muted playsinline webkit-playsinline x5-playsinline preload="none">
+                <source src="http://localhost:8080/live/hls/stream.m3u8" type="application/x-mpegURL" />
+                <source src="http://localhost:8080/live/audio/stream.mp3" type="audio/mpeg" />
+            </video>
+            <div id="audio-overlay">
+                <canvas id="grain-canvas"></canvas>
+                <div id="edge-pulse"></div>
+            </div>
+            <div id="overlay">
+                <div id="live-badge"><div id="live-dot"></div>LIVE</div>
+                <div id="ticker">Loading current set...</div>
+                <div id="energy-meter"><div id="energy-bar"></div></div>
+                <div id="waveform-container">
+                    <canvas id="waveform-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BACK TO LIVE BANNER (appears when playing a staff pick) -->
+    <div id="back-to-live" onclick="backToLive()">&#8592; Back to Live Stream</div>
+
+    <!-- HELP ID MODAL -->
+    <div id="help-id-modal">
+        <div id="help-id-form">
+            <h3>HELP IDENTIFY THIS TRACK</h3>
+            <div class="help-id-time" id="help-id-time-range"></div>
+            <input type="text" id="help-id-artist" placeholder="Artist name" maxlength="100" />
+            <input type="text" id="help-id-title" placeholder="Track title" maxlength="200" />
+            <input type="text" id="help-id-name" placeholder="Your name (optional)" maxlength="50" />
+            <input type="hidden" id="help-id-set" />
+            <input type="hidden" id="help-id-start" />
+            <div class="form-buttons">
+                <button class="cancel-btn" onclick="closeHelpIdModal()">Cancel</button>
+                <button class="submit-btn" onclick="submitHelpId()">Submit</button>
+            </div>
+            <div class="success-msg" id="help-id-success">Thanks! Your submission has been received.</div>
+        </div>
+    </div>
+
+    <!-- PROGRAMME + CHAT STACKED -->
+    <div id="programme-chat-row">
+        <div id="programme-section">
+            <h2>PROGRAMME</h2>
+            <div id="programme-date"></div>
+            <div id="programme-live-message">Currently streaming live. Programme resumes after the live session.</div>
+            <div id="programme-list"></div>
+        </div>
+        <div id="chat-column">
+            <h3>CHAT</h3>
+            <button id="chat-toggle" onclick="document.getElementById('chat-body').classList.toggle('open'); this.textContent = document.getElementById('chat-body').classList.contains('open') ? 'Hide Chat' : 'Open Chat';">Open Chat</button>
+            <div id="chat-body">
+                <div id="chat-widget">
+                    <div id="chat-header">
+                        <span id="chat-online">0 online</span>
+                    </div>
+                    <div id="chat-messages"></div>
+                    <div id="chat-input-row">
+                        <input type="text" id="chat-nick" placeholder="Name" maxlength="20" />
+                        <input type="text" id="chat-msg" placeholder="Type a message..." maxlength="300" />
+                        <button id="chat-send">&#9654;</button>
+                    </div>
+                </div>
+                <div id="chat-discord-link">
+                    <a href="https://discord.gg/BCHVkUwT" target="_blank">Join our Discord</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STAFF PICKS -->
+    <div id="staff-picks">
+        <h2>STAFF PICKS</h2>
+        <div id="picks-grid"></div>
+    </div>
+
+    <div class="w-container" style="margin-top: 40px; margin-bottom: 30px;">
+        <h1 class="main-title">RONAUT RADIO</h1>
+        <p style="font-size: 14px; font-weight: 400; letter-spacing: 1px; margin: 10px 0 0 0; text-transform: uppercase;">Los Angeles • Vinyl Only • Live Shows</p>
+    </div>
+
+    <div class="share-container">
+        <button id="btn-share">Share the stream!</button>
+    </div>
+
+    <div class="social-links">
+        <a href="https://instagram.com/ronautradio" target="_blank" class="w-inline-block">
+            <img src="assets/6065dc53271cd689405645e3_social-instagram.svg" loading="lazy" alt="Instagram"/>
+        </a>
+        <a href="https://facebook.com/ronautradio" target="_blank" class="w-inline-block">
+            <img src="assets/6065e3ca47bb418dbc19f3ea_social-facebook.svg" loading="lazy" alt="Facebook"/>
+        </a>
+        <a href="https://soundcloud.com/ronautradio" target="_blank" class="w-inline-block">
+            <img src="assets/6065e41429ff79264e86b0d7_social-soundcloud.svg" loading="lazy" alt="Soundcloud"/>
+        </a>
+        <a href="https://mixcloud.com/ronautradio" target="_blank" class="w-inline-block">
+            <img src="assets/6065e43e39b94578e5cc3ea1_social-mixcloud.svg" loading="lazy" alt="Mixcloud"/>
+        </a>
+        <a href="https://youtube.com/ronautradio" target="_blank" class="w-inline-block">
+            <img src="assets/6065e46287c6313a761f2885_social-youtube.svg" loading="lazy" alt="YouTube"/>
+        </a>
+        <a href="https://twitter.com/ronautradiola" target="_blank" class="w-inline-block">
+            <img src="assets/6065e48787c63189c61f2aab_social-twitter.svg" loading="lazy" alt="Twitter"/>
+        </a>
+    </div>
+
+    <div class="w-container">
+        <p class="paragraph">We are an independent, non-profit, online radio station live streaming 24/7 from Los Angeles.<br/>Expect a continuous stream of the best and most varied music Los Angeles has to offer.<br/>‍<br/><strong>Please use this </strong><a href="mailto:ronautradiola@hotmail.com"><strong>form</strong></a><strong> to submit show proposal.</strong><br/><br/></p>
+    </div>
+
+    <!-- SCHEDULE SECTION -->
+    <div class="w-container" style="margin-top: 60px; margin-bottom: 40px;">
+      <h2 style="font-size: 36px; font-weight: 300; letter-spacing: 2px; margin-bottom: 30px;">UPCOMING SHOWS</h2>
+      <div id="calendar" style="max-width: 800px; margin: 0 auto;"></div>
+    </div>
+    
+    <div class="section">
+        <div id='collection-component-1618238023055'></div>
+        <img src="67fbd3ee737c96017f6e42a6_cityview.webp" loading="lazy" sizes="100vw" srcset="67fbd3ee737c96017f6e42a6_cityview-p-500.webp 500w, 67fbd3ee737c96017f6e42a6_cityview-p-800.webp 800w, 67fbd3ee737c96017f6e42a6_cityview-p-1080.webp 1080w, 67fbd3ee737c96017f6e42a6_cityview-p-1600.webp 1600w, 67fbd3ee737c96017f6e42a6_cityview.webp 1920w" alt="" class="image-7" style="width: 100%;" />
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://vjs.zencdn.net/8.5.2/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.15/index.global.min.js'></script>
+    <script src='https://unpkg.com/popper.js/dist/umd/popper.min.js'></script>
+    <script src='https://unpkg.com/tooltip.js/dist/umd/tooltip.min.js'></script>
+
+    <script>
+    // Global HLS instance (needs to be accessible for staff picks player switching)
+    var hlsInstance = null;
+    var isPlayingPick = false;
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function initHls(video) {
+        if (Hls.isSupported()) {
+            hlsInstance = new Hls();
+            hlsInstance.loadSource('http://localhost:8080/live/hls/stream.m3u8');
+            hlsInstance.attachMedia(video);
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
+                video.play().catch(function(e) { console.log("Autoplay prevented", e); });
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = 'http://localhost:8080/live/hls/stream.m3u8';
+            video.addEventListener('loadedmetadata', function() {
+                video.play().catch(function(e) { console.log("Autoplay prevented", e); });
+            });
+        }
+    }
+
+    function playPick(url, title, startTime) {
+        var video = document.getElementById('ronaut-player');
+        var ticker = document.getElementById('ticker');
+        var backBtn = document.getElementById('back-to-live');
+
+        // Destroy HLS instance
+        if (hlsInstance) {
+            hlsInstance.destroy();
+            hlsInstance = null;
+        }
+
+        // Set MP4 source directly
+        video.src = 'http://localhost:8080' + url;
+
+        // Seek to start time if provided
+        if (startTime && startTime > 0) {
+            video.addEventListener('loadedmetadata', function onLoaded() {
+                video.currentTime = startTime;
+                video.removeEventListener('loadedmetadata', onLoaded);
+            });
+        }
+
+        video.play().catch(function(e) { console.log("Play prevented", e); });
+
+        ticker.textContent = 'Playing: ' + title;
+        ticker.style.display = 'block';
+        backBtn.style.display = 'block';
+        isPlayingPick = true;
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function backToLive() {
+        var video = document.getElementById('ronaut-player');
+        var backBtn = document.getElementById('back-to-live');
+
+        // Re-initialize HLS
+        initHls(video);
+        backBtn.style.display = 'none';
+        isPlayingPick = false;
+    }
+
+    // Help ID Modal
+    function openHelpIdModal(setName, startTime, timeRange) {
+        document.getElementById('help-id-set').value = setName;
+        document.getElementById('help-id-start').value = startTime;
+        document.getElementById('help-id-time-range').textContent = 'Time: ' + timeRange;
+        document.getElementById('help-id-artist').value = '';
+        document.getElementById('help-id-title').value = '';
+        document.getElementById('help-id-name').value = localStorage.getItem('ronaut_chat_nick') || '';
+        document.getElementById('help-id-success').style.display = 'none';
+        document.getElementById('help-id-modal').classList.add('open');
+    }
+
+    function closeHelpIdModal() {
+        document.getElementById('help-id-modal').classList.remove('open');
+    }
+
+    async function submitHelpId() {
+        var setName = document.getElementById('help-id-set').value;
+        var startTime = parseInt(document.getElementById('help-id-start').value, 10);
+        var artist = document.getElementById('help-id-artist').value.trim();
+        var title = document.getElementById('help-id-title').value.trim();
+        var submittedBy = document.getElementById('help-id-name').value.trim() || 'Anonymous';
+
+        if (!artist || !title) {
+            alert('Please enter both artist and track title.');
+            return;
+        }
+
+        try {
+            var res = await fetch('http://localhost:8080/api/submit-id', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    set_name: setName,
+                    start_time: startTime,
+                    artist: artist,
+                    title: title,
+                    submitted_by: submittedBy
+                })
+            });
+            var data = await res.json();
+            if (data.status === 'ok') {
+                document.getElementById('help-id-success').style.display = 'block';
+                setTimeout(closeHelpIdModal, 1500);
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        } catch (err) {
+            alert('Failed to submit. Please try again.');
+        }
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('help-id-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeHelpIdModal();
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Player, Now Playing, and Programme
+        (function() {
+            const video = document.getElementById('ronaut-player');
+            const ticker = document.getElementById('ticker');
+            const liveBadge = document.getElementById('live-badge');
+            const programmeList = document.getElementById('programme-list');
+            const programmeLiveMsg = document.getElementById('programme-live-message');
+
+            let currentMode = 'offline';
+
+            function formatTime(unixTimestamp) {
+                if (!unixTimestamp || unixTimestamp <= 0) return '';
+                var d = new Date(unixTimestamp * 1000);
+                var now = new Date();
+                var hours = d.getHours().toString().padStart(2, '0');
+                var mins = d.getMinutes().toString().padStart(2, '0');
+                if (d.toDateString() === now.toDateString()) {
+                    return hours + ':' + mins;
+                }
+                var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                return dayNames[d.getDay()] + ' ' + hours + ':' + mins;
+            }
+
+            function formatDuration(seconds) {
+                if (!seconds || seconds <= 0) return '0:00';
+                var h = Math.floor(seconds / 3600);
+                var m = Math.floor((seconds % 3600) / 60);
+                var s = Math.floor(seconds % 60);
+                if (h > 0) {
+                    return h + ':' + m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0');
+                }
+                return m + ':' + s.toString().padStart(2, '0');
+            }
+
+            async function updateNowPlaying() {
+                if (isPlayingPick) return; // Don't override ticker when playing a staff pick
+                try {
+                    var res = await fetch("http://localhost:8080/api/now-playing");
+                    var data = await res.json();
+                    currentMode = data.mode || 'offline';
+
+                    if (currentMode === 'live') {
+                        liveBadge.classList.add('active');
+                        liveBadge.style.display = 'flex';
+                        ticker.textContent = 'LIVE BROADCAST';
+                        ticker.style.display = 'block';
+                    } else {
+                        liveBadge.classList.remove('active');
+                        liveBadge.style.display = 'none';
+                        if (data.now_playing && data.now_playing !== 'Offline') {
+                            ticker.textContent = 'Now Playing: ' + data.now_playing;
+                            ticker.style.display = 'block';
+                        } else {
+                            ticker.textContent = 'Stream offline';
+                            ticker.style.display = 'block';
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch now playing:", err);
+                    ticker.textContent = 'Error loading track info.';
+                    ticker.style.display = 'block';
+                }
+            }
+
+            async function updateProgramme() {
+                var programmeDate = document.getElementById('programme-date');
+                if (programmeDate) {
+                    var now = new Date();
+                    var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                    var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                    programmeDate.textContent = dayNames[now.getDay()] + ', ' + monthNames[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+                }
+
+                if (currentMode !== 'auto') {
+                    programmeList.innerHTML = '';
+                    programmeLiveMsg.style.display = currentMode === 'live' ? 'block' : 'none';
+                    return;
+                }
+                programmeLiveMsg.style.display = 'none';
+
+                try {
+                    var res = await fetch("http://localhost:8080/api/programme?count=10&recent=3");
+                    var data = await res.json();
+
+                    if (!data.current && (!data.upcoming || data.upcoming.length === 0)) {
+                        programmeList.innerHTML = '<div class="programme-item"><span class="track-name">No programme data available</span></div>';
+                        return;
+                    }
+
+                    var html = '';
+                    // Recent tracks (already played)
+                    if (data.recent && data.recent.length > 0) {
+                        for (var r = 0; r < data.recent.length; r++) {
+                            var recent = data.recent[r];
+                            var recentTime = formatTime(recent.ended_at - recent.duration);
+                            html += '<div class="programme-item programme-past">';
+                            html += '<span class="track-name">' + escapeHtml(recent.display_name) + '</span>';
+                            html += '<span class="track-time">' + recentTime + '</span>';
+                            html += '</div>';
+                        }
+                    }
+                    // Current track with progress line
+                    if (data.current) {
+                        var elapsed = Math.floor(Date.now() / 1000) - data.current.started_at;
+                        var duration = data.current.duration || 0;
+                        if (elapsed < 0) elapsed = 0;
+                        if (elapsed > duration && duration > 0) elapsed = duration;
+                        var progressPct = duration > 0 ? Math.min(100, (elapsed / duration) * 100) : 0;
+
+                        html += '<div class="programme-item now-playing">';
+                        if (duration > 0) {
+                            html += '<div class="progress-line" style="left:' + progressPct.toFixed(1) + '%"></div>';
+                        }
+                        html += '<span class="track-name"><span class="now-playing-dot"></span>' + escapeHtml(data.current.display_name) + '</span>';
+                        html += '<span class="track-time">NOW</span>';
+                        html += '</div>';
+                    }
+                    // Upcoming tracks
+                    if (data.upcoming) {
+                        for (var i = 0; i < data.upcoming.length; i++) {
+                            var track = data.upcoming[i];
+                            var timeStr = formatTime(track.estimated_start);
+                            html += '<div class="programme-item">';
+                            html += '<span class="track-name">' + escapeHtml(track.display_name) + '</span>';
+                            html += '<span class="track-time">' + timeStr + '</span>';
+                            html += '</div>';
+                        }
+                    }
+                    programmeList.innerHTML = html;
+                } catch (err) {
+                    console.error("Failed to fetch programme:", err);
+                }
+            }
+
+            // Initial calls — programme needs currentMode from now-playing first
+            updateNowPlaying().then(function() {
+                updateProgramme();
+            });
+
+            // Poll: now-playing every 10s, programme every 30s
+            setInterval(updateNowPlaying, 10000);
+            setInterval(updateProgramme, 30000);
+
+            // Initialize HLS Player
+            initHls(video);
+
+            // Audio-reactive visuals
+            (function() {
+                var audioCtx = null;
+                var analyser = null;
+                var dataArray = null;
+                var timeDataArray = null;
+                var grainCanvas = document.getElementById('grain-canvas');
+                var grainCtx = grainCanvas.getContext('2d');
+                var edgePulse = document.getElementById('edge-pulse');
+                var energyBar = document.getElementById('energy-bar');
+                var waveCanvas = document.getElementById('waveform-canvas');
+                var waveCtx = waveCanvas.getContext('2d');
+                var isAudioConnected = false;
+                var audioConnectionFailed = false; // Track if we should use demo mode
+                var smoothedWaveform = null; // For temporal smoothing
+                var demoPhase = 0; // For demo mode animation
+
+                // Resize grain canvas
+                function resizeGrainCanvas() {
+                    var container = document.getElementById('player-container');
+                    grainCanvas.width = container.offsetWidth;
+                    grainCanvas.height = container.offsetHeight;
+                }
+                resizeGrainCanvas();
+                window.addEventListener('resize', resizeGrainCanvas);
+
+                // Resize waveform canvas
+                function resizeWaveCanvas() {
+                    var container = document.getElementById('waveform-container');
+                    if (!container) return;
+                    var rect = container.getBoundingClientRect();
+                    var dpr = window.devicePixelRatio || 1;
+                    // Use rect dimensions which work better on mobile
+                    var w = rect.width || container.offsetWidth || 280;
+                    var h = rect.height || container.offsetHeight || 70;
+                    waveCanvas.width = w * dpr;
+                    waveCanvas.height = h * dpr;
+                    waveCanvas.style.width = w + 'px';
+                    waveCanvas.style.height = h + 'px';
+                    waveCtx.setTransform(1, 0, 0, 1, 0, 0);
+                    waveCtx.scale(dpr, dpr);
+                }
+                // Initial resize after a short delay (for mobile layout)
+                setTimeout(resizeWaveCanvas, 100);
+                window.addEventListener('resize', resizeWaveCanvas);
+                window.addEventListener('orientationchange', function() {
+                    setTimeout(resizeWaveCanvas, 200);
+                });
+
+                // Generate film grain
+                function drawGrain() {
+                    var w = grainCanvas.width;
+                    var h = grainCanvas.height;
+                    var imageData = grainCtx.createImageData(w, h);
+                    var data = imageData.data;
+                    for (var i = 0; i < data.length; i += 4) {
+                        var noise = Math.random() * 255;
+                        data[i] = noise;
+                        data[i + 1] = noise;
+                        data[i + 2] = noise;
+                        data[i + 3] = 255;
+                    }
+                    grainCtx.putImageData(imageData, 0, 0);
+                }
+
+                // Generate demo waveform data (when real audio isn't available)
+                function generateDemoWaveform(numPoints) {
+                    var points = [];
+                    demoPhase += 0.02;
+                    for (var i = 0; i < numPoints; i++) {
+                        // Combine multiple sine waves for organic feel
+                        var x = i / numPoints;
+                        var v = Math.sin(x * Math.PI * 4 + demoPhase) * 0.3;
+                        v += Math.sin(x * Math.PI * 2 + demoPhase * 0.7) * 0.2;
+                        v += Math.sin(x * Math.PI * 7 + demoPhase * 1.3) * 0.15;
+                        v += (Math.random() - 0.5) * 0.05; // Subtle noise
+                        points.push(v);
+                    }
+                    return points;
+                }
+
+                // Draw AM-style waveform - smooth, flowing, iconic
+                function drawWaveform() {
+                    var container = document.getElementById('waveform-container');
+                    if (!container) return;
+                    var rect = container.getBoundingClientRect();
+                    var w = rect.width || 280;
+                    var h = rect.height || 70;
+                    if (w < 10 || h < 10) return; // Don't draw if too small
+                    var centerY = h / 2;
+
+                    // Clear canvas
+                    waveCtx.clearRect(0, 0, w, h);
+
+                    var numPoints = 32; // Fewer points = smoother
+                    var rawPoints = [];
+
+                    // Use real audio data if available, otherwise use demo mode
+                    if (analyser && timeDataArray && isAudioConnected && !audioConnectionFailed) {
+                        analyser.getByteTimeDomainData(timeDataArray);
+                        var blockSize = Math.floor(timeDataArray.length / numPoints);
+
+                        for (var i = 0; i < numPoints; i++) {
+                            var sum = 0;
+                            var start = i * blockSize;
+                            // Average the block for smoothing
+                            for (var j = 0; j < blockSize; j++) {
+                                sum += timeDataArray[start + j];
+                            }
+                            var avg = sum / blockSize;
+                            var v = (avg - 128) / 128; // Normalize to -1 to 1
+                            rawPoints.push(v);
+                        }
+                    } else {
+                        // Demo mode: generate synthetic waveform
+                        rawPoints = generateDemoWaveform(numPoints);
+                    }
+
+                    // Temporal smoothing - blend with previous frame
+                    if (!smoothedWaveform) {
+                        smoothedWaveform = rawPoints.slice();
+                    } else {
+                        var smoothFactor = 0.7; // Higher = smoother/slower
+                        for (var s = 0; s < rawPoints.length; s++) {
+                            smoothedWaveform[s] = smoothedWaveform[s] * smoothFactor + rawPoints[s] * (1 - smoothFactor);
+                        }
+                    }
+
+                    // Build points for drawing
+                    var points = [];
+                    var sliceWidth = w / (smoothedWaveform.length - 1);
+                    for (var p = 0; p < smoothedWaveform.length; p++) {
+                        var x = p * sliceWidth;
+                        var y = centerY + smoothedWaveform[p] * (h * 0.4); // Scale amplitude
+                        points.push({ x: x, y: y });
+                    }
+
+                    // Draw filled area with gradient (AM style)
+                    var gradient = waveCtx.createLinearGradient(0, 0, 0, h);
+                    gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+                    gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.15)');
+                    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.25)');
+                    gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.15)');
+                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+                    // Draw smooth curve using cardinal spline
+                    waveCtx.beginPath();
+                    waveCtx.moveTo(0, centerY);
+
+                    // Catmull-Rom spline for ultra-smooth curves
+                    for (var c = 0; c < points.length - 1; c++) {
+                        var p0 = points[c - 1] || points[c];
+                        var p1 = points[c];
+                        var p2 = points[c + 1];
+                        var p3 = points[c + 2] || p2;
+
+                        for (var t = 0; t <= 1; t += 0.1) {
+                            var t2 = t * t;
+                            var t3 = t2 * t;
+                            var px = 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+                            var py = 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+                            waveCtx.lineTo(px, py);
+                        }
+                    }
+
+                    // Complete the fill path
+                    waveCtx.lineTo(w, centerY);
+                    waveCtx.lineTo(w, h);
+                    waveCtx.lineTo(0, h);
+                    waveCtx.closePath();
+                    waveCtx.fillStyle = gradient;
+                    waveCtx.fill();
+
+                    // Draw the main line (AM white line)
+                    waveCtx.beginPath();
+                    for (var d = 0; d < points.length - 1; d++) {
+                        var dp0 = points[d - 1] || points[d];
+                        var dp1 = points[d];
+                        var dp2 = points[d + 1];
+                        var dp3 = points[d + 2] || dp2;
+
+                        for (var dt = 0; dt <= 1; dt += 0.1) {
+                            var dt2 = dt * dt;
+                            var dt3 = dt2 * dt;
+                            var dpx = 0.5 * ((2 * dp1.x) + (-dp0.x + dp2.x) * dt + (2 * dp0.x - 5 * dp1.x + 4 * dp2.x - dp3.x) * dt2 + (-dp0.x + 3 * dp1.x - 3 * dp2.x + dp3.x) * dt3);
+                            var dpy = 0.5 * ((2 * dp1.y) + (-dp0.y + dp2.y) * dt + (2 * dp0.y - 5 * dp1.y + 4 * dp2.y - dp3.y) * dt2 + (-dp0.y + 3 * dp1.y - 3 * dp2.y + dp3.y) * dt3);
+                            if (d === 0 && dt === 0) {
+                                waveCtx.moveTo(dpx, dpy);
+                            } else {
+                                waveCtx.lineTo(dpx, dpy);
+                            }
+                        }
+                    }
+
+                    // Glow effect
+                    waveCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                    waveCtx.lineWidth = 6;
+                    waveCtx.lineCap = 'round';
+                    waveCtx.stroke();
+
+                    // Main white line
+                    waveCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                    waveCtx.lineWidth = 2;
+                    waveCtx.stroke();
+                }
+
+                // Connect audio for analysis (called on user interaction)
+                function connectAudio() {
+                    if (isAudioConnected || audioConnectionFailed || !video) return;
+                    try {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        var source = audioCtx.createMediaElementSource(video);
+                        analyser = audioCtx.createAnalyser();
+                        analyser.fftSize = 2048; // Higher for smoother waveform
+                        analyser.smoothingTimeConstant = 0.9;
+                        source.connect(analyser);
+                        analyser.connect(audioCtx.destination);
+                        dataArray = new Uint8Array(analyser.frequencyBinCount);
+                        timeDataArray = new Uint8Array(analyser.fftSize);
+                        isAudioConnected = true;
+                        console.log('Audio analysis connected');
+                    } catch (e) {
+                        console.log('Audio analysis not available (using demo mode):', e.message);
+                        audioConnectionFailed = true;
+                        // Demo mode will be used automatically
+                    }
+                }
+
+                // Animation loop
+                function animate() {
+                    requestAnimationFrame(animate);
+
+                    // Update grain every few frames for performance
+                    if (Math.random() < 0.3) {
+                        drawGrain();
+                    }
+
+                    // Draw waveform (works in both real and demo mode)
+                    drawWaveform();
+
+                    // Calculate energy for edge pulse and energy bar
+                    var bass = 0;
+                    var energy = 0;
+
+                    if (analyser && dataArray && isAudioConnected && !audioConnectionFailed) {
+                        analyser.getByteFrequencyData(dataArray);
+
+                        // Calculate bass energy (lower frequencies)
+                        var bassCount = Math.floor(dataArray.length * 0.15); // Lower 15% of frequencies
+                        for (var i = 0; i < bassCount; i++) {
+                            bass += dataArray[i];
+                        }
+                        bass = bass / bassCount / 255; // Normalize 0-1
+
+                        // Calculate overall energy
+                        var total = 0;
+                        for (var j = 0; j < dataArray.length; j++) {
+                            total += dataArray[j];
+                        }
+                        energy = total / dataArray.length / 255; // Normalize 0-1
+                    } else {
+                        // Demo mode: generate synthetic energy
+                        bass = 0.3 + Math.sin(demoPhase * 2) * 0.15 + Math.random() * 0.05;
+                        energy = 0.4 + Math.sin(demoPhase * 1.5) * 0.2 + Math.random() * 0.05;
+                    }
+
+                    // Edge pulse based on bass (subtle)
+                    var pulseIntensity = Math.pow(bass, 1.5) * 0.12; // Max ~12% opacity
+                    edgePulse.style.boxShadow = 'inset 0 0 ' + (40 + bass * 40) + 'px rgba(255, 255, 255, ' + pulseIntensity + ')';
+
+                    // Energy bar
+                    energyBar.style.width = (energy * 100) + '%';
+                }
+
+                // Start on user interaction (autoplay policy)
+                function activateAudio() {
+                    connectAudio();
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume().then(function() {
+                            console.log('AudioContext resumed');
+                        }).catch(function(e) {
+                            console.log('Failed to resume AudioContext:', e.message);
+                        });
+                    }
+                    resizeWaveCanvas(); // Ensure canvas is sized
+                }
+
+                video.addEventListener('play', activateAudio);
+                video.addEventListener('playing', activateAudio);
+                video.addEventListener('volumechange', function() {
+                    // Try to connect when user unmutes
+                    if (!video.muted && !isAudioConnected && !audioConnectionFailed) {
+                        activateAudio();
+                    }
+                });
+
+                // Click and touch for mobile
+                document.addEventListener('click', activateAudio, { once: true });
+                document.addEventListener('touchstart', activateAudio, { once: true });
+                document.addEventListener('touchend', activateAudio, { once: true });
+
+                animate();
+            })();
+        })();
+
+        // Staff Picks
+        (function() {
+            var picksGrid = document.getElementById('picks-grid');
+            var setsData = {};  // Store set data for seek functionality
+
+            async function loadStaffPicks() {
+                try {
+                    var res = await fetch('http://localhost:8080/api/sets');
+                    var data = await res.json();
+                    if (!data.sets || data.sets.length === 0) return;
+
+                    var html = '';
+                    for (var i = 0; i < data.sets.length; i++) {
+                        var pick = data.sets[i];
+                        setsData[pick.url] = pick;
+
+                        html += '<div class="pick-card" data-url="' + pick.url + '" data-title="' + escapeHtml(pick.title) + '">';
+                        html += '<img src="http://localhost:8080' + pick.thumbnail + '" alt="' + escapeHtml(pick.title) + '" loading="lazy" />';
+                        html += '<div class="pick-title">' + escapeHtml(pick.title) + '</div>';
+                        if (pick.description) {
+                            html += '<div class="pick-desc">' + escapeHtml(pick.description) + '</div>';
+                        }
+                        // Genres/vibes
+                        if (pick.genres && pick.genres.length > 0) {
+                            html += '<div class="pick-genres">' + pick.genres.map(escapeHtml).join(' · ') + '</div>';
+                        }
+                        // Tracklist toggle (includes identified + unidentified)
+                        var hasTracklist = (pick.tracklist && pick.tracklist.length > 0);
+                        var hasUnidentified = (pick.unidentified && pick.unidentified.length > 0);
+                        if (hasTracklist || hasUnidentified) {
+                            var totalCount = (pick.tracklist ? pick.tracklist.length : 0);
+                            var unidCount = pick.unidentified ? pick.unidentified.length : 0;
+                            var label = totalCount > 0 ? 'Tracklist (' + totalCount + ')' : '';
+                            if (unidCount > 0) {
+                                label += (label ? ' + ' : '') + unidCount + ' unidentified';
+                            }
+                            html += '<div class="pick-tracklist-toggle" data-url="' + pick.url + '">' + label + '</div>';
+                            html += '<div class="pick-tracklist" id="tracklist-' + i + '">';
+                            // Merge and sort by start_time
+                            var allTracks = [];
+                            if (pick.tracklist) {
+                                for (var t = 0; t < pick.tracklist.length; t++) {
+                                    allTracks.push({type: 'identified', data: pick.tracklist[t]});
+                                }
+                            }
+                            if (pick.unidentified) {
+                                for (var u = 0; u < pick.unidentified.length; u++) {
+                                    allTracks.push({type: 'unidentified', data: pick.unidentified[u]});
+                                }
+                            }
+                            allTracks.sort(function(a, b) { return a.data.start_time - b.data.start_time; });
+
+                            for (var at = 0; at < allTracks.length; at++) {
+                                var item = allTracks[at];
+                                if (item.type === 'identified') {
+                                    var track = item.data;
+                                    var artist = track.artists && track.artists.length > 0 ? track.artists[0] : 'Unknown';
+                                    html += '<div class="track">';
+                                    html += '<span class="track-time" data-url="' + pick.url + '" data-time="' + track.start_time + '">' + track.start_time_formatted + '</span>';
+                                    html += escapeHtml(artist) + ' - ' + escapeHtml(track.title);
+                                    html += '</div>';
+                                } else {
+                                    var unid = item.data;
+                                    var timeRange = unid.start_time_formatted + ' - ' + unid.end_time_formatted;
+                                    var setName = pick.filename.replace('.mp4', '');
+                                    html += '<div class="track unidentified">';
+                                    html += '<span class="track-time" data-url="' + pick.url + '" data-time="' + unid.start_time + '">' + timeRange + '</span>';
+                                    html += escapeHtml(unid.title) + ' <span class="help-id" data-set="' + escapeHtml(setName) + '" data-start="' + unid.start_time + '" data-range="' + timeRange + '">[Help ID]</span>';
+                                    html += '</div>';
+                                }
+                            }
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                    }
+                    picksGrid.innerHTML = html;
+
+                    // Card click to play
+                    var cards = picksGrid.querySelectorAll('.pick-card');
+                    for (var j = 0; j < cards.length; j++) {
+                        cards[j].addEventListener('click', function(e) {
+                            // Don't trigger if clicking tracklist elements
+                            if (e.target.classList.contains('pick-tracklist-toggle') ||
+                                e.target.classList.contains('track-time') ||
+                                e.target.closest('.pick-tracklist')) {
+                                return;
+                            }
+                            playPick(this.getAttribute('data-url'), this.getAttribute('data-title'));
+                        });
+                    }
+
+                    // Tracklist toggle click
+                    var toggles = picksGrid.querySelectorAll('.pick-tracklist-toggle');
+                    for (var k = 0; k < toggles.length; k++) {
+                        toggles[k].addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            var tracklist = this.nextElementSibling;
+                            tracklist.classList.toggle('open');
+                            this.textContent = tracklist.classList.contains('open') ?
+                                'Hide Tracklist' : 'Tracklist (' + tracklist.children.length + ')';
+                        });
+                    }
+
+                    // Track time click to seek
+                    var times = picksGrid.querySelectorAll('.track-time');
+                    for (var m = 0; m < times.length; m++) {
+                        times[m].addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            var url = this.getAttribute('data-url');
+                            var time = parseInt(this.getAttribute('data-time'), 10);
+                            var setData = setsData[url];
+                            if (setData) {
+                                playPick(url, setData.title, time);
+                            }
+                        });
+                    }
+
+                    // Help ID click to open modal
+                    var helpIds = picksGrid.querySelectorAll('.help-id');
+                    for (var h = 0; h < helpIds.length; h++) {
+                        helpIds[h].addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            var setName = this.getAttribute('data-set');
+                            var startTime = parseInt(this.getAttribute('data-start'), 10);
+                            var timeRange = this.getAttribute('data-range');
+                            openHelpIdModal(setName, startTime, timeRange);
+                        });
+                    }
+                } catch (err) {
+                    console.error('Failed to load staff picks:', err);
+                }
+            }
+
+            loadStaffPicks();
+        })();
+
+        // Chat
+        (function() {
+            var socket = io('http://localhost:8080', { path: '/ws/' });
+            var messagesDiv = document.getElementById('chat-messages');
+            var nickInput = document.getElementById('chat-nick');
+            var msgInput = document.getElementById('chat-msg');
+            var sendBtn = document.getElementById('chat-send');
+            var onlineSpan = document.getElementById('chat-online');
+
+            // Restore nickname from localStorage
+            nickInput.value = localStorage.getItem('ronaut_chat_nick') || '';
+
+            function appendMessage(data) {
+                var div = document.createElement('div');
+                div.className = 'chat-msg';
+                var nick = document.createElement('span');
+                nick.className = 'chat-nick';
+                nick.style.color = data.color;
+                nick.textContent = data.nickname;
+                var text = document.createTextNode(data.message);
+                div.appendChild(nick);
+                div.appendChild(text);
+                messagesDiv.appendChild(div);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+
+            socket.on('history', function(messages) {
+                messagesDiv.innerHTML = '';
+                for (var i = 0; i < messages.length; i++) {
+                    appendMessage(messages[i]);
+                }
+            });
+
+            socket.on('new_message', function(data) {
+                appendMessage(data);
+            });
+
+            socket.on('user_count', function(data) {
+                onlineSpan.textContent = data.count + ' online';
+            });
+
+            socket.on('error', function(data) {
+                msgInput.style.borderColor = '#ff0000';
+                setTimeout(function() { msgInput.style.borderColor = ''; }, 1000);
+            });
+
+            function sendMessage() {
+                var nick = nickInput.value.trim() || 'anon';
+                var msg = msgInput.value.trim();
+                if (!msg) return;
+                localStorage.setItem('ronaut_chat_nick', nick);
+                socket.emit('send_message', { nickname: nick, message: msg });
+                msgInput.value = '';
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            msgInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') sendMessage();
+            });
+        })();
+
+        // Share Button
+        (function() {
+            const shareButton = document.getElementById("btn-share");
+            const shareData = {
+                title: "Ronaut Radio",
+                text: "Listening to Ronaut Radio!",
+                url: "https://ronautradio.la"
+            };
+
+            if (navigator.share) {
+                shareButton.addEventListener("click", async () => {
+                    try {
+                        await navigator.share(shareData);
+                    } catch (err) {
+                        console.error("Share failed:", err);
+                    }
+                });
+            } else {
+                 shareButton.addEventListener("click", () => {
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(shareData.url).then(() => {
+                            alert('Link copied to clipboard!');
+                        }).catch((err) => {
+                            console.error('Failed to copy: ', err);
+                            prompt('Copy this link to share:', shareData.url);
+                        });
+                    } else {
+                        prompt('Copy this link to share:', shareData.url);
+                    }
+                });
+            }
+        })();
+        
+        // Shopify
+        (function() {
+            var scriptURL = 'https://sdks.shopifycdn.com/buy-button/latest/buy-button-storefront.min.js';
+            if (window.ShopifyBuy) {
+                if (window.ShopifyBuy.UI) { ShopifyBuyInit(); } else { loadScript(); }
+            } else {
+                loadScript();
+            }
+            function loadScript() {
+                var script = document.createElement('script');
+                script.async = true;
+                script.src = scriptURL;
+                (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(script);
+                script.onload = ShopifyBuyInit;
+            }
+            function ShopifyBuyInit() {
+                var client = ShopifyBuy.buildClient({
+                    domain: 'ronautradio.myshopify.com',
+                    storefrontAccessToken: '686cfe8cf0b79c6521c19106239159c3',
+                });
+                ShopifyBuy.UI.onReady(client).then(function(ui) {
+                    ui.createComponent('collection', {
+                        id: '187376926808',
+                        node: document.getElementById('collection-component-1618238023055'),
+                        moneyFormat: '%24%7B%7Bamount%7D%7D',
+                        options: { "product": { "styles": { "product": { "@media (min-width: 601px)": { "max-width": "calc(25% - 20px)", "margin-left": "20px", "margin-bottom": "50px", "width": "calc(25% - 20px)" }, "img": { "height": "calc(100% - 15px)", "position": "absolute", "left": "0", "right": "0", "top": "0" }, "imgWrapper": { "padding-top": "calc(75% + 15px)", "position": "relative", "height": "0" } }, "title": { "font-size": "14px" }, "button": { ":hover": { "background-color": "#000000" }, "background-color": "#000000", ":focus": { "background-color": "#000000" }, "padding-left": "50px", "padding-right": "50px" } }, "text": { "button": "Add to cart" } }, "productSet": { "styles": { "products": { "@media (min-width: 601px)": { "margin-left": "-20px" } } } }, "modalProduct": { "contents": { "img": false, "imgWithCarousel": true, "button": false, "buttonWithQuantity": true }, "styles": { "product": { "@media (min-width: 601px)": { "max-width": "100%", "margin-left": "0px", "margin-bottom": "0px" } }, "button": { ":hover": { "background-color": "#000000" }, "background-color": "#000000", ":focus": { "background-color": "#000000" }, "padding-left": "50px", "padding-right": "50px" }, "title": { "font-family": "Helvetica Neue, sans-serif", "font-weight": "bold", "font-size": "26px", "color": "#4c4c4c" } }, "text": { "button": "Add to cart" } }, "option": {}, "cart": { "styles": { "button": { ":hover": { "background-color": "#000000" }, "background-color": "#000000", ":focus": { "background-color": "#000000" } } }, "text": { "total": "Subtotal", "button": "Checkout" }, "contents": { "note": true } }, "toggle": { "styles": { "toggle": { "background-color": "#000000", ":hover": { "background-color": "#000000" }, ":focus": { "background-color": "#000000" } } } } },
+                    });
+                });
+            }
+        })();
+
+        // Calendar
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            timeZone: 'America/Los_Angeles',
+            headerToolbar: {
+                left: 'prev,next',
+                center: 'title',
+                right: 'today'
+            },
+            initialView: 'dayGridMonth',
+            firstDay: 1, // Monday
+            nowIndicator: true,
+            eventSources: [{
+                url: 'https://calendar.google.com/calendar/ical/heffcoi%40gmail.com/public/basic.ics',
+                format: 'ics'
+            }],
+            eventClick: function(info) {
+                info.jsEvent.preventDefault();
+            }
+        });
+        calendar.render();
+    });
+    </script>
+</body>
+</html>
