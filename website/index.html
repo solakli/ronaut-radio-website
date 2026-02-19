@@ -340,6 +340,7 @@
             right: 0;
             z-index: 10000;
             padding: 8px 12px;
+            transition: top 0.12s ease-out;
         }
 
         #btn-theme {
@@ -3864,10 +3865,15 @@
         var playerEl = document.getElementById('top-player-container');
         if (!themeBar || !playerEl) return;
 
+        var rafPending = false;
         function positionThemeToggle() {
-            var playerBottom = playerEl.getBoundingClientRect().bottom;
-            // Sit just BELOW the player; once player is gone, pin to top-right
-            themeBar.style.top = Math.max(8, playerBottom + 6) + 'px';
+            if (rafPending) return;
+            rafPending = true;
+            requestAnimationFrame(function() {
+                var playerBottom = playerEl.getBoundingClientRect().bottom;
+                themeBar.style.top = Math.max(8, playerBottom + 6) + 'px';
+                rafPending = false;
+            });
         }
 
         window.addEventListener('scroll', positionThemeToggle, { passive: true });
