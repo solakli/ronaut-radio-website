@@ -382,6 +382,31 @@
             height: 24px;
         }
 
+        /* Dark mode: brand colors for social icons via CSS filter */
+        [data-theme="dark"] .social-links img[alt="Instagram"] {
+            filter: brightness(0) saturate(100%) invert(30%) sepia(73%) saturate(700%) hue-rotate(299deg) brightness(110%);
+        }
+        [data-theme="dark"] .social-links img[alt="Facebook"] {
+            filter: brightness(0) saturate(100%) invert(33%) sepia(100%) saturate(700%) hue-rotate(211deg) brightness(110%);
+        }
+        [data-theme="dark"] .social-links img[alt="Soundcloud"] {
+            filter: brightness(0) saturate(100%) invert(51%) sepia(100%) saturate(1000%) hue-rotate(3deg) brightness(110%);
+        }
+        [data-theme="dark"] .social-links img[alt="Mixcloud"] {
+            filter: brightness(0) saturate(100%) invert(62%) sepia(29%) saturate(700%) hue-rotate(174deg) brightness(110%);
+        }
+        [data-theme="dark"] .social-links img[alt="YouTube"] {
+            filter: brightness(0) saturate(100%) invert(14%) sepia(100%) saturate(5000%) hue-rotate(353deg) brightness(130%);
+        }
+        [data-theme="dark"] .social-links img[alt="Twitter"] {
+            filter: brightness(0) saturate(100%) invert(53%) sepia(75%) saturate(500%) hue-rotate(178deg) brightness(110%);
+        }
+        /* Discord inline SVG — restore brand blue in dark mode */
+        [data-theme="dark"] .social-links a[href*="discord"] svg {
+            color: #5865F2;
+            opacity: 1;
+        }
+
         .paragraph {
             text-align: center;
             margin-top: 20px;
@@ -1167,27 +1192,6 @@
             text-decoration: underline;
         }
 
-        /* Dark mode tracklist — orange tone (matches #ff6600 site orange) */
-        [data-theme="dark"] .pick-card .pick-tracklist {
-            background: #1f1610;
-            color: #e8c4a0;
-        }
-        [data-theme="dark"] .pick-card .pick-tracklist-toggle {
-            color: #ff6600;
-        }
-        [data-theme="dark"] .pick-card .pick-tracklist-toggle:hover {
-            color: #ff8833;
-        }
-        [data-theme="dark"] .pick-card .pick-tracklist .track-time {
-            color: #ff6600;
-        }
-        [data-theme="dark"] .pick-card .pick-tracklist .track-time:hover {
-            color: #ff8833;
-        }
-        [data-theme="dark"] .pick-card .pick-tracklist .track.unidentified {
-            color: #b08060;
-            border-left-color: #ff6600;
-        }
 
         /* Help ID Modal */
         #help-id-modal {
