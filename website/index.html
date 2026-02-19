@@ -963,6 +963,15 @@
             color: var(--bg-primary);
         }
 
+        [data-theme="dark"] .detail-links a {
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        [data-theme="dark"] .detail-links a:hover {
+            background: #fff;
+            color: #1a1a1a;
+        }
+
         .detail-sets-title {
             font-family: Oswald, sans-serif;
             font-size: 11px;
@@ -995,8 +1004,10 @@
             }
 
             .detail-photo {
-                flex: 0 0 220px;
+                flex: 0 0 260px;
+                min-height: 260px;
                 width: 100%;
+                background-size: cover;
                 background-position: top center;
             }
 
@@ -1435,10 +1446,6 @@
             .pick-card img {
                 margin: 0 auto;
             }
-            /* Center resident row photos */
-            .resident-row {
-                justify-content: center;
-            }
             /* Mobile: just show icon, no text */
             .theme-text {
                 display: none;
@@ -1551,7 +1558,7 @@
         <div id="chat-column">
             <h3>CHAT</h3>
             <button id="chat-toggle" onclick="document.getElementById('chat-body').classList.toggle('open'); this.textContent = document.getElementById('chat-body').classList.contains('open') ? 'Hide Chat' : 'Open Chat';">Open Chat</button>
-            <a href="https://discord.gg/rrnN2sSYAb" target="_blank" id="discord-btn" style="display: inline-flex; align-items: center; gap: 6px; background: #5865F2; color: #fff; font-family: Oswald, sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; padding: 8px 14px; text-decoration: none; margin-left: 8px; vertical-align: middle;">
+            <a href="https://discord.gg/rrnN2sSYAb" target="_blank" id="discord-btn" style="display: inline-flex; align-items: center; gap: 6px; background: #d4a32a; color: #fff; font-family: Oswald, sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; padding: 8px 14px; text-decoration: none; margin-left: 8px; vertical-align: middle;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
                 Discord
             </a>
@@ -1630,7 +1637,7 @@
     <div class="w-container">
         <p class="paragraph">We are an independent, non-profit online radio station streaming 24/7 from Los Angeles. We broadcast vinyl sets from selectors across Los Angeles and San Diego.</p>
         <p class="paragraph">Ronaut Radio is a platform for local DJs and vinyl enthusiasts to share their sound, build community, and keep underground music moving.</p>
-        <p class="paragraph"><strong>If you'd like to be featured or collaborate, <a href="mailto:ronautradio@gmail.com">connect with us</a>.</strong></p>
+        <p class="paragraph"><strong>If you'd like to be featured or collaborate, <a href="mailto:ronautradio@gmail.com" style="color: #d4a32a;">connect with us</a>.</strong></p>
     </div>
 
     <!-- STAFF PICKS -->
@@ -3852,14 +3859,8 @@
 
         function positionThemeToggle() {
             var playerBottom = playerEl.getBoundingClientRect().bottom;
-            var barH = themeBar.offsetHeight;
-            // Once player has scrolled off screen, pin to top-right
-            if (playerBottom <= barH + 8) {
-                themeBar.style.top = '5px';
-            } else {
-                // Sit just inside the bottom-right corner of the player
-                themeBar.style.top = (playerBottom - barH - 8) + 'px';
-            }
+            // Sit just BELOW the player; once player is gone, pin to top-right
+            themeBar.style.top = Math.max(8, playerBottom + 6) + 'px';
         }
 
         window.addEventListener('scroll', positionThemeToggle, { passive: true });
