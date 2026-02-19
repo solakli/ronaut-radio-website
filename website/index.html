@@ -1151,6 +1151,28 @@
             text-decoration: underline;
         }
 
+        /* Dark mode tracklist — green tone */
+        [data-theme="dark"] .pick-card .pick-tracklist {
+            background: #1a2a1f;
+            color: #a8d4b4;
+        }
+        [data-theme="dark"] .pick-card .pick-tracklist-toggle {
+            color: #a8d4b4;
+        }
+        [data-theme="dark"] .pick-card .pick-tracklist-toggle:hover {
+            color: #d4eeda;
+        }
+        [data-theme="dark"] .pick-card .pick-tracklist .track-time {
+            color: #6aaa84;
+        }
+        [data-theme="dark"] .pick-card .pick-tracklist .track-time:hover {
+            color: #a8d4b4;
+        }
+        [data-theme="dark"] .pick-card .pick-tracklist .track.unidentified {
+            color: #7aaa8a;
+            border-left-color: #5a9a6a;
+        }
+
         /* Help ID Modal */
         #help-id-modal {
             display: none;
@@ -1396,6 +1418,22 @@
             #chat-widget {
                 width: 100%;
             }
+            /* Center staff picks grid on mobile */
+            #picks-grid {
+                justify-items: center;
+            }
+            .pick-card {
+                max-width: 400px;
+                width: 100%;
+                text-align: center;
+            }
+            .pick-card img {
+                margin: 0 auto;
+            }
+            /* Center resident row photos */
+            .resident-row {
+                justify-content: center;
+            }
             /* Mobile: just show icon, no text */
             .theme-text {
                 display: none;
@@ -1404,10 +1442,11 @@
                 padding: 4px 8px;
                 font-size: 10px;
             }
-            /* Move theme toggle lower on mobile to avoid unmute/fullscreen buttons */
+            /* Mobile theme toggle — JS positions it dynamically via scroll */
             #theme-toggle-bar {
-                top: 38px;
+                top: 60px; /* safe initial fallback; JS overrides immediately */
                 right: 5px;
+                transition: top 0.08s linear;
             }
         }
 
@@ -2958,7 +2997,17 @@
                 }
             });
 
+            // Track last locally-echoed message to avoid showing it twice
+            var _lastSent = null;
             socket.on('new_message', function(data) {
+                // Skip server echo if we already displayed this message optimistically
+                if (_lastSent &&
+                    data.nickname === _lastSent.nickname &&
+                    data.message === _lastSent.message &&
+                    Math.abs(data.timestamp - _lastSent.timestamp) < 5) {
+                    _lastSent = null;
+                    return;
+                }
                 appendMessage(data);
             });
 
@@ -2971,6 +3020,18 @@
                 setTimeout(function() { msgInput.style.borderColor = ''; }, 1000);
             });
 
+            // Simple deterministic color from nickname (mirrors server logic)
+            function _nickColor(name) {
+                var h = 0;
+                for (var i = 0; i < name.length; i++) {
+                    h = Math.imul(31, h) + name.charCodeAt(i) | 0;
+                }
+                var r = (Math.abs(h) % 128) + 40;
+                var g = (Math.abs(h >> 8) % 128) + 40;
+                var b = (Math.abs(h >> 16) % 128) + 40;
+                return '#' + ('0' + r.toString(16)).slice(-2) + ('0' + g.toString(16)).slice(-2) + ('0' + b.toString(16)).slice(-2);
+            }
+
             function sendMessage() {
                 var nick = nickInput.value.trim();
                 // Use saved/generated nickname if input is empty
@@ -2982,6 +3043,13 @@
                 // Save the nickname (ensures it persists)
                 localStorage.setItem('ronaut_chat_nick', nick);
                 nickInput.value = nick; // Update input to show the name being used
+
+                // Show message locally immediately (works even if socket is slow)
+                var now = Date.now() / 1000;
+                var localData = { nickname: nick, message: msg, color: _nickColor(nick), timestamp: now };
+                _lastSent = localData;
+                appendMessage(localData);
+
                 socket.emit('send_message', { nickname: nick, message: msg });
                 msgInput.value = '';
             }
@@ -3361,7 +3429,7 @@
             }
             this.x = this.startX;
             this.y = this.startY;
-            this.size = Math.random() * 22 + 10; // 10-32px
+            this.size = window.innerWidth < 768 ? Math.random() * 6 + 3 : Math.random() * 22 + 10; // mobile: 3-9px, desktop: 10-32px
             this.speed = (Math.random() * 1.5 + 0.5); // Diagonal speed
 
             // Meteor angle (roughly 45 degrees, slight variation)
@@ -3601,9 +3669,10 @@
             ctx.restore();
         };
 
-        // Create asteroids (fewer for less distraction)
+        // Create asteroids (fewer on mobile)
         var asteroids = [];
-        for (var i = 0; i < 7; i++) {
+        var asteroidCount = window.innerWidth < 768 ? 3 : 7;
+        for (var i = 0; i < asteroidCount; i++) {
             asteroids.push(new CartoonAsteroid());
         }
 
@@ -3765,6 +3834,32 @@
             requestAnimationFrame(animate);
         }
         animate();
+    })();
+    </script>
+
+    <!-- Mobile: scroll-driven dark mode toggle position -->
+    <script>
+    (function() {
+        if (window.innerWidth >= 768) return;
+        var themeBar = document.getElementById('theme-toggle-bar');
+        var playerEl = document.getElementById('top-player-container');
+        if (!themeBar || !playerEl) return;
+
+        function positionThemeToggle() {
+            var playerBottom = playerEl.getBoundingClientRect().bottom;
+            var barH = themeBar.offsetHeight;
+            // Once player has scrolled off screen, pin to top-right
+            if (playerBottom <= barH + 8) {
+                themeBar.style.top = '5px';
+            } else {
+                // Sit just inside the bottom-right corner of the player
+                themeBar.style.top = (playerBottom - barH - 8) + 'px';
+            }
+        }
+
+        window.addEventListener('scroll', positionThemeToggle, { passive: true });
+        // Run once after layout settles
+        setTimeout(positionThemeToggle, 100);
     })();
     </script>
 </body>
