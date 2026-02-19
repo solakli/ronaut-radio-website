@@ -3408,17 +3408,18 @@
             }
             this.opacity = 0.4 + Math.random() * 0.2;
 
-            // Trails
+            // Trails — faster meteors burn hotter, emit more frequently and intensely
             this.speedLines = [];
             this.debris = [];
             this.trailTimer = 0;
-            this.trailInterval = 2;
+            this.trailInterval = Math.max(1, Math.round(3 - this.speed)); // fast=1 frame, slow=3 frames
         };
         CartoonAsteroid.prototype.emitSpeedLines = function() {
             // Speed lines trail behind meteor (towards top-left)
             var trailAngle = this.angle + Math.PI; // Opposite of travel direction
             var perpAngle = this.angle + Math.PI / 2; // Perpendicular to travel (the trailing edge)
-            for (var i = 0; i < 3; i++) {
+            var lineCount = Math.round(1 + this.speed * 1.5); // fast=4 lines, slow=2 lines
+            for (var i = 0; i < lineCount; i++) {
                 // Spawn across the trailing surface of the meteor
                 var edgeOffset = (Math.random() - 0.5) * this.size * 1.4; // Spread across meteor width
                 var backOffset = this.size * 0.4 + Math.random() * this.size * 0.3; // Behind the meteor
@@ -3434,16 +3435,18 @@
             // Debris spawns from trailing surface and drifts away
             var trailAngle = this.angle + Math.PI; // Opposite of travel direction
             var perpAngle = this.angle + Math.PI / 2; // Perpendicular to travel
-            for (var i = 0; i < 2; i++) {
+            var debrisCount = Math.round(0.5 + this.speed); // fast=2-3 particles, slow=1
+            for (var i = 0; i < debrisCount; i++) {
                 // Spawn across the trailing edge of the meteor
                 var edgeOffset = (Math.random() - 0.5) * this.size * 1.2; // Spread across meteor width
                 var backOffset = this.size * 0.3 + Math.random() * this.size * 0.2; // Behind the meteor
                 var spawnX = this.x + Math.cos(trailAngle) * backOffset + Math.cos(perpAngle) * edgeOffset;
                 var spawnY = this.y + Math.sin(trailAngle) * backOffset + Math.sin(perpAngle) * edgeOffset;
-                // Velocity: drift in trail direction with slight spread
+                // Velocity: faster meteors fling debris out harder
                 var driftAngle = trailAngle + (Math.random() - 0.5) * 0.5;
-                var vx = Math.cos(driftAngle) * (Math.random() * 0.5 + 0.2);
-                var vy = Math.sin(driftAngle) * (Math.random() * 0.5 + 0.2);
+                var particleSpeed = (Math.random() * 0.4 + 0.2) * (0.5 + this.speed * 0.5);
+                var vx = Math.cos(driftAngle) * particleSpeed;
+                var vy = Math.sin(driftAngle) * particleSpeed;
                 this.debris.push(new DebrisParticle(spawnX, spawnY, vx, vy));
             }
         };
@@ -3488,6 +3491,7 @@
                 this.angle = Math.PI * 0.25 + (Math.random() - 0.5) * 0.2;
                 this.vx = Math.cos(this.angle) * this.speed;
                 this.vy = Math.sin(this.angle) * this.speed;
+                this.trailInterval = Math.max(1, Math.round(3 - this.speed));
                 this.speedLines = [];
                 this.debris = [];
             }
