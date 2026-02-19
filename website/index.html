@@ -1173,6 +1173,12 @@
             text-decoration: underline;
         }
 
+        /* Dark mode: schedule separators + staff picks legibility */
+        [data-theme="dark"] .programme-item { border-color: #555; }
+        [data-theme="dark"] .programme-item:first-child { border-color: #555; }
+        [data-theme="dark"] .pick-card .pick-desc { color: #bbb; }
+        [data-theme="dark"] .pick-card .pick-genres { color: #aaa; }
+
         /* Dark mode tracklist */
         [data-theme="dark"] .pick-card .pick-tracklist { background: #1f1610; color: #e8c4a0; }
         [data-theme="dark"] .pick-card .pick-tracklist-toggle { color: #ff6600; }
