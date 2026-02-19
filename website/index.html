@@ -278,6 +278,61 @@
             to { transform: translateX(-100%); }
         }
 
+        #current-track {
+            position: absolute;
+            bottom: 44px;
+            left: 12px;
+            right: 20px;
+            font-family: Oswald, sans-serif;
+            font-size: 12px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: none;
+        }
+
+        #listener-count {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-family: Oswald, sans-serif;
+            font-size: 11px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.55);
+            display: none;
+        }
+
+        #genre-filter {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .genre-btn {
+            font-family: Oswald, sans-serif;
+            font-size: 11px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .genre-btn.active, .genre-btn:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
         #next-live-banner {
             color: white;
             font-size: 14px;
@@ -1525,6 +1580,8 @@
             <div id="overlay">
                 <div id="live-badge"><div id="live-dot"></div>LIVE</div>
                 <div id="ticker">Loading current set...</div>
+                <div id="current-track"></div>
+                <div id="listener-count"></div>
                 <div id="energy-meter"><div id="energy-bar"></div></div>
                 <div id="waveform-container">
                     <canvas id="waveform-canvas"></canvas>
@@ -1651,6 +1708,7 @@
     <!-- STAFF PICKS -->
     <div id="staff-picks">
         <h2>STAFF PICKS</h2>
+        <div id="genre-filter"></div>
         <div id="picks-grid"></div>
     </div>
 
@@ -2050,12 +2108,14 @@
 
                     var miniStatus = document.querySelector('#mini-player .mini-status');
                     var miniTitle = document.querySelector('#mini-player .mini-title');
+                    var currentTrackEl = document.getElementById('current-track');
 
                     if (currentMode === 'live') {
                         liveBadge.classList.add('active');
                         liveBadge.style.display = 'flex';
                         ticker.textContent = 'LIVE BROADCAST';
                         ticker.style.display = 'block';
+                        if (currentTrackEl) currentTrackEl.style.display = 'none';
                         if (miniStatus) miniStatus.textContent = 'LIVE';
                         if (miniTitle) miniTitle.textContent = 'Live Broadcast';
                         updateMediaSession('Live Broadcast', 'Ronaut Radio');
@@ -2074,6 +2134,17 @@
                             if (miniStatus) miniStatus.textContent = 'OFFLINE';
                             if (miniTitle) miniTitle.textContent = 'Stream offline';
                             updateMediaSession('Stream Offline', 'Ronaut Radio');
+                        }
+                        // Show current track (artist/title within the set)
+                        if (currentTrackEl) {
+                            var ct = data.current_track;
+                            if (ct && ct.title) {
+                                var artist = ct.artists && ct.artists.length > 0 ? ct.artists[0] : '';
+                                currentTrackEl.textContent = artist ? '♪ ' + artist + ' — ' + ct.title : '♪ ' + ct.title;
+                                currentTrackEl.style.display = 'block';
+                            } else {
+                                currentTrackEl.style.display = 'none';
+                            }
                         }
                     }
                 } catch (err) {
@@ -2161,6 +2232,26 @@
             // Poll: now-playing every 10s, programme every 30s
             setInterval(updateNowPlaying, 10000);
             setInterval(updateProgramme, 30000);
+
+            // Listener count polling
+            var listenerCountEl = document.getElementById('listener-count');
+            async function updateListenerCount() {
+                if (!listenerCountEl) return;
+                try {
+                    var res = await fetch('https://stream.ronautradio.la/api/listeners');
+                    var data = await res.json();
+                    if (data.listeners !== null && data.listeners > 0) {
+                        listenerCountEl.textContent = '● ' + data.listeners + ' listening';
+                        listenerCountEl.style.display = 'block';
+                    } else {
+                        listenerCountEl.style.display = 'none';
+                    }
+                } catch (err) {
+                    listenerCountEl.style.display = 'none';
+                }
+            }
+            updateListenerCount();
+            setInterval(updateListenerCount, 30000);
 
             // Mini Player - show when main player scrolls out of view
             (function() {
@@ -2799,6 +2890,7 @@
         // Staff Picks
         (function() {
             var picksGrid = document.getElementById('picks-grid');
+            var genreFilter = document.getElementById('genre-filter');
             var setsData = {};  // Store set data for seek functionality
             function encodePickPath(path) {
                 if (!path) return '';
@@ -2830,7 +2922,8 @@
                         var title = displayPickTitle(pick);
                         setsData[encodedUrl] = pick;
 
-                        html += '<div class="pick-card" data-url="' + encodedUrl + '" data-title="' + escapeHtml(title) + '">';
+                        var genreAttr = pick.genres && pick.genres.length > 0 ? pick.genres.join(',').toLowerCase() : '';
+                        html += '<div class="pick-card" data-url="' + encodedUrl + '" data-title="' + escapeHtml(title) + '" data-genres="' + escapeHtml(genreAttr) + '">';
                         html += '<img src="' + encodePickPath('https://stream.ronautradio.la' + pick.thumbnail) + '" alt="' + escapeHtml(title) + '" loading="lazy" />';
                         html += '<div class="pick-title">' + escapeHtml(title) + '</div>';
                         if (pick.description) {
@@ -2890,6 +2983,40 @@
                         html += '</div>';
                     }
                     picksGrid.innerHTML = html;
+
+                    // Build genre filter
+                    var allGenres = new Set();
+                    for (var gi = 0; gi < data.sets.length; gi++) {
+                        var gs = data.sets[gi].genres || [];
+                        for (var gj = 0; gj < gs.length; gj++) {
+                            allGenres.add(gs[gj].toLowerCase());
+                        }
+                    }
+                    if (allGenres.size > 0 && genreFilter) {
+                        var sortedGenres = Array.from(allGenres).sort();
+                        var filterHtml = '<button class="genre-btn active" data-genre="all">ALL</button>';
+                        for (var gk = 0; gk < sortedGenres.length; gk++) {
+                            filterHtml += '<button class="genre-btn" data-genre="' + escapeHtml(sortedGenres[gk]) + '">' + escapeHtml(sortedGenres[gk]) + '</button>';
+                        }
+                        genreFilter.innerHTML = filterHtml;
+
+                        genreFilter.addEventListener('click', function(e) {
+                            var btn = e.target.closest('.genre-btn');
+                            if (!btn) return;
+                            var genre = btn.getAttribute('data-genre');
+                            genreFilter.querySelectorAll('.genre-btn').forEach(function(b) { b.classList.remove('active'); });
+                            btn.classList.add('active');
+                            var cards = picksGrid.querySelectorAll('.pick-card');
+                            cards.forEach(function(card) {
+                                if (genre === 'all') {
+                                    card.style.display = '';
+                                } else {
+                                    var cardGenres = (card.getAttribute('data-genres') || '').split(',');
+                                    card.style.display = cardGenres.indexOf(genre) !== -1 ? '' : 'none';
+                                }
+                            });
+                        });
+                    }
 
                     // Card click to play
                     var cards = picksGrid.querySelectorAll('.pick-card');
