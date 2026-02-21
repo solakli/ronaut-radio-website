@@ -300,6 +300,32 @@
             display: none;
         }
 
+        #cast-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            padding: 6px;
+            pointer-events: auto;
+            display: none;
+            z-index: 101;
+            transition: color 0.15s;
+        }
+
+        #cast-btn:hover { color: #fff; }
+
+        #cast-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+            display: block;
+        }
+
+        #cast-btn.casting { color: #fff; }
+
         #listener-count {
             position: absolute;
             top: 12px;
@@ -1571,12 +1597,18 @@
             <button class="mini-btn" id="mini-mute-btn" title="Mute/Unmute">
                 <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
             </button>
+            <button class="mini-btn" id="mini-cast-btn" title="Cast / AirPlay" style="display:none">
+                <svg viewBox="0 0 24 24"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+            </button>
         </div>
     </div>
 
     <div id="top-player-container">
         <div id="player-container">
-            <video id="ronaut-player" class="video-js vjs-default-skin" controls autoplay muted playsinline webkit-playsinline x5-playsinline preload="none" crossorigin="anonymous">
+            <button id="cast-btn" title="Cast to TV / AirPlay">
+                <svg viewBox="0 0 24 24"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+            </button>
+            <video id="ronaut-player" class="video-js vjs-default-skin" controls autoplay muted playsinline webkit-playsinline x5-playsinline x-webkit-airplay="allow" preload="none" crossorigin="anonymous">
                 <source src="https://stream.ronautradio.la/live/hls/stream.m3u8" type="application/x-mpegURL" />
                 <source src="https://stream.ronautradio.la/live/audio/stream.mp3" type="audio/mpeg" />
             </video>
@@ -2258,6 +2290,60 @@
             }
             updateListenerCount();
             setInterval(updateListenerCount, 30000);
+
+            // Cast / AirPlay button
+            (function() {
+                var video = document.getElementById('ronaut-player');
+                var castBtn = document.getElementById('cast-btn');
+                var miniCastBtn = document.getElementById('mini-cast-btn');
+
+                function showCastBtns() {
+                    if (castBtn) castBtn.style.display = 'block';
+                    if (miniCastBtn) miniCastBtn.style.display = 'block';
+                }
+
+                function triggerCast() {
+                    // AirPlay (Safari / iOS)
+                    if (video.webkitShowPlaybackTargetPicker) {
+                        video.webkitShowPlaybackTargetPicker();
+                        return;
+                    }
+                    // Chromecast / Remote Playback API (Chrome)
+                    if (video.remote && video.remote.prompt) {
+                        video.remote.prompt().catch(function() {});
+                        return;
+                    }
+                }
+
+                // AirPlay availability (Safari)
+                if (window.WebKitPlaybackTargetAvailabilityEvent) {
+                    video.addEventListener('webkitplaybacktargetavailabilitychanged', function(e) {
+                        if (e.availability === 'available') showCastBtns();
+                    });
+                }
+
+                // Remote Playback API availability (Chrome / Chromecast)
+                if (video.remote) {
+                    video.remote.watchAvailability(function(available) {
+                        if (available) showCastBtns();
+                    }).catch(function() {});
+
+                    video.remote.addEventListener('connecting', function() {
+                        if (castBtn) castBtn.classList.add('casting');
+                        if (miniCastBtn) miniCastBtn.style.opacity = '1';
+                    });
+                    video.remote.addEventListener('connect', function() {
+                        if (castBtn) castBtn.classList.add('casting');
+                    });
+                    video.remote.addEventListener('disconnect', function() {
+                        if (castBtn) castBtn.classList.remove('casting');
+                        if (miniCastBtn) miniCastBtn.style.opacity = '';
+                    });
+                }
+
+                if (castBtn) castBtn.addEventListener('click', triggerCast);
+                if (miniCastBtn) miniCastBtn.addEventListener('click', triggerCast);
+            })();
 
             // Mini Player - show when main player scrolls out of view
             (function() {
