@@ -27,6 +27,13 @@
     </script>
     <link href="assets/favicon.png" rel="shortcut icon" type="image/png" />
     <link href="index.html" rel="canonical" />
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Ronaut" />
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-KZ8YVCHYY7"></script>
     <script>
@@ -4009,6 +4016,11 @@
         // Run once after layout settles
         setTimeout(positionThemeToggle, 100);
     })();
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
     </script>
 </body>
 </html>
