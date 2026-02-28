@@ -1608,7 +1608,7 @@
             <button id="cast-btn" title="Cast to TV / AirPlay">
                 <svg viewBox="0 0 24 24"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
             </button>
-            <video id="ronaut-player" class="video-js vjs-default-skin" controls muted playsinline webkit-playsinline x5-playsinline x-webkit-airplay="allow" preload="none" crossorigin="anonymous" poster="https://ronautradio.la/assets/silver-surfer.png">
+            <video id="ronaut-player" class="video-js vjs-default-skin" controls muted playsinline webkit-playsinline x5-playsinline x-webkit-airplay="allow" preload="none" crossorigin="anonymous">
                 <source src="https://stream.ronautradio.la/live/hls/stream.m3u8" type="application/x-mpegURL" />
                 <source src="https://stream.ronautradio.la/live/audio/stream.mp3" type="audio/mpeg" />
             </video>
@@ -1787,9 +1787,9 @@
     function initHls(video) {
         if (Hls.isSupported()) {
             hlsInstance = new Hls({
-                liveSyncDurationCount: 2,       // Buffer ~8s before live edge
-                liveMaxLatencyDurationCount: 5,
-                liveDurationInfinity: true,
+                liveSyncDurationCount: 1,       // Buffer only 1 segment (~4s) before playing
+                liveMaxLatencyDurationCount: 3, // Tolerate up to 3 segments of latency
+                liveDurationInfinity: true,     // Treat live stream as infinite duration
                 maxBufferLength: 30,
             });
             hlsInstance.loadSource('https://stream.ronautradio.la/live/hls/stream.m3u8');
@@ -1798,10 +1798,10 @@
                 video.play().catch(function(e) { console.log("Autoplay prevented", e); });
             });
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // Native HLS (iOS Safari) — must call play() immediately to trigger load
-            // loadedmetadata won't fire without autoplay or an explicit play() call
             video.src = 'https://stream.ronautradio.la/live/hls/stream.m3u8';
-            video.play().catch(function(e) { console.log("Autoplay prevented", e); });
+            video.addEventListener('loadedmetadata', function() {
+                video.play().catch(function(e) { console.log("Autoplay prevented", e); });
+            });
         }
     }
 
