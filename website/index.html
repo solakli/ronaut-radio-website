@@ -3164,19 +3164,6 @@
                             openHelpIdModal(setName, startTime, timeRange);
                         });
                     }
-                    // Handle ?set= URL param — direct shareable link to any set (staff pick or unlisted)
-                    var urlParams = new URLSearchParams(window.location.search);
-                    var setParam = urlParams.get('set');
-                    if (setParam) {
-                        var directUrl = '/hls-vod/' + setParam + '.m3u8';
-                        var matchedSet = data.sets.find(function(s) { return s.url === directUrl; });
-                        var directTitle = urlParams.get('title') || (matchedSet ? displayPickTitle(matchedSet) : setParam);
-                        playPick(directUrl, directTitle);
-                        setTimeout(function() {
-                            document.getElementById('ronaut-player').scrollIntoView({ behavior: 'smooth' });
-                        }, 500);
-                    }
-
                 } catch (err) {
                     console.error('Failed to load staff picks:', err);
                 }
