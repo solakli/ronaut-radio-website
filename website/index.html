@@ -1788,8 +1788,9 @@
     function initHls(video) {
         if (Hls.isSupported()) {
             hlsInstance = new Hls({
-                // 1 segment (4s) behind live edge — fast start; retry handles half-written segments.
-                liveSyncDurationCount: 1,
+                // 2 segments (8s) behind live edge — avoids live-edge stall (targetDuration×2=8s wait)
+                // without being so far back that multiple stalls stack up like with liveSyncDurationCount:3
+                liveSyncDurationCount: 2,
                 liveMaxLatencyDurationCount: 10,
                 liveDurationInfinity: true,
                 maxBufferLength: 8,
