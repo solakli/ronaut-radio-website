@@ -1789,11 +1789,12 @@
     function initHls(video) {
         if (Hls.isSupported()) {
             hlsInstance = new Hls({
-                liveSyncDurationCount: 1,
-                liveMaxLatencyDurationCount: 5,
+                liveSyncDurationCount: 1,        // 1 segment (4s) behind live edge
+                liveMaxLatencyDurationCount: 3,  // max 3 segments before catching up
                 liveDurationInfinity: true,
-                maxBufferLength: 30,
-                // Aggressive retries so stream gaps (ffmpeg restart) recover in seconds not 40s
+                maxBufferLength: 8,              // was 30 — caused ~39s startup delay
+                startFragPrefetch: true,         // prefetch segments before play() fires
+                // Aggressive retries so stream gaps recover in seconds not 40s
                 manifestLoadingMaxRetry: 20,
                 manifestLoadingRetryDelay: 500,
                 manifestLoadingMaxRetryTimeout: 2000,
