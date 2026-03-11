@@ -1789,19 +1789,49 @@
     function initHls(video) {
         if (Hls.isSupported()) {
             hlsInstance = new Hls({
-                liveSyncDurationCount: 1,       // Buffer 1 segment (4s) before live edge — faster start
+                liveSyncDurationCount: 1,
                 liveMaxLatencyDurationCount: 5,
                 liveDurationInfinity: true,
                 maxBufferLength: 30,
+                // Aggressive retries so stream gaps (ffmpeg restart) recover in seconds not 40s
+                manifestLoadingMaxRetry: 20,
+                manifestLoadingRetryDelay: 500,
+                manifestLoadingMaxRetryTimeout: 2000,
+                levelLoadingMaxRetry: 20,
+                levelLoadingRetryDelay: 500,
+                fragLoadingMaxRetry: 20,
+                fragLoadingRetryDelay: 500,
+                fragLoadingMaxRetryTimeout: 2000,
             });
             hlsInstance.loadSource('https://stream.ronautradio.la/live/hls/stream.m3u8');
             hlsInstance.attachMedia(video);
+
+            // Start playing as soon as manifest is parsed
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
                 video.play().catch(function(e) { console.log("Autoplay prevented", e); });
             });
+
+            // Re-trigger play when first fragment is buffered — handles the case
+            // where stream was in a gap when page loaded and autoplay window expired
+            hlsInstance.on(Hls.Events.FRAG_BUFFERED, function() {
+                if (video.paused && !isPlayingPick) {
+                    video.play().catch(function(e) {});
+                }
+            });
+
+            // On fatal error, try to recover — prevents permanent stall
+            hlsInstance.on(Hls.Events.ERROR, function(event, data) {
+                if (data.fatal) {
+                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                        hlsInstance.startLoad();
+                    } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                        hlsInstance.recoverMediaError();
+                    }
+                }
+            });
+
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // Native HLS (iOS Safari) — must call play() immediately to trigger load
-            // loadedmetadata won't fire without autoplay or an explicit play() call
+            // Native HLS (iOS Safari)
             video.src = 'https://stream.ronautradio.la/live/hls/stream.m3u8';
             video.play().catch(function(e) { console.log("Autoplay prevented", e); });
         }
