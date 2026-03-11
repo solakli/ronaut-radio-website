@@ -206,7 +206,7 @@
 
 <div class="cpu-warn" id="cpu-warn">
   <span>⚠</span>
-  <span>ffmpeg CPU at <strong id="cpu-warn-val">—</strong> — re-encoding at 30fps/2Mbps now deployed but stream needs restart to take effect</span>
+  <span>System CPU at <strong id="cpu-warn-val">—</strong> — server is under heavy load</span>
 </div>
 
 <div class="main" id="main"><div class="loading">Loading stream data…</div></div>
@@ -323,7 +323,7 @@ function render(raw, sum, play) {
 
   // CPU warning
   const curCpu = toNum(L.ffmpeg_cpu_pct);
-  if (curCpu > 200) {
+  if (curCpu > 80) {
     const w = document.getElementById('cpu-warn');
     w.className = 'cpu-warn visible';
     document.getElementById('cpu-warn-val').textContent = curCpu + '%';
@@ -370,9 +370,9 @@ function render(raw, sum, play) {
         <div class="card-sub">min 24h: <b>${sum.min_ffmpeg_speed ?? '—'}×</b> · avg <b>${sum.avg_ffmpeg_speed ?? '—'}×</b></div>
       </div>
       <div class="card">
-        <div class="card-label">ffmpeg CPU</div>
-        <div class="card-value ${colorClass(curCpu, 100, 200)}">${curCpu > 0 ? Math.round(curCpu) : '—'}<span style="font-size:16px;font-weight:400">%</span></div>
-        <div class="card-sub">${curCpu > 150 ? '⚠ high · restart stream' : curCpu > 0 ? 'normal' : '—'}</div>
+        <div class="card-label">System CPU</div>
+        <div class="card-value ${colorClass(curCpu, 60, 80)}">${curCpu > 0 ? Math.round(curCpu) : '—'}<span style="font-size:16px;font-weight:400">%</span></div>
+        <div class="card-sub">${curCpu > 80 ? '⚠ high load' : curCpu > 0 ? 'normal' : '—'}</div>
       </div>
       <div class="card">
         <div class="card-label">Live Listeners</div>
@@ -413,7 +413,7 @@ function render(raw, sum, play) {
           <canvas id="c-speed" height="130"></canvas>
         </div>
         <div class="chart-card">
-          <div class="chart-label">ffmpeg CPU % <span style="color:#555">(danger &gt;200%)</span><span class="current-val">${Math.round(curCpu)}%</span></div>
+          <div class="chart-label">System CPU % <span style="color:#555">(danger &gt;80%)</span><span class="current-val">${Math.round(curCpu)}%</span></div>
           <canvas id="c-cpu" height="130"></canvas>
         </div>
         <div class="chart-card">
@@ -475,7 +475,7 @@ function render(raw, sum, play) {
   // Build charts
   makeChart('c-seg',       segAges,   labels, '#ef4444', { unit: 's', suggestedMax: 35 });
   makeChart('c-speed',     speeds,    labels, '#22c55e', { unit: '×', min: 0.7, suggestedMax: 1.1 });
-  makeChart('c-cpu',       cpus,      labels, '#f59e0b', { unit: '%', suggestedMax: 350 });
+  makeChart('c-cpu',       cpus,      labels, '#f59e0b', { unit: '%', suggestedMax: 100 });
   makeChart('c-listeners', listeners, labels, '#60a5fa', { unit: '' });
 }
 
