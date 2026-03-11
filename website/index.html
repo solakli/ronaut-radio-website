@@ -1788,23 +1788,22 @@
     function initHls(video) {
         if (Hls.isSupported()) {
             hlsInstance = new Hls({
-                // 3 segments (12s) behind live edge — reliably written by ffmpeg.
-                liveSyncDurationCount: 3,
+                // 1 segment (4s) behind live edge — fast start; retry handles half-written segments.
+                liveSyncDurationCount: 1,
                 liveMaxLatencyDurationCount: 10,
                 liveDurationInfinity: true,
                 maxBufferLength: 8,
-                backBufferLength: 30,           // was Infinity — prevents memory bloat
+                backBufferLength: 30,
                 startFragPrefetch: true,
-                // Manifest/level: a few retries is enough
                 manifestLoadingMaxRetry: 5,
                 manifestLoadingRetryDelay: 500,
                 manifestLoadingMaxRetryTimeout: 1000,
                 levelLoadingMaxRetry: 5,
                 levelLoadingRetryDelay: 500,
-                // Fragment: 3 retries max then let manifest reload with fresh URLs
-                fragLoadingMaxRetry: 3,
-                fragLoadingRetryDelay: 300,
-                fragLoadingMaxRetryTimeout: 1000,
+                // 2 retries with 1s delay handles half-written segments without long backoff
+                fragLoadingMaxRetry: 2,
+                fragLoadingRetryDelay: 1000,
+                fragLoadingMaxRetryTimeout: 2000,
             });
             hlsInstance.loadSource('https://stream.ronautradio.la/live/hls/stream.m3u8');
             hlsInstance.attachMedia(video);
