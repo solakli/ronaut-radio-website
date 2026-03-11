@@ -1817,6 +1817,21 @@
                 if (!isPlayingPick) {
                     video.play().catch(function(e) {});
                 }
+                // Watchdog: if HLS.js enters live-sync stall (no segment loaded within 5s),
+                // destroy and reinit — worst case 5s wait instead of 27s
+                window._hlsWatchdog = setTimeout(function() {
+                    var ts = performance.getEntriesByType('resource').filter(function(r) {
+                        return r.name.endsWith('.ts');
+                    });
+                    if (ts.length < 2) {
+                        hlsInstance.destroy();
+                        initHls(video);
+                    }
+                }, 5000);
+            });
+
+            hlsInstance.on(Hls.Events.FRAG_LOADED, function() {
+                clearTimeout(window._hlsWatchdog);
             });
 
             hlsInstance.on(Hls.Events.FRAG_BUFFERED, function() {
