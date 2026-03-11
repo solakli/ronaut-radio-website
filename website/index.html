@@ -1788,9 +1788,13 @@
     function initHls(video) {
         if (Hls.isSupported()) {
             hlsInstance = new Hls({
-                // 2 segments (8s) behind live edge — avoids live-edge stall (targetDuration×2=8s wait)
-                // without being so far back that multiple stalls stack up like with liveSyncDurationCount:3
-                liveSyncDurationCount: 2,
+                // 3 segments (12s) behind live — prevents live sync recovery stall.
+                // Confirmed root cause: with liveSyncDurationCount:2, HLS.js loads 2 segments,
+                // decides it's too close to the live edge, then polls manifest every 4s for
+                // ~27 seconds waiting for the window to advance. liveSyncDurationCount:3
+                // keeps the target far enough back that this never triggers.
+                liveSyncDurationCount: 3,
+                maxFragLookUpTolerance: 0.2,  // prevents stall when sync point falls between segment boundaries
                 liveMaxLatencyDurationCount: 10,
                 liveDurationInfinity: true,
                 maxBufferLength: 8,
@@ -1801,41 +1805,28 @@
                 manifestLoadingMaxRetryTimeout: 1000,
                 levelLoadingMaxRetry: 5,
                 levelLoadingRetryDelay: 500,
-                // 2 retries with 1s delay handles half-written segments without long backoff
                 fragLoadingMaxRetry: 2,
                 fragLoadingRetryDelay: 1000,
                 fragLoadingMaxRetryTimeout: 2000,
             });
-            var _t0 = performance.now();
-            var _log = function(label) { console.log('[HLS]', label, '+' + Math.round(performance.now() - _t0) + 'ms'); };
 
             hlsInstance.loadSource('https://stream.ronautradio.la/live/hls/stream.m3u8');
             hlsInstance.attachMedia(video);
-            _log('loadSource+attachMedia called');
 
-            hlsInstance.on(Hls.Events.MEDIA_ATTACHED,  function() { _log('MEDIA_ATTACHED'); });
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
-                _log('MANIFEST_PARSED');
                 if (!isPlayingPick) {
-                    video.play().catch(function(e) { _log('play() rejected: ' + e.message); });
-                    _log('play() called');
+                    video.play().catch(function(e) {});
                 }
             });
-            hlsInstance.on(Hls.Events.FRAG_LOADING,  function(e, d) { _log('FRAG_LOADING  sn=' + d.frag.sn); });
-            hlsInstance.on(Hls.Events.FRAG_LOADED,   function(e, d) { _log('FRAG_LOADED   sn=' + d.frag.sn); });
-            hlsInstance.on(Hls.Events.FRAG_BUFFERED, function(e, d) {
-                _log('FRAG_BUFFERED sn=' + d.frag.sn);
+
+            hlsInstance.on(Hls.Events.FRAG_BUFFERED, function() {
                 if (video.paused && !isPlayingPick) {
                     video.play().catch(function(e) {});
                 }
             });
-            video.addEventListener('playing', function() { _log('video PLAYING'); }, { once: true });
-            video.addEventListener('waiting', function() { _log('video WAITING'); });
-            video.addEventListener('canplay',  function() { _log('video CANPLAY'); }, { once: true });
 
             // On fatal error, try to recover — prevents permanent stall
             hlsInstance.on(Hls.Events.ERROR, function(event, data) {
-                _log('ERROR fatal=' + data.fatal + ' type=' + data.type + ' details=' + data.details);
                 if (data.fatal) {
                     if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                         hlsInstance.startLoad();
