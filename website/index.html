@@ -1809,13 +1809,15 @@
             hlsInstance.loadSource('https://stream.ronautradio.la/live/hls/stream.m3u8');
             hlsInstance.attachMedia(video);
 
-            // Do NOT call video.play() at MANIFEST_PARSED — calling play() before any
-            // data exists puts Chrome into "pending play" state which throttles HLS.js
-            // network requests, causing a 20+ second deadlock. Native autoplay attribute
-            // handles this cleanly once HLS.js appends the first segment.
+            // Call play() at MANIFEST_PARSED to put the browser in eager-play mode
+            // immediately — this was working in late Feb before the SW cache issue.
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
+                if (!isPlayingPick) {
+                    video.play().catch(function(e) {});
+                }
+            });
 
-            // Fallback: if autoplay was blocked (e.g. after returning from a staff pick),
-            // resume as soon as a fragment arrives.
+            // Fallback: also try on first fragment in case autoplay was deferred.
             hlsInstance.on(Hls.Events.FRAG_BUFFERED, function() {
                 if (video.paused && !isPlayingPick) {
                     video.play().catch(function(e) {});
