@@ -3,197 +3,261 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ronaut Radio — Stream Health</title>
+  <title>Ronaut Radio — Stream Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+    :root {
+      --bg: #080808;
+      --surface: #111;
+      --border: #1d1d1d;
+      --text: #d0d0d0;
+      --muted: #444;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --blue: #60a5fa;
+      --purple: #a78bfa;
+    }
     body {
-      background: #0a0a0a;
-      color: #e0e0e0;
+      background: var(--bg);
+      color: var(--text);
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 13px;
       min-height: 100vh;
-      padding: 24px 20px 48px;
+      padding: 0 0 60px;
     }
 
-    header {
+    /* ── HEADER ── */
+    .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 28px;
-      border-bottom: 1px solid #222;
-      padding-bottom: 16px;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      background: #0d0d0d;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
-    header h1 {
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #fff;
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; }
+    .logo span { color: var(--muted); font-weight: 400; }
+    .status-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      border: 1px solid var(--border);
     }
-    header h1 span { color: #888; font-weight: 400; }
-    #last-updated { color: #555; font-size: 11px; }
+    .status-pill.healthy  { color: var(--green);  border-color: #22c55e44; background: #22c55e11; }
+    .status-pill.degraded { color: var(--amber);  border-color: #f59e0b44; background: #f59e0b11; }
+    .status-pill.frozen   { color: var(--red);    border-color: #ef444444; background: #ef444411; animation: pulse 1.5s infinite; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    @keyframes pulse { 50% { opacity: 0.4; } }
+    .header-right { font-size: 11px; color: var(--muted); }
 
-    /* Status dot in header */
-    #header-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+    /* ── CPU WARNING ── */
+    .cpu-warn {
+      display: none;
+      margin: 20px 28px 0;
+      padding: 14px 18px;
+      background: #ef444412;
+      border: 1px solid #ef444440;
+      border-radius: 6px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 500;
     }
-    #status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #555;
-    }
-    #status-dot.healthy  { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
-    #status-dot.degraded { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
-    #status-dot.frozen   { background: #ef4444; box-shadow: 0 0 6px #ef4444; animation: blink 1s infinite; }
-    @keyframes blink { 50% { opacity: 0.3; } }
+    .cpu-warn.visible { display: flex; align-items: center; gap: 10px; }
+    .cpu-warn strong { color: #ff6b6b; }
 
-    /* Summary cards */
-    .cards {
+    /* ── MAIN ── */
+    .main { padding: 24px 28px; }
+
+    /* ── HERO CARDS ── */
+    .hero {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 12px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
     .card {
-      background: #111;
-      border: 1px solid #1e1e1e;
-      border-radius: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 16px;
+    }
+    .card-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 10px; }
+    .card-value { font-size: 32px; font-weight: 800; color: #fff; line-height: 1; letter-spacing: -0.02em; }
+    .card-value.green  { color: var(--green); }
+    .card-value.amber  { color: var(--amber); }
+    .card-value.red    { color: var(--red); }
+    .card-value.blue   { color: var(--blue); }
+    .card-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .card-sub b { color: #888; }
+
+    /* ── SECTION ── */
+    .section { margin-bottom: 24px; }
+    .section-title {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── TIMELINE ── */
+    .timeline-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       padding: 16px;
     }
-    .card-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #555;
-      margin-bottom: 8px;
+    .timeline-bar {
+      display: flex; height: 32px; gap: 2px; border-radius: 4px; overflow: hidden;
     }
-    .card-value {
-      font-size: 26px;
-      font-weight: 700;
-      color: #fff;
-      line-height: 1;
-    }
-    .card-value.good    { color: #22c55e; }
-    .card-value.warn    { color: #f59e0b; }
-    .card-value.bad     { color: #ef4444; }
-    .card-sub {
-      font-size: 11px;
-      color: #444;
-      margin-top: 5px;
+    .tl-seg { flex: 1; min-width: 2px; cursor: default; transition: filter 0.1s; }
+    .tl-seg:hover { filter: brightness(2); }
+    .tl-seg.healthy  { background: #22c55e; opacity: 0.5; }
+    .tl-seg.degraded { background: var(--amber); opacity: 0.7; }
+    .tl-seg.frozen   { background: var(--red); opacity: 1; }
+    .timeline-labels {
+      display: flex; justify-content: space-between;
+      margin-top: 6px; font-size: 10px; color: var(--muted);
     }
 
-    /* Charts grid */
-    .charts {
+    /* ── CHARTS GRID ── */
+    .charts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
     }
-    .chart-box {
-      background: #111;
-      border: 1px solid #1e1e1e;
-      border-radius: 6px;
+    @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       padding: 16px;
     }
-    .chart-box.wide {
-      grid-column: 1 / -1;
+    .chart-label {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--muted); margin-bottom: 14px;
+      display: flex; justify-content: space-between; align-items: center;
     }
-    .chart-title {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #555;
-      margin-bottom: 14px;
+    .chart-label .current-val {
+      font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none;
+      color: #fff;
     }
-    canvas { width: 100% !important; }
 
-    /* Status timeline */
-    #timeline {
-      display: flex;
-      height: 28px;
-      gap: 2px;
-      overflow: hidden;
-      border-radius: 3px;
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
     }
-    .tl-bar {
-      flex: 1;
-      border-radius: 2px;
-      min-width: 2px;
-      cursor: pointer;
-      position: relative;
-    }
-    .tl-bar.healthy  { background: #22c55e33; }
-    .tl-bar.degraded { background: #f59e0b55; }
-    .tl-bar.frozen   { background: #ef4444; }
-    .tl-bar:hover    { filter: brightness(1.5); }
-
-    .error-msg {
-      color: #ef4444;
-      padding: 40px 0;
-      text-align: center;
-      font-size: 13px;
-    }
-    .loading {
-      color: #333;
-      padding: 40px 0;
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 16px;
       text-align: center;
     }
+    .stat-num { font-size: 36px; font-weight: 800; color: #fff; letter-spacing: -0.02em; }
+    .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+
+    /* ── TOP SETS ── */
+    .sets-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .set-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .set-row:last-child { border-bottom: none; }
+    .set-rank { font-size: 10px; color: var(--muted); width: 20px; text-align: right; flex-shrink: 0; }
+    .set-name { flex: 1; font-size: 13px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .set-bar-wrap { width: 120px; flex-shrink: 0; }
+    .set-bar-bg { background: #1a1a1a; border-radius: 3px; height: 6px; overflow: hidden; }
+    .set-bar { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.5s; }
+    .set-count { font-size: 11px; color: var(--muted); width: 50px; text-align: right; flex-shrink: 0; }
+    .set-hours { font-size: 10px; color: #333; width: 45px; text-align: right; flex-shrink: 0; }
+
+    .loading { padding: 80px; text-align: center; color: #333; font-size: 14px; }
+    .error { padding: 60px; text-align: center; color: var(--red); }
+    .footer { padding: 20px 28px 0; font-size: 11px; color: #2a2a2a; text-align: right; }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>Ronaut Radio <span>/ Stream Health</span></h1>
-  <div id="header-status">
-    <div id="status-dot"></div>
-    <span id="status-label">—</span>
+<div class="header">
+  <div class="header-left">
+    <div class="logo">Ronaut Radio <span>/ Dashboard</span></div>
+    <div class="status-pill" id="status-pill">
+      <div class="status-dot"></div>
+      <span id="status-text">—</span>
+    </div>
   </div>
-</header>
+  <div class="header-right" id="last-updated">—</div>
+</div>
 
-<div id="app"><div class="loading">Loading…</div></div>
+<div class="cpu-warn" id="cpu-warn">
+  <span>⚠</span>
+  <span>ffmpeg CPU at <strong id="cpu-warn-val">—</strong> — re-encoding at 30fps/2Mbps now deployed but stream needs restart to take effect</span>
+</div>
+
+<div class="main" id="main"><div class="loading">Loading stream data…</div></div>
 
 <script>
-const API = 'https://stream.ronautradio.la/api/kpi';
-const REFRESH_MS = 5 * 60 * 1000;
-
+const API = 'https://stream.ronautradio.la/api';
 let charts = {};
 
+const toNum = v => parseFloat(v) || 0;
+const toInt = v => parseInt(v) || 0;
+
 function fmt(iso) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+function fmtHours(h) {
+  if (h >= 1000) return Math.round(h).toLocaleString() + 'h';
+  if (h >= 100) return Math.round(h) + 'h';
+  return h.toFixed(1) + 'h';
+}
+function colorClass(v, goodBelow, warnBelow) {
+  if (v < goodBelow) return 'green';
+  if (v < warnBelow) return 'amber';
+  return 'red';
+}
+function speedClass(v) {
+  if (v >= 0.97) return 'green';
+  if (v >= 0.85) return 'amber';
+  return 'red';
 }
 
-function fmtDate(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
-         d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function statusClass(s) {
-  if (s === 'healthy') return 'good';
-  if (s === 'degraded') return 'warn';
-  return 'bad';
-}
-
-function makeChart(id, label, data, labels, color, opts = {}) {
-  const ctx = document.getElementById(id).getContext('2d');
+function makeChart(id, data, labels, color, opts = {}) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
   if (charts[id]) charts[id].destroy();
-  charts[id] = new Chart(ctx, {
+
+  const annotations = [];
+  if (opts.threshold) {
+    annotations.push({
+      type: 'line', yMin: opts.threshold, yMax: opts.threshold,
+      borderColor: '#ef444455', borderWidth: 1, borderDash: [4, 4],
+    });
+  }
+
+  charts[id] = new Chart(ctx.getContext('2d'), {
     type: 'line',
     data: {
       labels,
       datasets: [{
-        label,
         data,
         borderColor: color,
-        backgroundColor: color + '18',
+        backgroundColor: color + '14',
         borderWidth: 1.5,
         pointRadius: 0,
         tension: 0.3,
@@ -206,60 +270,25 @@ function makeChart(id, label, data, labels, color, opts = {}) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          mode: 'index',
-          intersect: false,
-          backgroundColor: '#1a1a1a',
-          borderColor: '#333',
-          borderWidth: 1,
-          titleColor: '#888',
-          bodyColor: '#fff',
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: '#1a1a1a' },
-          ticks: { color: '#444', maxTicksLimit: 8, font: { size: 10 } }
-        },
-        y: {
-          grid: { color: '#1a1a1a' },
-          ticks: { color: '#444', font: { size: 10 } },
-          min: opts.min ?? undefined,
-          max: opts.max ?? undefined,
-          suggestedMin: opts.suggestedMin ?? undefined,
-        }
-      }
-    }
-  });
-}
-
-function makeMultiChart(id, datasets, labels) {
-  const ctx = document.getElementById(id).getContext('2d');
-  if (charts[id]) charts[id].destroy();
-  charts[id] = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      animation: false,
-      plugins: {
-        legend: {
-          display: true,
-          labels: { color: '#555', font: { size: 10 }, boxWidth: 10 }
-        },
-        tooltip: {
           mode: 'index', intersect: false,
-          backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
-          titleColor: '#888', bodyColor: '#fff',
+          backgroundColor: '#181818',
+          borderColor: '#333', borderWidth: 1,
+          titleColor: '#666', bodyColor: '#ddd',
+          callbacks: {
+            label: ctx => (opts.unit ? ctx.parsed.y + opts.unit : ctx.parsed.y)
+          }
         }
       },
       scales: {
         x: {
-          grid: { color: '#1a1a1a' },
-          ticks: { color: '#444', maxTicksLimit: 8, font: { size: 10 } }
+          grid: { color: '#151515' },
+          ticks: { color: '#333', maxTicksLimit: 6, font: { size: 10 } }
         },
         y: {
-          grid: { color: '#1a1a1a' },
-          ticks: { color: '#444', font: { size: 10 } },
+          grid: { color: '#151515' },
+          ticks: { color: '#333', font: { size: 10 } },
+          min: opts.min ?? 0,
+          suggestedMax: opts.suggestedMax,
         }
       }
     }
@@ -268,150 +297,191 @@ function makeMultiChart(id, datasets, labels) {
 
 async function load() {
   try {
-    const [rawRes, sumRes] = await Promise.all([
-      fetch(API + '?rows=288'),
-      fetch(API + '?summary=1')
+    const [kpiRaw, kpiSum, playStats] = await Promise.all([
+      fetch(API + '/kpi?rows=288').then(r => r.json()),
+      fetch(API + '/kpi?summary=1').then(r => r.json()),
+      fetch(API + '/play-stats').then(r => r.json()).catch(() => null),
     ]);
-    if (!rawRes.ok) throw new Error('API error ' + rawRes.status);
-    const raw = await rawRes.json();
-    const sum = await sumRes.json();
-    render(raw, sum);
+    render(kpiRaw, kpiSum, playStats);
+    document.getElementById('last-updated').textContent =
+      'Updated ' + new Date().toLocaleTimeString();
   } catch(e) {
-    document.getElementById('app').innerHTML =
-      `<div class="error-msg">Could not load KPI data — ${e.message}</div>`;
+    document.getElementById('main').innerHTML =
+      `<div class="error">Could not load data — ${e.message}</div>`;
   }
 }
 
-function render(raw, sum) {
+function render(raw, sum, play) {
   const rows = raw.rows || [];
-  const latest = rows[rows.length - 1] || {};
+  const L = rows[rows.length - 1] || {};
 
   // Header status
-  const st = latest.status || 'unknown';
-  document.getElementById('status-dot').className = st;
-  document.getElementById('status-label').textContent = st.toUpperCase();
+  const st = L.status || 'unknown';
+  const pill = document.getElementById('status-pill');
+  pill.className = 'status-pill ' + st;
+  document.getElementById('status-text').textContent = st.toUpperCase();
 
-  // Derive arrays
-  const labels       = rows.map(r => fmt(r.timestamp));
-  const segAges      = rows.map(r => parseInt(r.segment_age_s) || 0);
-  const speeds       = rows.map(r => parseFloat(r.ffmpeg_speed) || 0);
-  const cpus         = rows.map(r => parseFloat(r.ffmpeg_cpu_pct) || 0);
-  const listeners    = rows.map(r => parseInt(r.live_listeners) || 0);
-  const uptime       = rows.map(r => parseInt(r.ffmpeg_uptime_min) || 0);
+  // CPU warning
+  const curCpu = toNum(L.ffmpeg_cpu_pct);
+  if (curCpu > 200) {
+    const w = document.getElementById('cpu-warn');
+    w.className = 'cpu-warn visible';
+    document.getElementById('cpu-warn-val').textContent = curCpu + '%';
+  }
 
-  const curSegAge    = parseInt(latest.segment_age_s) || 0;
-  const curSpeed     = parseFloat(latest.ffmpeg_speed) || 0;
-  const curCpu       = parseFloat(latest.ffmpeg_cpu_pct) || 0;
-  const curListeners = parseInt(latest.live_listeners) || 0;
-  const curUptime    = parseInt(latest.ffmpeg_uptime_min) || 0;
-  const curFreeze    = parseInt(latest.freeze_today) || 0;
-  const curRestart   = parseInt(latest.restarts_today) || 0;
+  // Arrays
+  const labels    = rows.map(r => fmt(r.timestamp));
+  const segAges   = rows.map(r => toInt(r.segment_age_s));
+  const speeds    = rows.map(r => toNum(r.ffmpeg_speed));
+  const cpus      = rows.map(r => toNum(r.ffmpeg_cpu_pct));
+  const listeners = rows.map(r => toInt(r.live_listeners));
 
-  const segAgeClass  = curSegAge < 15 ? 'good' : curSegAge < 30 ? 'warn' : 'bad';
-  const speedClass   = curSpeed >= 0.95 ? 'good' : curSpeed >= 0.8 ? 'warn' : 'bad';
-  const cpuClass     = curCpu < 100 ? 'good' : curCpu < 180 ? 'warn' : 'bad';
+  const curAge    = toInt(L.segment_age_s);
+  const curSpeed  = toNum(L.ffmpeg_speed);
+  const curList   = toInt(L.live_listeners);
+  const curFreeze = toInt(L.freeze_today);
+  const curRstart = toInt(L.restarts_today);
+  const curUptMin = toInt(L.ffmpeg_uptime_min);
+  const upDays    = Math.floor(curUptMin / 1440);
+  const upHrs     = Math.floor((curUptMin % 1440) / 60);
+  const upStr     = upDays ? `${upDays}d ${upHrs}h` : `${upHrs}h ${curUptMin % 60}m`;
 
-  const uptimeDays   = Math.floor(curUptime / 1440);
-  const uptimeHrs    = Math.floor((curUptime % 1440) / 60);
-  const uptimeStr    = uptimeDays > 0 ? `${uptimeDays}d ${uptimeHrs}h` : `${uptimeHrs}h ${curUptime % 60}m`;
+  // Timeline labels: first and last timestamp
+  const firstLabel = rows.length ? fmt(rows[0].timestamp) : '';
+  const lastLabel  = rows.length ? fmt(rows[rows.length - 1].timestamp) : '';
 
-  document.getElementById('app').innerHTML = `
-    <div class="cards">
+  document.getElementById('main').innerHTML = `
+
+    <!-- HERO CARDS -->
+    <div class="hero">
       <div class="card">
-        <div class="card-label">Uptime (24h)</div>
-        <div class="card-value ${sum.uptime_pct >= 99 ? 'good' : sum.uptime_pct >= 95 ? 'warn' : 'bad'}">${sum.uptime_pct ?? '—'}%</div>
-        <div class="card-sub">${sum.frozen_snapshots ?? 0} frozen snapshots</div>
+        <div class="card-label">Stream Uptime</div>
+        <div class="card-value ${sum.uptime_pct >= 99 ? 'green' : sum.uptime_pct >= 95 ? 'amber' : 'red'}">${sum.uptime_pct ?? '—'}<span style="font-size:16px;font-weight:400">%</span></div>
+        <div class="card-sub"><b>${sum.frozen_snapshots ?? 0}</b> frozen snapshots · 24h</div>
       </div>
       <div class="card">
         <div class="card-label">Segment Age</div>
-        <div class="card-value ${segAgeClass}">${curSegAge}s</div>
-        <div class="card-sub">healthy &lt;15s · frozen &gt;30s</div>
+        <div class="card-value ${colorClass(curAge, 15, 30)}">${curAge}<span style="font-size:16px;font-weight:400">s</span></div>
+        <div class="card-sub">avg <b>${sum.avg_segment_age_s ?? '—'}s</b> · max <b>${sum.max_segment_age_s ?? '—'}s</b></div>
       </div>
       <div class="card">
         <div class="card-label">ffmpeg Speed</div>
-        <div class="card-value ${speedClass}">${curSpeed > 0 ? curSpeed.toFixed(3) + 'x' : '—'}</div>
-        <div class="card-sub">min 24h: ${sum.min_ffmpeg_speed ?? '—'}x</div>
+        <div class="card-value ${speedClass(curSpeed)}">${curSpeed > 0 ? curSpeed.toFixed(2) : '—'}<span style="font-size:14px;font-weight:400">×</span></div>
+        <div class="card-sub">min 24h: <b>${sum.min_ffmpeg_speed ?? '—'}×</b> · avg <b>${sum.avg_ffmpeg_speed ?? '—'}×</b></div>
       </div>
       <div class="card">
         <div class="card-label">ffmpeg CPU</div>
-        <div class="card-value ${cpuClass}">${curCpu > 0 ? curCpu + '%' : '—'}</div>
-        <div class="card-sub">burnout risk &gt;200%</div>
+        <div class="card-value ${colorClass(curCpu, 100, 200)}">${curCpu > 0 ? Math.round(curCpu) : '—'}<span style="font-size:16px;font-weight:400">%</span></div>
+        <div class="card-sub">${curCpu > 150 ? '⚠ high · restart stream' : curCpu > 0 ? 'normal' : '—'}</div>
       </div>
       <div class="card">
         <div class="card-label">Live Listeners</div>
-        <div class="card-value">${curListeners}</div>
-        <div class="card-sub">peak 24h: ${sum.peak_listeners ?? 0} · avg: ${sum.avg_listeners ?? 0}</div>
+        <div class="card-value blue">${curList}</div>
+        <div class="card-sub">peak <b>${sum.peak_listeners ?? 0}</b> · avg <b>${sum.avg_listeners ?? 0}</b></div>
       </div>
       <div class="card">
         <div class="card-label">Freeze Events</div>
-        <div class="card-value ${curFreeze === 0 ? 'good' : 'bad'}">${curFreeze}</div>
-        <div class="card-sub">${curRestart} restarts today</div>
+        <div class="card-value ${curFreeze === 0 ? 'green' : 'red'}">${curFreeze}</div>
+        <div class="card-sub"><b>${curRstart}</b> restarts today</div>
       </div>
       <div class="card">
         <div class="card-label">ffmpeg Uptime</div>
-        <div class="card-value">${uptimeStr}</div>
-        <div class="card-sub">${rows.length} snapshots loaded</div>
+        <div class="card-value" style="font-size:22px">${upStr || '—'}</div>
+        <div class="card-sub">${rows.length} snapshots · 5min intervals</div>
       </div>
     </div>
 
-    <div class="charts">
-
-      <div class="chart-box wide">
-        <div class="chart-title">Stream Status — 24h Timeline (green=healthy · amber=degraded · red=frozen)</div>
-        <div id="timeline"></div>
+    <!-- TIMELINE -->
+    <div class="section">
+      <div class="section-title">24h Status Timeline</div>
+      <div class="timeline-wrap">
+        <div class="timeline-bar" id="timeline"></div>
+        <div class="timeline-labels"><span>${firstLabel}</span><span>12h ago</span><span>${lastLabel}</span></div>
       </div>
-
-      <div class="chart-box">
-        <div class="chart-title">Segment Age (s) — frozen threshold: 30s</div>
-        <canvas id="chart-seg" height="120"></canvas>
-      </div>
-
-      <div class="chart-box">
-        <div class="chart-title">ffmpeg Speed (×realtime) — should stay ≥1.0</div>
-        <canvas id="chart-speed" height="120"></canvas>
-      </div>
-
-      <div class="chart-box">
-        <div class="chart-title">Live Listeners</div>
-        <canvas id="chart-listeners" height="120"></canvas>
-      </div>
-
-      <div class="chart-box">
-        <div class="chart-title">ffmpeg CPU %</div>
-        <canvas id="chart-cpu" height="120"></canvas>
-      </div>
-
     </div>
 
-    <div style="color:#333; font-size:11px; margin-top:20px; text-align:right">
-      Last snapshot: ${latest.timestamp ? fmtDate(latest.timestamp) : '—'} &nbsp;·&nbsp;
-      Auto-refreshes every 5 min
+    <!-- CHARTS -->
+    <div class="section">
+      <div class="section-title">Stream Health — Last 24 Hours</div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-label">Segment Age <span style="color:#555">(frozen &gt;30s)</span><span class="current-val">${curAge}s</span></div>
+          <canvas id="c-seg" height="130"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-label">ffmpeg Speed <span style="color:#555">(should be ≥1.0×)</span><span class="current-val">${curSpeed.toFixed(3)}×</span></div>
+          <canvas id="c-speed" height="130"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-label">ffmpeg CPU % <span style="color:#555">(danger &gt;200%)</span><span class="current-val">${Math.round(curCpu)}%</span></div>
+          <canvas id="c-cpu" height="130"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-label">Live Listeners<span class="current-val">${curList} now</span></div>
+          <canvas id="c-listeners" height="130"></canvas>
+        </div>
+      </div>
     </div>
+
+    <!-- PLAY STATS -->
+    ${play ? `
+    <div class="section">
+      <div class="section-title">All-Time Play Stats</div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-num">${fmtHours(play.total_hours)}</div>
+          <div class="stat-label">Hours Streamed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">${play.total_plays.toLocaleString()}</div>
+          <div class="stat-label">Sets Aired</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">${play.top_sets.length > 0 ? play.top_sets[0].play_count : '—'}</div>
+          <div class="stat-label">Most Played (times)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Top Sets</div>
+      <div class="sets-card">
+        ${play.top_sets.map((s, i) => {
+          const maxCount = play.top_sets[0].play_count || 1;
+          const pct = Math.round(s.play_count / maxCount * 100);
+          const hrs = s.total_play_s > 0 ? (s.total_play_s / 3600).toFixed(1) + 'h' : '';
+          return `<div class="set-row">
+            <div class="set-rank">#${i + 1}</div>
+            <div class="set-name">${s.display_name}</div>
+            <div class="set-bar-wrap"><div class="set-bar-bg"><div class="set-bar" style="width:${pct}%"></div></div></div>
+            <div class="set-count">${s.play_count}×</div>
+            <div class="set-hours">${hrs}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    ` : ''}
   `;
 
-  // Timeline
+  // Build timeline
   const tl = document.getElementById('timeline');
   rows.forEach(r => {
-    const bar = document.createElement('div');
-    bar.className = 'tl-bar ' + (r.status || 'unknown');
-    bar.title = `${fmt(r.timestamp)}  ${r.status}  seg=${r.segment_age_s}s  speed=${r.ffmpeg_speed}x`;
-    tl.appendChild(bar);
+    const b = document.createElement('div');
+    b.className = 'tl-seg ' + (r.status || 'unknown');
+    b.title = `${fmt(r.timestamp)} · ${r.status} · seg=${r.segment_age_s}s · speed=${r.ffmpeg_speed}x · cpu=${r.ffmpeg_cpu_pct}%`;
+    tl.appendChild(b);
   });
 
-  // Charts
-  makeChart('chart-seg', 'Segment Age', segAges, labels, '#ef4444', { min: 0, suggestedMin: 0 });
-  makeChart('chart-speed', 'Speed', speeds, labels, '#22c55e', { suggestedMin: 0.8 });
-  makeChart('chart-listeners', 'Listeners', listeners, labels, '#60a5fa', { min: 0 });
-  makeChart('chart-cpu', 'CPU %', cpus, labels, '#f59e0b', { min: 0 });
-
-  document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  // Build charts
+  makeChart('c-seg',       segAges,   labels, '#ef4444', { unit: 's', suggestedMax: 35 });
+  makeChart('c-speed',     speeds,    labels, '#22c55e', { unit: '×', min: 0.7, suggestedMax: 1.1 });
+  makeChart('c-cpu',       cpus,      labels, '#f59e0b', { unit: '%', suggestedMax: 350 });
+  makeChart('c-listeners', listeners, labels, '#60a5fa', { unit: '' });
 }
 
-// Auto-refresh
 load();
-setInterval(load, REFRESH_MS);
+setInterval(load, 5 * 60 * 1000);
 </script>
 
-<span id="last-updated" style="display:none"></span>
 </body>
 </html>
