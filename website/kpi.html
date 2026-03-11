@@ -56,20 +56,27 @@
     @keyframes pulse { 50% { opacity: 0.4; } }
     .header-right { font-size: 11px; color: var(--muted); }
 
-    /* ── CPU WARNING ── */
-    .cpu-warn {
+    /* ── WARNINGS ── */
+    .warn-banner {
       display: none;
       margin: 20px 28px 0;
       padding: 14px 18px;
-      background: #ef444412;
-      border: 1px solid #ef444440;
       border-radius: 6px;
-      color: var(--red);
       font-size: 13px;
       font-weight: 500;
     }
-    .cpu-warn.visible { display: flex; align-items: center; gap: 10px; }
-    .cpu-warn strong { color: #ff6b6b; }
+    .warn-banner.visible { display: flex; align-items: center; gap: 10px; }
+    .warn-banner.cpu-warn {
+      background: #ef444412; border: 1px solid #ef444440; color: var(--red);
+    }
+    .warn-banner.cpu-warn strong { color: #ff6b6b; }
+    .warn-banner.drift-warn {
+      background: #f59e0b12; border: 1px solid #f59e0b40; color: var(--amber);
+    }
+    .warn-banner.drift-warn.critical {
+      background: #ef444412; border: 1px solid #ef444440; color: var(--red);
+    }
+    .warn-banner strong { color: inherit; filter: brightness(1.3); }
 
     /* ── MAIN ── */
     .main { padding: 24px 28px; }
@@ -204,9 +211,13 @@
   <div class="header-right" id="last-updated">—</div>
 </div>
 
-<div class="cpu-warn" id="cpu-warn">
+<div class="warn-banner cpu-warn" id="cpu-warn">
   <span>⚠</span>
   <span>System CPU at <strong id="cpu-warn-val">—</strong> — server is under heavy load</span>
+</div>
+<div class="warn-banner drift-warn" id="drift-warn">
+  <span>⚠</span>
+  <span>A/V drift at <strong id="drift-warn-val">—</strong>s — listeners may experience <strong id="drift-warn-delay">—</strong>s startup delay. Restart the stream to reset.</span>
 </div>
 
 <div class="main" id="main"><div class="loading">Loading stream data…</div></div>
@@ -325,8 +336,18 @@ function render(raw, sum, play) {
   const curCpu = toNum(L.ffmpeg_cpu_pct);
   if (curCpu > 80) {
     const w = document.getElementById('cpu-warn');
-    w.className = 'cpu-warn visible';
+    w.className = 'warn-banner cpu-warn visible';
     document.getElementById('cpu-warn-val').textContent = curCpu + '%';
+  }
+
+  // A/V drift warning
+  const curDrift = toNum(L.av_drift_s);
+  if (curDrift >= 1.0) {
+    const w = document.getElementById('drift-warn');
+    const estimatedDelay = curDrift < 2 ? Math.round(curDrift * 3 + 2) : Math.round(curDrift * 4);
+    w.className = 'warn-banner drift-warn visible' + (curDrift >= 3 ? ' critical' : '');
+    document.getElementById('drift-warn-val').textContent = curDrift.toFixed(2);
+    document.getElementById('drift-warn-delay').textContent = estimatedDelay;
   }
 
   // Arrays
@@ -335,6 +356,7 @@ function render(raw, sum, play) {
   const speeds    = rows.map(r => toNum(r.ffmpeg_speed));
   const cpus      = rows.map(r => toNum(r.ffmpeg_cpu_pct));
   const listeners = rows.map(r => toInt(r.live_listeners));
+  const drifts    = rows.map(r => r.av_drift_s ? toNum(r.av_drift_s) : null);
 
   const curAge    = toInt(L.segment_age_s);
   const curSpeed  = toNum(L.ffmpeg_speed);
@@ -385,6 +407,11 @@ function render(raw, sum, play) {
         <div class="card-sub"><b>${curRstart}</b> restarts today</div>
       </div>
       <div class="card">
+        <div class="card-label">A/V Drift</div>
+        <div class="card-value ${curDrift <= 0 ? '' : curDrift < 0.5 ? 'green' : curDrift < 2 ? 'amber' : 'red'}">${curDrift > 0 ? curDrift.toFixed(2) : '—'}<span style="font-size:14px;font-weight:400">s</span></div>
+        <div class="card-sub">${curDrift <= 0 ? '—' : curDrift < 0.5 ? 'sync OK' : curDrift < 2 ? 'watch closely' : 'startup delay likely'}</div>
+      </div>
+      <div class="card">
         <div class="card-label">ffmpeg Uptime</div>
         <div class="card-value" style="font-size:22px">${upStr || '—'}</div>
         <div class="card-sub">${rows.length} snapshots · 5min intervals</div>
@@ -419,6 +446,10 @@ function render(raw, sum, play) {
         <div class="chart-card">
           <div class="chart-label">Live Listeners<span class="current-val">${curList} now</span></div>
           <canvas id="c-listeners" height="130"></canvas>
+        </div>
+        <div class="chart-card" style="grid-column: 1 / -1">
+          <div class="chart-label">A/V Drift <span style="color:#555">(warn &gt;1s · danger &gt;3s · causes startup delay)</span><span class="current-val" style="color:${curDrift < 0.5 ? 'var(--green)' : curDrift < 2 ? 'var(--amber)' : 'var(--red)'}">${curDrift > 0 ? curDrift.toFixed(2) + 's' : '—'}</span></div>
+          <canvas id="c-drift" height="100"></canvas>
         </div>
       </div>
     </div>
@@ -477,6 +508,7 @@ function render(raw, sum, play) {
   makeChart('c-speed',     speeds,    labels, '#22c55e', { unit: '×', min: 0.7, suggestedMax: 1.1 });
   makeChart('c-cpu',       cpus,      labels, '#f59e0b', { unit: '%', suggestedMax: 100 });
   makeChart('c-listeners', listeners, labels, '#60a5fa', { unit: '' });
+  makeChart('c-drift',     drifts,    labels, '#a78bfa', { unit: 's', suggestedMax: 5, threshold: 1 });
 }
 
 load();
