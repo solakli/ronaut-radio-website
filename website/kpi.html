@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ronaut Radio — Stream Health</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+      padding: 24px 20px 48px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      border-bottom: 1px solid #222;
+      padding-bottom: 16px;
+    }
+    header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    header h1 span { color: #888; font-weight: 400; }
+    #last-updated { color: #555; font-size: 11px; }
+
+    /* Status dot in header */
+    #header-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    #status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #555;
+    }
+    #status-dot.healthy  { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    #status-dot.degraded { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    #status-dot.frozen   { background: #ef4444; box-shadow: 0 0 6px #ef4444; animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: 0.3; } }
+
+    /* Summary cards */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .card {
+      background: #111;
+      border: 1px solid #1e1e1e;
+      border-radius: 6px;
+      padding: 16px;
+    }
+    .card-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+    .card-value.good    { color: #22c55e; }
+    .card-value.warn    { color: #f59e0b; }
+    .card-value.bad     { color: #ef4444; }
+    .card-sub {
+      font-size: 11px;
+      color: #444;
+      margin-top: 5px;
+    }
+
+    /* Charts grid */
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 16px;
+    }
+    .chart-box {
+      background: #111;
+      border: 1px solid #1e1e1e;
+      border-radius: 6px;
+      padding: 16px;
+    }
+    .chart-box.wide {
+      grid-column: 1 / -1;
+    }
+    .chart-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #555;
+      margin-bottom: 14px;
+    }
+    canvas { width: 100% !important; }
+
+    /* Status timeline */
+    #timeline {
+      display: flex;
+      height: 28px;
+      gap: 2px;
+      overflow: hidden;
+      border-radius: 3px;
+    }
+    .tl-bar {
+      flex: 1;
+      border-radius: 2px;
+      min-width: 2px;
+      cursor: pointer;
+      position: relative;
+    }
+    .tl-bar.healthy  { background: #22c55e33; }
+    .tl-bar.degraded { background: #f59e0b55; }
+    .tl-bar.frozen   { background: #ef4444; }
+    .tl-bar:hover    { filter: brightness(1.5); }
+
+    .error-msg {
+      color: #ef4444;
+      padding: 40px 0;
+      text-align: center;
+      font-size: 13px;
+    }
+    .loading {
+      color: #333;
+      padding: 40px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Ronaut Radio <span>/ Stream Health</span></h1>
+  <div id="header-status">
+    <div id="status-dot"></div>
+    <span id="status-label">—</span>
+  </div>
+</header>
+
+<div id="app"><div class="loading">Loading…</div></div>
+
+<script>
+const API = 'https://stream.ronautradio.la/api/kpi';
+const REFRESH_MS = 5 * 60 * 1000;
+
+let charts = {};
+
+function fmt(iso) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
+         d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function statusClass(s) {
+  if (s === 'healthy') return 'good';
+  if (s === 'degraded') return 'warn';
+  return 'bad';
+}
+
+function makeChart(id, label, data, labels, color, opts = {}) {
+  const ctx = document.getElementById(id).getContext('2d');
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label,
+        data,
+        borderColor: color,
+        backgroundColor: color + '18',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.3,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          backgroundColor: '#1a1a1a',
+          borderColor: '#333',
+          borderWidth: 1,
+          titleColor: '#888',
+          bodyColor: '#fff',
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#1a1a1a' },
+          ticks: { color: '#444', maxTicksLimit: 8, font: { size: 10 } }
+        },
+        y: {
+          grid: { color: '#1a1a1a' },
+          ticks: { color: '#444', font: { size: 10 } },
+          min: opts.min ?? undefined,
+          max: opts.max ?? undefined,
+          suggestedMin: opts.suggestedMin ?? undefined,
+        }
+      }
+    }
+  });
+}
+
+function makeMultiChart(id, datasets, labels) {
+  const ctx = document.getElementById(id).getContext('2d');
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#555', font: { size: 10 }, boxWidth: 10 }
+        },
+        tooltip: {
+          mode: 'index', intersect: false,
+          backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
+          titleColor: '#888', bodyColor: '#fff',
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#1a1a1a' },
+          ticks: { color: '#444', maxTicksLimit: 8, font: { size: 10 } }
+        },
+        y: {
+          grid: { color: '#1a1a1a' },
+          ticks: { color: '#444', font: { size: 10 } },
+        }
+      }
+    }
+  });
+}
+
+async function load() {
+  try {
+    const [rawRes, sumRes] = await Promise.all([
+      fetch(API + '?rows=288'),
+      fetch(API + '?summary=1')
+    ]);
+    if (!rawRes.ok) throw new Error('API error ' + rawRes.status);
+    const raw = await rawRes.json();
+    const sum = await sumRes.json();
+    render(raw, sum);
+  } catch(e) {
+    document.getElementById('app').innerHTML =
+      `<div class="error-msg">Could not load KPI data — ${e.message}</div>`;
+  }
+}
+
+function render(raw, sum) {
+  const rows = raw.rows || [];
+  const latest = rows[rows.length - 1] || {};
+
+  // Header status
+  const st = latest.status || 'unknown';
+  document.getElementById('status-dot').className = st;
+  document.getElementById('status-label').textContent = st.toUpperCase();
+
+  // Derive arrays
+  const labels       = rows.map(r => fmt(r.timestamp));
+  const segAges      = rows.map(r => parseInt(r.segment_age_s) || 0);
+  const speeds       = rows.map(r => parseFloat(r.ffmpeg_speed) || 0);
+  const cpus         = rows.map(r => parseFloat(r.ffmpeg_cpu_pct) || 0);
+  const listeners    = rows.map(r => parseInt(r.live_listeners) || 0);
+  const uptime       = rows.map(r => parseInt(r.ffmpeg_uptime_min) || 0);
+
+  const curSegAge    = parseInt(latest.segment_age_s) || 0;
+  const curSpeed     = parseFloat(latest.ffmpeg_speed) || 0;
+  const curCpu       = parseFloat(latest.ffmpeg_cpu_pct) || 0;
+  const curListeners = parseInt(latest.live_listeners) || 0;
+  const curUptime    = parseInt(latest.ffmpeg_uptime_min) || 0;
+  const curFreeze    = parseInt(latest.freeze_today) || 0;
+  const curRestart   = parseInt(latest.restarts_today) || 0;
+
+  const segAgeClass  = curSegAge < 15 ? 'good' : curSegAge < 30 ? 'warn' : 'bad';
+  const speedClass   = curSpeed >= 0.95 ? 'good' : curSpeed >= 0.8 ? 'warn' : 'bad';
+  const cpuClass     = curCpu < 100 ? 'good' : curCpu < 180 ? 'warn' : 'bad';
+
+  const uptimeDays   = Math.floor(curUptime / 1440);
+  const uptimeHrs    = Math.floor((curUptime % 1440) / 60);
+  const uptimeStr    = uptimeDays > 0 ? `${uptimeDays}d ${uptimeHrs}h` : `${uptimeHrs}h ${curUptime % 60}m`;
+
+  document.getElementById('app').innerHTML = `
+    <div class="cards">
+      <div class="card">
+        <div class="card-label">Uptime (24h)</div>
+        <div class="card-value ${sum.uptime_pct >= 99 ? 'good' : sum.uptime_pct >= 95 ? 'warn' : 'bad'}">${sum.uptime_pct ?? '—'}%</div>
+        <div class="card-sub">${sum.frozen_snapshots ?? 0} frozen snapshots</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Segment Age</div>
+        <div class="card-value ${segAgeClass}">${curSegAge}s</div>
+        <div class="card-sub">healthy &lt;15s · frozen &gt;30s</div>
+      </div>
+      <div class="card">
+        <div class="card-label">ffmpeg Speed</div>
+        <div class="card-value ${speedClass}">${curSpeed > 0 ? curSpeed.toFixed(3) + 'x' : '—'}</div>
+        <div class="card-sub">min 24h: ${sum.min_ffmpeg_speed ?? '—'}x</div>
+      </div>
+      <div class="card">
+        <div class="card-label">ffmpeg CPU</div>
+        <div class="card-value ${cpuClass}">${curCpu > 0 ? curCpu + '%' : '—'}</div>
+        <div class="card-sub">burnout risk &gt;200%</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Live Listeners</div>
+        <div class="card-value">${curListeners}</div>
+        <div class="card-sub">peak 24h: ${sum.peak_listeners ?? 0} · avg: ${sum.avg_listeners ?? 0}</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Freeze Events</div>
+        <div class="card-value ${curFreeze === 0 ? 'good' : 'bad'}">${curFreeze}</div>
+        <div class="card-sub">${curRestart} restarts today</div>
+      </div>
+      <div class="card">
+        <div class="card-label">ffmpeg Uptime</div>
+        <div class="card-value">${uptimeStr}</div>
+        <div class="card-sub">${rows.length} snapshots loaded</div>
+      </div>
+    </div>
+
+    <div class="charts">
+
+      <div class="chart-box wide">
+        <div class="chart-title">Stream Status — 24h Timeline (green=healthy · amber=degraded · red=frozen)</div>
+        <div id="timeline"></div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-title">Segment Age (s) — frozen threshold: 30s</div>
+        <canvas id="chart-seg" height="120"></canvas>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-title">ffmpeg Speed (×realtime) — should stay ≥1.0</div>
+        <canvas id="chart-speed" height="120"></canvas>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-title">Live Listeners</div>
+        <canvas id="chart-listeners" height="120"></canvas>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-title">ffmpeg CPU %</div>
+        <canvas id="chart-cpu" height="120"></canvas>
+      </div>
+
+    </div>
+
+    <div style="color:#333; font-size:11px; margin-top:20px; text-align:right">
+      Last snapshot: ${latest.timestamp ? fmtDate(latest.timestamp) : '—'} &nbsp;·&nbsp;
+      Auto-refreshes every 5 min
+    </div>
+  `;
+
+  // Timeline
+  const tl = document.getElementById('timeline');
+  rows.forEach(r => {
+    const bar = document.createElement('div');
+    bar.className = 'tl-bar ' + (r.status || 'unknown');
+    bar.title = `${fmt(r.timestamp)}  ${r.status}  seg=${r.segment_age_s}s  speed=${r.ffmpeg_speed}x`;
+    tl.appendChild(bar);
+  });
+
+  // Charts
+  makeChart('chart-seg', 'Segment Age', segAges, labels, '#ef4444', { min: 0, suggestedMin: 0 });
+  makeChart('chart-speed', 'Speed', speeds, labels, '#22c55e', { suggestedMin: 0.8 });
+  makeChart('chart-listeners', 'Listeners', listeners, labels, '#60a5fa', { min: 0 });
+  makeChart('chart-cpu', 'CPU %', cpus, labels, '#f59e0b', { min: 0 });
+
+  document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+// Auto-refresh
+load();
+setInterval(load, REFRESH_MS);
+</script>
+
+<span id="last-updated" style="display:none"></span>
+</body>
+</html>
