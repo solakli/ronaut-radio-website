@@ -1806,26 +1806,36 @@
                 fragLoadingRetryDelay: 1000,
                 fragLoadingMaxRetryTimeout: 2000,
             });
+            var _t0 = performance.now();
+            var _log = function(label) { console.log('[HLS]', label, '+' + Math.round(performance.now() - _t0) + 'ms'); };
+
             hlsInstance.loadSource('https://stream.ronautradio.la/live/hls/stream.m3u8');
             hlsInstance.attachMedia(video);
+            _log('loadSource+attachMedia called');
 
-            // Call play() at MANIFEST_PARSED to put the browser in eager-play mode
-            // immediately — this was working in late Feb before the SW cache issue.
+            hlsInstance.on(Hls.Events.MEDIA_ATTACHED,  function() { _log('MEDIA_ATTACHED'); });
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
+                _log('MANIFEST_PARSED');
                 if (!isPlayingPick) {
-                    video.play().catch(function(e) {});
+                    video.play().catch(function(e) { _log('play() rejected: ' + e.message); });
+                    _log('play() called');
                 }
             });
-
-            // Fallback: also try on first fragment in case autoplay was deferred.
-            hlsInstance.on(Hls.Events.FRAG_BUFFERED, function() {
+            hlsInstance.on(Hls.Events.FRAG_LOADING,  function(e, d) { _log('FRAG_LOADING  sn=' + d.frag.sn); });
+            hlsInstance.on(Hls.Events.FRAG_LOADED,   function(e, d) { _log('FRAG_LOADED   sn=' + d.frag.sn); });
+            hlsInstance.on(Hls.Events.FRAG_BUFFERED, function(e, d) {
+                _log('FRAG_BUFFERED sn=' + d.frag.sn);
                 if (video.paused && !isPlayingPick) {
                     video.play().catch(function(e) {});
                 }
             });
+            video.addEventListener('playing', function() { _log('video PLAYING'); }, { once: true });
+            video.addEventListener('waiting', function() { _log('video WAITING'); });
+            video.addEventListener('canplay',  function() { _log('video CANPLAY'); }, { once: true });
 
             // On fatal error, try to recover — prevents permanent stall
             hlsInstance.on(Hls.Events.ERROR, function(event, data) {
+                _log('ERROR fatal=' + data.fatal + ' type=' + data.type + ' details=' + data.details);
                 if (data.fatal) {
                     if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                         hlsInstance.startLoad();
