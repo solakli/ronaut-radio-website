@@ -54,7 +54,18 @@
     .status-pill.frozen   { color: var(--red);    border-color: #ef444444; background: #ef444411; animation: pulse 1.5s infinite; }
     .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
     @keyframes pulse { 50% { opacity: 0.4; } }
-    .header-right { font-size: 11px; color: var(--muted); }
+    .header-right { display: flex; align-items: center; gap: 12px; font-size: 11px; color: var(--muted); }
+
+    /* ── RANGE PICKER ── */
+    .range-picker { display: flex; gap: 3px; }
+    .range-btn {
+      padding: 4px 10px; border-radius: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; transition: all 0.15s;
+    }
+    .range-btn:hover { border-color: #444; color: #ccc; }
+    .range-btn.active { border-color: #555; color: #fff; background: #1a1a1a; }
 
     /* ── WARNINGS ── */
     .warn-banner {
@@ -208,7 +219,14 @@
       <span id="status-text">—</span>
     </div>
   </div>
-  <div class="header-right" id="last-updated">—</div>
+  <div class="header-right">
+    <div class="range-picker">
+      <button class="range-btn active" onclick="setRange(288,'24h','12h ago')">24h</button>
+      <button class="range-btn"        onclick="setRange(576,'48h','24h ago')">48h</button>
+      <button class="range-btn"        onclick="setRange(2016,'7d','3.5d ago')">7d</button>
+    </div>
+    <span id="last-updated">—</span>
+  </div>
 </div>
 
 <div class="warn-banner cpu-warn" id="cpu-warn">
@@ -225,6 +243,26 @@
 <script>
 const API = 'https://stream.ronautradio.la/api';
 let charts = {};
+let currentRows = 288;
+let currentLabel = '24h';
+let currentMidLabel = '12h ago';
+
+function setRange(rows, label, midLabel) {
+  currentRows = rows;
+  currentLabel = label;
+  currentMidLabel = midLabel;
+  document.querySelectorAll('.range-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === label);
+  });
+  load();
+}
+
+// For 7d: downsample to ~288 points so charts stay fast
+function downsample(arr, targetLen) {
+  if (arr.length <= targetLen) return arr;
+  const step = arr.length / targetLen;
+  return Array.from({ length: targetLen }, (_, i) => arr[Math.round(i * step)]);
+}
 
 const toNum = v => parseFloat(v) || 0;
 const toInt = v => parseInt(v) || 0;
@@ -309,8 +347,8 @@ function makeChart(id, data, labels, color, opts = {}) {
 async function load() {
   try {
     const [kpiRaw, kpiSum, playStats] = await Promise.all([
-      fetch(API + '/kpi?rows=288').then(r => r.json()),
-      fetch(API + '/kpi?summary=1').then(r => r.json()),
+      fetch(API + `/kpi?rows=${currentRows}`).then(r => r.json()),
+      fetch(API + `/kpi?summary=1&rows=${currentRows}`).then(r => r.json()),
       fetch(API + '/play-stats').then(r => r.json()).catch(() => null),
     ]);
     render(kpiRaw, kpiSum, playStats);
@@ -379,7 +417,7 @@ function render(raw, sum, play) {
       <div class="card">
         <div class="card-label">Stream Uptime</div>
         <div class="card-value ${sum.uptime_pct >= 99 ? 'green' : sum.uptime_pct >= 95 ? 'amber' : 'red'}">${sum.uptime_pct ?? '—'}<span style="font-size:16px;font-weight:400">%</span></div>
-        <div class="card-sub"><b>${sum.frozen_snapshots ?? 0}</b> frozen snapshots · 24h</div>
+        <div class="card-sub"><b>${sum.frozen_snapshots ?? 0}</b> frozen snapshots · ${currentLabel}</div>
       </div>
       <div class="card">
         <div class="card-label">Segment Age</div>
@@ -389,7 +427,7 @@ function render(raw, sum, play) {
       <div class="card">
         <div class="card-label">ffmpeg Speed</div>
         <div class="card-value ${speedClass(curSpeed)}">${curSpeed > 0 ? curSpeed.toFixed(2) : '—'}<span style="font-size:14px;font-weight:400">×</span></div>
-        <div class="card-sub">min 24h: <b>${sum.min_ffmpeg_speed ?? '—'}×</b> · avg <b>${sum.avg_ffmpeg_speed ?? '—'}×</b></div>
+        <div class="card-sub">min ${currentLabel}: <b>${sum.min_ffmpeg_speed ?? '—'}×</b> · avg <b>${sum.avg_ffmpeg_speed ?? '—'}×</b></div>
       </div>
       <div class="card">
         <div class="card-label">System CPU</div>
@@ -420,16 +458,16 @@ function render(raw, sum, play) {
 
     <!-- TIMELINE -->
     <div class="section">
-      <div class="section-title">24h Status Timeline</div>
+      <div class="section-title">${currentLabel} Status Timeline</div>
       <div class="timeline-wrap">
         <div class="timeline-bar" id="timeline"></div>
-        <div class="timeline-labels"><span>${firstLabel}</span><span>12h ago</span><span>${lastLabel}</span></div>
+        <div class="timeline-labels"><span>${firstLabel}</span><span>${currentMidLabel}</span><span>${lastLabel}</span></div>
       </div>
     </div>
 
     <!-- CHARTS -->
     <div class="section">
-      <div class="section-title">Stream Health — Last 24 Hours</div>
+      <div class="section-title">Stream Health — Last ${currentLabel}</div>
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-label">Segment Age <span style="color:#555">(frozen &gt;30s)</span><span class="current-val">${curAge}s</span></div>
@@ -503,12 +541,20 @@ function render(raw, sum, play) {
     tl.appendChild(b);
   });
 
-  // Build charts
-  makeChart('c-seg',       segAges,   labels, '#ef4444', { unit: 's', suggestedMax: 35 });
-  makeChart('c-speed',     speeds,    labels, '#22c55e', { unit: '×', min: 0.7, suggestedMax: 1.1 });
-  makeChart('c-cpu',       cpus,      labels, '#f59e0b', { unit: '%', suggestedMax: 100 });
-  makeChart('c-listeners', listeners, labels, '#60a5fa', { unit: '' });
-  makeChart('c-drift',     drifts,    labels, '#a78bfa', { unit: 's', suggestedMax: 5, threshold: 1 });
+  // Build charts — downsample to ~288 pts so 7d view doesn't kill perf
+  const TARGET = 288;
+  const dsLabels    = downsample(labels,    TARGET);
+  const dsSegAges   = downsample(segAges,   TARGET);
+  const dsSpeeds    = downsample(speeds,    TARGET);
+  const dsCpus      = downsample(cpus,      TARGET);
+  const dsListeners = downsample(listeners, TARGET);
+  const dsDrifts    = downsample(drifts,    TARGET);
+
+  makeChart('c-seg',       dsSegAges,   dsLabels, '#ef4444', { unit: 's', suggestedMax: 35 });
+  makeChart('c-speed',     dsSpeeds,    dsLabels, '#22c55e', { unit: '×', min: 0.7, suggestedMax: 1.1 });
+  makeChart('c-cpu',       dsCpus,      dsLabels, '#f59e0b', { unit: '%', suggestedMax: 100 });
+  makeChart('c-listeners', dsListeners, dsLabels, '#60a5fa', { unit: '' });
+  makeChart('c-drift',     dsDrifts,    dsLabels, '#a78bfa', { unit: 's', suggestedMax: 5, threshold: 1 });
 }
 
 load();
