@@ -79,7 +79,6 @@
 
         body {
             margin: 0;
-            padding-top: 101px;
             font-family: Oswald, sans-serif;
             text-align: center;
             background-color: var(--bg-primary);
@@ -421,52 +420,6 @@
         #btn-share:disabled {
             background: #000;
             color: #fff;
-        }
-
-        /* Top Nav Bar */
-        #top-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 24px;
-            padding-right: 160px;
-            height: 101px;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--bg-primary);
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 9999;
-        }
-        .nav-brand {
-            font-family: Oswald, sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            text-decoration: none;
-        }
-        .nav-link {
-            font-family: Oswald, sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            text-decoration: none;
-            cursor: pointer;
-            background: none;
-            border: none;
-            padding: 0;
-        }
-        .nav-link:hover { color: var(--text-primary); }
-        .nav-link.active {
-            color: var(--text-primary);
-            border-bottom: 2px solid var(--text-primary);
-            padding-bottom: 2px;
-        }
-        @media (max-width: 600px) {
-            #top-nav { padding-right: 24px; }
         }
 
         /* Theme Toggle Bar - fixed at top */
@@ -1443,18 +1396,17 @@
         }
 
         /* Mini Player */
-        #nav-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
         #mini-player {
+            position: fixed;
             background: #000;
             color: #fff;
             font-family: Oswald, sans-serif;
+            z-index: 9998;
             display: none;
             align-items: center;
             gap: 12px;
+            padding: 10px 15px 10px 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
         #mini-player.visible {
@@ -1534,14 +1486,14 @@
             fill: #fff;
         }
 
-        /* Desktop: inline in nav bar */
+        /* Desktop: top-left */
         @media (min-width: 768px) {
             #mini-player {
+                top: 0;
+                left: 0;
                 padding: 0 15px 0 0;
             }
             #mini-player .mini-video-wrap {
-                width: 180px;
-                height: 101px;
                 margin: 0;
             }
         }
@@ -1549,11 +1501,9 @@
         /* Mobile: bottom sticky bar */
         @media (max-width: 767px) {
             #mini-player {
-                position: fixed;
                 bottom: 0;
                 left: 0;
                 right: 0;
-                z-index: 9998;
                 justify-content: space-between;
                 border-top: 1px solid #333;
                 padding: 0 12px 0 0;
@@ -1619,283 +1569,22 @@
             z-index: -1;
             pointer-events: none;
         }
-
-        /* ─── SETS VIEW ─── */
-        #sets-view { padding-top: 20px; min-height: 100vh; }
-
-        /* ─── PAGE HEADER ─── */
-        #sets-page-header {
-            max-width: 1200px;
-            margin: 40px auto 0;
-            padding: 0 24px;
-            display: flex;
-            align-items: baseline;
-            gap: 16px;
-        }
-        #sets-page-header h1 {
-            font-size: 32px;
-            font-weight: 300;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            margin: 0;
-        }
-        #sets-total-count {
-            font-size: 12px;
-            font-weight: 300;
-            letter-spacing: 2px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        /* ─── GENRE FILTER ─── */
-        #sets-genre-filter {
-            max-width: 1200px;
-            margin: 20px auto 0;
-            padding: 0 24px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        /* ─── FEATURED PLAYER ─── */
-        #featured-section {
-            max-width: 1200px;
-            margin: 32px auto 0;
-            padding: 0 24px;
-        }
-        #featured-inner {
-            display: flex;
-            gap: 32px;
-            align-items: flex-start;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            padding: 24px;
-        }
-        #featured-video-wrap {
-            flex: 0 0 48%;
-            position: relative;
-        }
-        #featured-video {
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: #000;
-            display: block;
-        }
-        #featured-meta {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            min-width: 0;
-        }
-        #feat-number {
-            font-size: 11px;
-            font-weight: 300;
-            letter-spacing: 3px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-        #feat-title {
-            font-size: 26px;
-            font-weight: 400;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin: 0;
-            line-height: 1.2;
-        }
-        #feat-desc {
-            font-size: 14px;
-            font-weight: 300;
-            color: var(--text-secondary);
-            margin: 0;
-        }
-        #feat-genres {
-            font-size: 11px;
-            font-weight: 300;
-            letter-spacing: 1.5px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-        #feat-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 4px;
-        }
-        .feat-btn {
-            font-family: Oswald, sans-serif;
-            font-size: 12px;
-            font-weight: 400;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            padding: 8px 18px;
-            cursor: pointer;
-            border: 1px solid var(--text-primary);
-            background: transparent;
-            color: var(--text-primary);
-            transition: background 0.15s, color 0.15s;
-        }
-        .feat-btn:hover {
-            background: var(--text-primary);
-            color: var(--bg-primary);
-        }
-        .feat-btn.close-btn {
-            border-color: var(--border-color);
-            color: var(--text-muted);
-        }
-        .feat-btn.close-btn:hover {
-            border-color: var(--text-primary);
-            background: transparent;
-            color: var(--text-primary);
-        }
-        #feat-tracklist {
-            margin-top: 12px;
-            border-top: 1px solid var(--border-color);
-            padding-top: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .tl-header {
-            font-size: 11px;
-            font-weight: 400;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            color: var(--text-muted);
-        }
-        .tl-item {
-            font-size: 12px;
-            font-weight: 300;
-            letter-spacing: 0.5px;
-            padding: 4px 0;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-color);
-        }
-        .tl-item:last-child { border-bottom: none; }
-        .tl-time {
-            color: var(--text-muted);
-            margin-right: 6px;
-            font-size: 11px;
-        }
-
-        /* ─── SETS GRID ─── */
-        #sets-grid {
-            max-width: 1200px;
-            margin: 32px auto 60px;
-            padding: 0 24px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 28px;
-        }
-
-        /* ─── SET CARD ─── */
-        .set-card {
-            cursor: pointer;
-            text-align: left;
-            transition: opacity 0.2s;
-        }
-        .set-card:hover { opacity: 0.8; }
-        .set-card.active .card-thumb-wrap::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border: 2px solid var(--text-primary);
-            pointer-events: none;
-        }
-        .card-thumb-wrap {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: var(--border-color);
-            overflow: hidden;
-        }
-        .card-thumb-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .card-num {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            background: rgba(0,0,0,0.75);
-            color: #fff;
-            font-family: Oswald, sans-serif;
-            font-size: 11px;
-            font-weight: 400;
-            letter-spacing: 1px;
-            padding: 3px 7px;
-        }
-        .card-playing-badge {
-            position: absolute;
-            bottom: 8px;
-            left: 8px;
-            background: var(--text-primary);
-            color: var(--bg-primary);
-            font-family: Oswald, sans-serif;
-            font-size: 10px;
-            font-weight: 400;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            padding: 3px 8px;
-        }
-        .card-title {
-            font-size: 15px;
-            font-weight: 400;
-            letter-spacing: 0.5px;
-            margin-top: 10px;
-            text-transform: uppercase;
-        }
-        .card-desc {
-            font-size: 12px;
-            font-weight: 300;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-        .card-genres {
-            font-size: 10px;
-            font-weight: 300;
-            color: var(--text-muted);
-            margin-top: 5px;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-
-        /* ─── LOADING ─── */
-        #sets-loading {
-            text-align: center;
-            padding: 60px 24px;
-            font-size: 13px;
-            font-weight: 300;
-            letter-spacing: 2px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        /* ─── SETS RESPONSIVE ─── */
-        @media (max-width: 900px) {
-            #featured-inner { flex-direction: column; }
-            #featured-video-wrap { flex: none; width: 100%; }
-        }
-        @media (max-width: 600px) {
-            #sets-page-header h1 { font-size: 24px; }
-            #sets-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-        }
-        @media (max-width: 400px) {
-            #sets-grid { grid-template-columns: 1fr; }
-        }
     </style>
 </head>
 <body>
     <!-- Asteroid Background Canvas -->
     <canvas id="asteroid-canvas"></canvas>
 
-    <!-- Top Nav Bar -->
-    <div id="top-nav">
-        <div id="nav-left">
-            <!-- Mini Player (inline in nav bar on desktop, fixed bottom on mobile) -->
-            <div id="mini-player">
+    <!-- Theme Toggle Bar (fixed top) -->
+    <div id="theme-toggle-bar">
+        <button id="btn-theme" title="Toggle dark/light mode">
+            <span class="theme-icon-light"><span class="theme-symbol">&#9728;&#65038;</span><span class="theme-text"> Light Mode</span></span>
+            <span class="theme-icon-dark"><span class="theme-symbol">&#9790;&#65038;</span><span class="theme-text"> Dark Mode</span></span>
+        </button>
+    </div>
+
+    <!-- Mini Player (appears when scrolling) -->
+    <div id="mini-player">
         <div class="mini-video-wrap">
             <video id="mini-video" muted playsinline></video>
         </div>
@@ -1914,23 +1603,8 @@
                 <svg viewBox="0 0 24 24"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
             </button>
         </div>
-            </div><!-- end #mini-player -->
-            <button class="nav-brand nav-link active" id="nav-live-btn" onclick="showView('live')">Ronaut Radio</button>
-        </div><!-- end #nav-left -->
-        <div style="display:flex; gap:24px; align-items:center;">
-            <button class="nav-link" id="nav-sets-btn" onclick="showView('sets')">Sets</button>
-        </div>
-    </div><!-- end #top-nav -->
-
-    <!-- Theme Toggle Bar (fixed top-right) -->
-    <div id="theme-toggle-bar">
-        <button id="btn-theme" title="Toggle dark/light mode">
-            <span class="theme-icon-light"><span class="theme-symbol">&#9728;&#65038;</span><span class="theme-text"> Light Mode</span></span>
-            <span class="theme-icon-dark"><span class="theme-symbol">&#9790;&#65038;</span><span class="theme-text"> Dark Mode</span></span>
-        </button>
     </div>
 
-    <div id="live-view">
     <div id="top-player-container">
         <div id="player-container">
             <button id="cast-btn" title="Cast to TV / AirPlay">
@@ -2092,35 +1766,6 @@
     <div class="section">
         <div id='collection-component-1618238023055'></div>
     </div>
-    </div><!-- end #live-view -->
-
-    <!-- SETS VIEW -->
-    <div id="sets-view" style="display:none">
-        <div id="featured-section" style="display:none">
-            <div id="featured-inner">
-                <div id="featured-video-wrap">
-                    <video id="featured-video" controls playsinline></video>
-                </div>
-                <div id="featured-meta">
-                    <div id="feat-number"></div>
-                    <h2 id="feat-title"></h2>
-                    <p id="feat-desc"></p>
-                    <div id="feat-genres"></div>
-                    <div id="feat-actions">
-                        <button class="feat-btn" id="feat-copy-btn" onclick="copyLink()">Copy Link</button>
-                        <button class="feat-btn close-btn" onclick="closeFeatured()">&#10005; Close</button>
-                    </div>
-                    <div id="feat-tracklist" style="display:none"></div>
-                </div>
-            </div>
-        </div>
-        <div id="sets-page-header">
-            <h1>Sets</h1>
-            <span id="sets-total-count"></span>
-        </div>
-        <div id="sets-genre-filter"></div>
-        <div id="sets-grid"><div id="sets-loading">Loading sets...</div></div>
-    </div><!-- end #sets-view -->
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -2133,14 +1778,6 @@
     var isPlayingPick = false;
     var currentPickTitle = '';
     var currentVodUrl = ''; // Store VOD URL for mini player
-
-    // SPA view state
-    var setsLoaded = false;
-    var setsAllSets = [];
-    var setsHlsInstance = null;
-    var setsActiveSlug = null;
-    var setsActiveGenre = 'all';
-    var currentView = 'live';
 
     function escapeHtml(text) {
         var div = document.createElement('div');
@@ -2387,73 +2024,6 @@
         // Re-preload mini video for live stream (mobile)
         if (window.preloadMiniVideo) {
             window.preloadMiniVideo();
-        }
-    }
-
-    function showView(view, slug, pushState) {
-        if (pushState === undefined) pushState = true;
-        currentView = view;
-        var liveView = document.getElementById('live-view');
-        var setsView = document.getElementById('sets-view');
-        var navLive = document.getElementById('nav-live-btn');
-        var navSets = document.getElementById('nav-sets-btn');
-
-        if (view === 'sets') {
-            liveView.style.display = 'none';
-            setsView.style.display = '';
-            navLive.classList.remove('active');
-            navSets.classList.add('active');
-
-            // Auto-show mini player
-            var mp = document.getElementById('mini-player');
-            if (mp) {
-                mp.classList.add('visible');
-                if (window._ronautMiniInit) window._ronautMiniInit();
-            }
-
-            // Load sets data then auto-select slug if provided
-            if (!setsLoaded) {
-                loadSets().then(function() {
-                    if (slug) selectSetBySlug(slug);
-                });
-            } else {
-                if (slug) selectSetBySlug(slug);
-            }
-
-            if (pushState) {
-                var url = '/?view=sets' + (slug ? '&set=' + encodeURIComponent(slug) : '');
-                window.history.pushState({ view: 'sets', slug: slug || null }, '', url);
-            }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        } else {
-            liveView.style.display = '';
-            setsView.style.display = 'none';
-            navLive.classList.add('active');
-            navSets.classList.remove('active');
-
-            // Stop sets player
-            if (setsHlsInstance) { setsHlsInstance.destroy(); setsHlsInstance = null; }
-            var featVid = document.getElementById('featured-video');
-            if (featVid) { featVid.pause(); featVid.src = ''; }
-
-            // Resume live stream — browser may have suspended it while view was hidden
-            if (!isPlayingPick) {
-                var liveVid = document.getElementById('ronaut-player');
-                if (liveVid) {
-                    if (hlsInstance && liveVid.paused) {
-                        liveVid.play().catch(function(e) { console.log('Resume prevented:', e); });
-                    } else if (!hlsInstance) {
-                        liveVid.crossOrigin = 'anonymous';
-                        initHls(liveVid);
-                    }
-                }
-            }
-
-            // Refresh now-playing and programme immediately
-            if (window._updateNowPlaying) window._updateNowPlaying();
-
-            if (pushState) window.history.pushState({ view: 'live' }, '', '/');
         }
     }
 
@@ -2713,10 +2283,6 @@
             // Poll: now-playing every 10s, programme every 30s
             setInterval(updateNowPlaying, 10000);
             setInterval(updateProgramme, 30000);
-            // Expose so showView can trigger immediate refresh
-            window._updateNowPlaying = function() {
-                updateNowPlaying().then(function() { updateProgramme(); });
-            };
 
             // Listener count polling
             var listenerCountEl = document.getElementById('listener-count');
@@ -2791,11 +2357,6 @@
                 if (castBtn) castBtn.addEventListener('click', triggerCast);
                 if (miniCastBtn) miniCastBtn.addEventListener('click', triggerCast);
             })();
-
-            // Initialize HLS Player early — before mini player IIFE so any mini player
-            // error doesn't block stream initialization
-            video.crossOrigin = 'anonymous';
-            initHls(video);
 
             // Mini Player - show when main player scrolls out of view
             (function() {
@@ -2998,28 +2559,21 @@
                     }
                 });
 
-                // Click mini player info/video — go to live view if in sets, else scroll to player
-                function miniClickHandler() {
-                    if (currentView === 'sets') {
-                        showView('live');
-                        setTimeout(function() {
-                            var prog = document.getElementById('programme-section');
-                            if (prog) prog.scrollIntoView({ behavior: 'smooth' });
-                        }, 100);
-                    } else {
-                        playerContainer.scrollIntoView({ behavior: 'smooth' });
-                    }
-                }
-                miniPlayer.querySelector('.mini-info').addEventListener('click', miniClickHandler);
-                miniVideo.addEventListener('click', miniClickHandler);
+                // Click mini player to scroll to main player
+                miniPlayer.querySelector('.mini-info').addEventListener('click', function() {
+                    playerContainer.scrollIntoView({ behavior: 'smooth' });
+                });
 
-                // Expose for sets view to trigger mini player init
-                window._ronautMiniInit = function() {
-                    initMiniVideo();
-                    wasVisible = true;
-                };
+                // Click mini video to scroll to main player
+                miniVideo.addEventListener('click', function() {
+                    playerContainer.scrollIntoView({ behavior: 'smooth' });
+                });
 
             })();
+
+            // Initialize HLS Player
+            video.crossOrigin = 'anonymous';
+            initHls(video);
 
             // Audio-reactive visuals
             (function() {
@@ -3463,17 +3017,6 @@
                 return pick.title || filenameTitle || 'Untitled';
             }
 
-            function getPickSlug(pick) {
-                if (pick.url && pick.url.indexOf('.m3u8') !== -1) {
-                    return pick.url.split('/').pop().replace('.m3u8', '');
-                }
-                return (pick.filename || '')
-                    .replace(/\.mp4$/i, '')
-                    .replace(/^ronaut\[\d+\]-?/i, '')
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]/g, '');
-            }
-
             async function loadStaffPicks() {
                 try {
                     var res = await fetch('https://stream.ronautradio.la/api/sets');
@@ -3488,8 +3031,7 @@
                         setsData[encodedUrl] = pick;
 
                         var genreAttr = pick.genres && pick.genres.length > 0 ? pick.genres.join(',').toLowerCase() : '';
-                        var pickSlug = getPickSlug(pick);
-                        html += '<div class="pick-card" data-url="' + encodedUrl + '" data-title="' + escapeHtml(title) + '" data-genres="' + escapeHtml(genreAttr) + '" data-slug="' + escapeHtml(pickSlug) + '">';
+                        html += '<div class="pick-card" data-url="' + encodedUrl + '" data-title="' + escapeHtml(title) + '" data-genres="' + escapeHtml(genreAttr) + '">';
                         html += '<img src="' + encodePickPath('https://stream.ronautradio.la' + pick.thumbnail) + '" alt="' + escapeHtml(title) + '" loading="lazy" />';
                         html += '<div class="pick-title">' + escapeHtml(title) + '</div>';
                         if (pick.description) {
@@ -3584,7 +3126,7 @@
                         });
                     }
 
-                    // Card click → navigate to sets page with ?set=slug
+                    // Card click to play
                     var cards = picksGrid.querySelectorAll('.pick-card');
                     for (var j = 0; j < cards.length; j++) {
                         cards[j].addEventListener('click', function(e) {
@@ -3594,12 +3136,7 @@
                                 e.target.closest('.pick-tracklist')) {
                                 return;
                             }
-                            var slug = this.getAttribute('data-slug');
-                            if (slug) {
-                                showView('sets', slug);
-                            } else {
-                                playPick(this.getAttribute('data-url'), this.getAttribute('data-title'));
-                            }
+                            playPick(this.getAttribute('data-url'), this.getAttribute('data-title'));
                         });
                     }
 
@@ -3659,16 +3196,6 @@
             }
 
             loadStaffPicks();
-        })();
-
-        // URL routing init — check if ?view=sets on page load
-        (function() {
-            var params = new URLSearchParams(window.location.search);
-            if (params.get('view') === 'sets') {
-                setTimeout(function() {
-                    showView('sets', params.get('set') || null, false);
-                }, 0);
-            }
         })();
 
         // Chat
@@ -4058,201 +3585,6 @@
             }, 5000);
         }
     });
-
-    // Browser back/forward for SPA routing
-    window.addEventListener('popstate', function() {
-        var params = new URLSearchParams(window.location.search);
-        var view = params.get('view') || 'live';
-        showView(view, params.get('set') || null, false);
-    });
-
-    // ─── SETS VIEW LOGIC ───
-    function setsGetSlug(set) {
-        if (set.url && set.url.indexOf('.m3u8') !== -1) {
-            return set.url.split('/').pop().replace('.m3u8', '');
-        }
-        return (set.filename || '')
-            .replace(/\.mp4$/i, '')
-            .replace(/^ronaut\[\d+\]-?/i, '')
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, '');
-    }
-
-    function setsGetNumber(filename) {
-        var m = (filename || '').match(/\[(\d+)\]/);
-        return m ? m[1] : '';
-    }
-
-    function setsEscHtml(s) {
-        return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    function loadSets() {
-        return fetch('https://stream.ronautradio.la/api/sets')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                setsAllSets = (data.sets || []).sort(function(a, b) {
-                    return parseInt(setsGetNumber(b.filename) || '0') - parseInt(setsGetNumber(a.filename) || '0');
-                });
-                setsLoaded = true;
-                setsRenderFilters();
-                setsRenderGrid();
-            })
-            .catch(function() {
-                document.getElementById('sets-grid').innerHTML = '<div id="sets-loading">Failed to load sets.</div>';
-            });
-    }
-
-    function setsRenderFilters() {
-        var genres = ['all'];
-        setsAllSets.forEach(function(s) {
-            (s.genres || []).forEach(function(g) {
-                if (genres.indexOf(g) === -1) genres.push(g);
-            });
-        });
-        document.getElementById('sets-genre-filter').innerHTML = genres.map(function(g) {
-            return '<button class="genre-btn' + (g === setsActiveGenre ? ' active' : '') +
-                '" onclick="filterGenre(\'' + setsEscHtml(g) + '\')">' + setsEscHtml(g === 'all' ? 'All' : g) + '</button>';
-        }).join('');
-    }
-
-    function filterGenre(genre) {
-        setsActiveGenre = genre;
-        setsRenderFilters();
-        setsRenderGrid();
-    }
-
-    function setsRenderGrid() {
-        var filtered = setsActiveGenre === 'all' ? setsAllSets : setsAllSets.filter(function(s) {
-            return (s.genres || []).indexOf(setsActiveGenre) !== -1;
-        });
-        var countEl = document.getElementById('sets-total-count');
-        if (countEl) countEl.textContent = filtered.length + ' set' + (filtered.length !== 1 ? 's' : '');
-        if (filtered.length === 0) {
-            document.getElementById('sets-grid').innerHTML = '<div id="sets-loading">No sets in this genre.</div>';
-            return;
-        }
-        document.getElementById('sets-grid').innerHTML = filtered.map(function(set) {
-            var slug = setsGetSlug(set);
-            var num = setsGetNumber(set.filename);
-            var genres = (set.genres || []).join(' · ');
-            var isActive = slug === setsActiveSlug;
-            var thumbUrl = 'https://stream.ronautradio.la' + set.thumbnail;
-            return '<div class="set-card' + (isActive ? ' active' : '') + '" onclick="selectSetBySlug(\'' + setsEscHtml(slug) + '\')">' +
-                '<div class="card-thumb-wrap">' +
-                '<img src="' + setsEscHtml(thumbUrl) + '" alt="' + setsEscHtml(set.title) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
-                (num ? '<span class="card-num">' + setsEscHtml(num) + '</span>' : '') +
-                (isActive ? '<span class="card-playing-badge">&#9654; Playing</span>' : '') +
-                '</div>' +
-                '<div class="card-title">' + setsEscHtml(set.title) + '</div>' +
-                (set.description ? '<div class="card-desc">' + setsEscHtml(set.description) + '</div>' : '') +
-                (genres ? '<div class="card-genres">' + setsEscHtml(genres) + '</div>' : '') +
-                '</div>';
-        }).join('');
-    }
-
-    function selectSetBySlug(slug) {
-        var found = setsAllSets.find(function(s) { return setsGetSlug(s) === slug; });
-        if (found) selectSet(found, true);
-    }
-
-    function selectSet(set, pushHistory) {
-        var slug = setsGetSlug(set);
-        setsActiveSlug = slug;
-
-        if (pushHistory) {
-            window.history.pushState({ view: 'sets', slug: slug }, '', '/?view=sets&set=' + encodeURIComponent(slug));
-        }
-
-        // Populate meta
-        var num = setsGetNumber(set.filename);
-        document.getElementById('feat-number').textContent = num ? 'Set ' + num : '';
-        document.getElementById('feat-title').textContent = set.title || '';
-        document.getElementById('feat-desc').textContent = set.description || '';
-        document.getElementById('feat-genres').textContent = (set.genres || []).join(' · ').toUpperCase();
-
-        // Tracklist
-        var tl = (set.tracklist || []).filter(function(t) { return !t.needs_id; });
-        var tlEl = document.getElementById('feat-tracklist');
-        if (tl.length > 0) {
-            tlEl.innerHTML = '<div class="tl-header">Tracklist</div>' +
-                tl.map(function(t, i) {
-                    var artist = (t.artists && t.artists.length) ? t.artists.join(', ') + ' \u2014 ' : '';
-                    var time = t.start_time_formatted ? '<span class="tl-time">' + t.start_time_formatted + '</span>' : '';
-                    return '<div class="tl-item">' + (i+1) + '. ' + time + setsEscHtml(artist + (t.title || '')) + '</div>';
-                }).join('');
-            tlEl.style.display = '';
-        } else {
-            tlEl.style.display = 'none';
-        }
-
-        loadFeaturedPlayer(set);
-        document.getElementById('featured-section').style.display = '';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setsRenderGrid();
-    }
-
-    function loadFeaturedPlayer(set) {
-        var video = document.getElementById('featured-video');
-        if (setsHlsInstance) { setsHlsInstance.destroy(); setsHlsInstance = null; }
-        video.src = '';
-        video.poster = 'https://stream.ronautradio.la' + set.thumbnail;
-
-        var fullUrl = 'https://stream.ronautradio.la' + set.url;
-        var isHls = set.url && set.url.indexOf('.m3u8') !== -1;
-
-        if (isHls && Hls.isSupported()) {
-            setsHlsInstance = new Hls();
-            setsHlsInstance.loadSource(fullUrl);
-            setsHlsInstance.attachMedia(video);
-            setsHlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
-                video.play().catch(function() {});
-            });
-            setsHlsInstance.on(Hls.Events.ERROR, function(event, data) {
-                if (data.fatal) {
-                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) setsHlsInstance.startLoad();
-                    else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) setsHlsInstance.recoverMediaError();
-                }
-            });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = fullUrl;
-            video.play().catch(function() {});
-        } else {
-            video.src = fullUrl;
-            video.play().catch(function() {});
-        }
-    }
-
-    function closeFeatured() {
-        if (setsHlsInstance) { setsHlsInstance.destroy(); setsHlsInstance = null; }
-        var video = document.getElementById('featured-video');
-        video.pause();
-        video.src = '';
-        document.getElementById('featured-section').style.display = 'none';
-        setsActiveSlug = null;
-        window.history.pushState({ view: 'sets' }, '', '/?view=sets');
-        setsRenderGrid();
-    }
-
-    function copyLink() {
-        var btn = document.getElementById('feat-copy-btn');
-        var url = window.location.href;
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(url).then(function() {
-                btn.textContent = 'Copied!';
-                setTimeout(function() { btn.textContent = 'Copy Link'; }, 2000);
-            });
-        } else {
-            var ta = document.createElement('textarea');
-            ta.value = url;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            btn.textContent = 'Copied!';
-            setTimeout(function() { btn.textContent = 'Copy Link'; }, 2000);
-        }
-    }
     </script>
 
     <!-- Asteroid Background Animation -->
