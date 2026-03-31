@@ -1824,6 +1824,7 @@
             hlsInstance = null;
         }
 
+        video.src = '';
         video.crossOrigin = 'anonymous';
         video.muted = false;
         video.removeAttribute('muted');
@@ -1843,6 +1844,12 @@
                     video.currentTime = startTime;
                 }
                 video.play().catch(function(e) { console.log("Play prevented", e); });
+            });
+            hlsInstance.on(Hls.Events.ERROR, function(event, data) {
+                if (data.fatal) {
+                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hlsInstance.startLoad();
+                    else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hlsInstance.recoverMediaError();
+                }
             });
         } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
             // Native HLS (Safari)
