@@ -422,6 +422,43 @@
             color: #fff;
         }
 
+        /* Top Nav Bar */
+        #top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px;
+            padding-right: 160px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            position: relative;
+            z-index: 100;
+        }
+        .nav-brand {
+            font-family: Oswald, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--text-primary);
+            padding-bottom: 2px;
+            text-decoration: none;
+        }
+        .nav-sets-link {
+            font-family: Oswald, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+        .nav-sets-link:hover { color: var(--text-primary); }
+        @media (max-width: 600px) {
+            #top-nav { padding-right: 24px; }
+        }
+
         /* Theme Toggle Bar - fixed at top */
         #theme-toggle-bar {
             position: fixed;
@@ -1574,6 +1611,12 @@
 <body>
     <!-- Asteroid Background Canvas -->
     <canvas id="asteroid-canvas"></canvas>
+
+    <!-- Top Nav Bar -->
+    <div id="top-nav">
+        <span class="nav-brand">Ronaut Radio</span>
+        <a href="sets.html" class="nav-sets-link">Sets</a>
+    </div>
 
     <!-- Theme Toggle Bar (fixed top) -->
     <div id="theme-toggle-bar">
