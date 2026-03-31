@@ -1442,17 +1442,18 @@
         }
 
         /* Mini Player */
+        #nav-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
         #mini-player {
-            position: fixed;
             background: #000;
             color: #fff;
             font-family: Oswald, sans-serif;
-            z-index: 9998;
             display: none;
             align-items: center;
             gap: 12px;
-            padding: 10px 15px 10px 0;
-            transition: transform 0.3s ease, opacity 0.3s ease;
         }
 
         #mini-player.visible {
@@ -1532,24 +1533,26 @@
             fill: #fff;
         }
 
-        /* Desktop: top-left */
+        /* Desktop: inline in nav bar */
         @media (min-width: 768px) {
             #mini-player {
-                top: 0;
-                left: 0;
                 padding: 0 15px 0 0;
             }
             #mini-player .mini-video-wrap {
-                margin: 0;
+                width: 87px;
+                height: 49px;
+                margin: -14px 0;
             }
         }
 
         /* Mobile: bottom sticky bar */
         @media (max-width: 767px) {
             #mini-player {
+                position: fixed;
                 bottom: 0;
                 left: 0;
                 right: 0;
+                z-index: 9998;
                 justify-content: space-between;
                 border-top: 1px solid #333;
                 padding: 0 12px 0 0;
@@ -1889,22 +1892,9 @@
 
     <!-- Top Nav Bar -->
     <div id="top-nav">
-        <button class="nav-brand nav-link active" id="nav-live-btn" onclick="showView('live')">Ronaut Radio</button>
-        <div style="display:flex; gap:24px; align-items:center;">
-            <button class="nav-link" id="nav-sets-btn" onclick="showView('sets')">Sets</button>
-        </div>
-    </div>
-
-    <!-- Theme Toggle Bar (fixed top) -->
-    <div id="theme-toggle-bar">
-        <button id="btn-theme" title="Toggle dark/light mode">
-            <span class="theme-icon-light"><span class="theme-symbol">&#9728;&#65038;</span><span class="theme-text"> Light Mode</span></span>
-            <span class="theme-icon-dark"><span class="theme-symbol">&#9790;&#65038;</span><span class="theme-text"> Dark Mode</span></span>
-        </button>
-    </div>
-
-    <!-- Mini Player (appears when scrolling) -->
-    <div id="mini-player">
+        <div id="nav-left">
+            <!-- Mini Player (inline in nav bar on desktop, fixed bottom on mobile) -->
+            <div id="mini-player">
         <div class="mini-video-wrap">
             <video id="mini-video" muted playsinline></video>
         </div>
@@ -1923,6 +1913,20 @@
                 <svg viewBox="0 0 24 24"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
             </button>
         </div>
+            </div><!-- end #mini-player -->
+            <button class="nav-brand nav-link active" id="nav-live-btn" onclick="showView('live')">Ronaut Radio</button>
+        </div><!-- end #nav-left -->
+        <div style="display:flex; gap:24px; align-items:center;">
+            <button class="nav-link" id="nav-sets-btn" onclick="showView('sets')">Sets</button>
+        </div>
+    </div><!-- end #top-nav -->
+
+    <!-- Theme Toggle Bar (fixed top-right) -->
+    <div id="theme-toggle-bar">
+        <button id="btn-theme" title="Toggle dark/light mode">
+            <span class="theme-icon-light"><span class="theme-symbol">&#9728;&#65038;</span><span class="theme-text"> Light Mode</span></span>
+            <span class="theme-icon-dark"><span class="theme-symbol">&#9790;&#65038;</span><span class="theme-text"> Dark Mode</span></span>
+        </button>
     </div>
 
     <div id="live-view">
@@ -2399,10 +2403,6 @@
             navLive.classList.remove('active');
             navSets.classList.add('active');
 
-            // Pause live stream to avoid audio overlap with sets player
-            var liveVideo = document.getElementById('ronaut-player');
-            if (liveVideo && !liveVideo.paused) liveVideo.pause();
-
             // Auto-show mini player
             var mp = document.getElementById('mini-player');
             if (mp) {
@@ -2435,10 +2435,6 @@
             if (setsHlsInstance) { setsHlsInstance.destroy(); setsHlsInstance = null; }
             var featVid = document.getElementById('featured-video');
             if (featVid) { featVid.pause(); featVid.src = ''; }
-
-            // Resume live stream
-            var liveVideo = document.getElementById('ronaut-player');
-            if (liveVideo && liveVideo.paused) liveVideo.play().catch(function(){});
 
             if (pushState) window.history.pushState({ view: 'live' }, '', '/');
         }
@@ -2976,15 +2972,20 @@
                     }
                 });
 
-                // Click mini player to scroll to main player
-                miniPlayer.querySelector('.mini-info').addEventListener('click', function() {
-                    playerContainer.scrollIntoView({ behavior: 'smooth' });
-                });
-
-                // Click mini video to scroll to main player
-                miniVideo.addEventListener('click', function() {
-                    playerContainer.scrollIntoView({ behavior: 'smooth' });
-                });
+                // Click mini player info/video — go to live view if in sets, else scroll to player
+                function miniClickHandler() {
+                    if (currentView === 'sets') {
+                        showView('live');
+                        setTimeout(function() {
+                            var prog = document.getElementById('programme-section');
+                            if (prog) prog.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                    } else {
+                        playerContainer.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+                miniPlayer.querySelector('.mini-info').addEventListener('click', miniClickHandler);
+                miniVideo.addEventListener('click', miniClickHandler);
 
                 // Expose for sets view to trigger mini player init
                 window._ronautMiniInit = function() {
