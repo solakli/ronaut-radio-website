@@ -2437,6 +2437,22 @@
             var featVid = document.getElementById('featured-video');
             if (featVid) { featVid.pause(); featVid.src = ''; }
 
+            // Resume live stream — browser may have suspended it while view was hidden
+            if (!isPlayingPick) {
+                var liveVid = document.getElementById('ronaut-player');
+                if (liveVid) {
+                    if (hlsInstance && liveVid.paused) {
+                        liveVid.play().catch(function(e) { console.log('Resume prevented:', e); });
+                    } else if (!hlsInstance) {
+                        liveVid.crossOrigin = 'anonymous';
+                        initHls(liveVid);
+                    }
+                }
+            }
+
+            // Refresh now-playing and programme immediately
+            if (window._updateNowPlaying) window._updateNowPlaying();
+
             if (pushState) window.history.pushState({ view: 'live' }, '', '/');
         }
     }
@@ -2697,6 +2713,10 @@
             // Poll: now-playing every 10s, programme every 30s
             setInterval(updateNowPlaying, 10000);
             setInterval(updateProgramme, 30000);
+            // Expose so showView can trigger immediate refresh
+            window._updateNowPlaying = function() {
+                updateNowPlaying().then(function() { updateProgramme(); });
+            };
 
             // Listener count polling
             var listenerCountEl = document.getElementById('listener-count');
@@ -2771,6 +2791,11 @@
                 if (castBtn) castBtn.addEventListener('click', triggerCast);
                 if (miniCastBtn) miniCastBtn.addEventListener('click', triggerCast);
             })();
+
+            // Initialize HLS Player early — before mini player IIFE so any mini player
+            // error doesn't block stream initialization
+            video.crossOrigin = 'anonymous';
+            initHls(video);
 
             // Mini Player - show when main player scrolls out of view
             (function() {
@@ -2995,10 +3020,6 @@
                 };
 
             })();
-
-            // Initialize HLS Player
-            video.crossOrigin = 'anonymous';
-            initHls(video);
 
             // Audio-reactive visuals
             (function() {
