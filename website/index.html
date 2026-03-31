@@ -3060,6 +3060,17 @@
                 return pick.title || filenameTitle || 'Untitled';
             }
 
+            function getPickSlug(pick) {
+                if (pick.url && pick.url.indexOf('.m3u8') !== -1) {
+                    return pick.url.split('/').pop().replace('.m3u8', '');
+                }
+                return (pick.filename || '')
+                    .replace(/\.mp4$/i, '')
+                    .replace(/^ronaut\[\d+\]-?/i, '')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, '');
+            }
+
             async function loadStaffPicks() {
                 try {
                     var res = await fetch('https://stream.ronautradio.la/api/sets');
@@ -3074,7 +3085,8 @@
                         setsData[encodedUrl] = pick;
 
                         var genreAttr = pick.genres && pick.genres.length > 0 ? pick.genres.join(',').toLowerCase() : '';
-                        html += '<div class="pick-card" data-url="' + encodedUrl + '" data-title="' + escapeHtml(title) + '" data-genres="' + escapeHtml(genreAttr) + '">';
+                        var pickSlug = getPickSlug(pick);
+                        html += '<div class="pick-card" data-url="' + encodedUrl + '" data-title="' + escapeHtml(title) + '" data-genres="' + escapeHtml(genreAttr) + '" data-slug="' + escapeHtml(pickSlug) + '">';
                         html += '<img src="' + encodePickPath('https://stream.ronautradio.la' + pick.thumbnail) + '" alt="' + escapeHtml(title) + '" loading="lazy" />';
                         html += '<div class="pick-title">' + escapeHtml(title) + '</div>';
                         if (pick.description) {
@@ -3169,7 +3181,7 @@
                         });
                     }
 
-                    // Card click to play
+                    // Card click → navigate to sets page with ?set=slug
                     var cards = picksGrid.querySelectorAll('.pick-card');
                     for (var j = 0; j < cards.length; j++) {
                         cards[j].addEventListener('click', function(e) {
@@ -3179,7 +3191,12 @@
                                 e.target.closest('.pick-tracklist')) {
                                 return;
                             }
-                            playPick(this.getAttribute('data-url'), this.getAttribute('data-title'));
+                            var slug = this.getAttribute('data-slug');
+                            if (slug) {
+                                window.location.href = 'sets.html?set=' + encodeURIComponent(slug);
+                            } else {
+                                playPick(this.getAttribute('data-url'), this.getAttribute('data-title'));
+                            }
                         });
                     }
 
