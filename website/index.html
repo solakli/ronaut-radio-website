@@ -1402,16 +1402,15 @@
 
         /* Mini Player */
         #mini-player {
-            position: fixed;
+            position: absolute; /* inside #top-nav (position:fixed), no z-index battle */
+            top: 0; left: 0;
             background: #000;
             color: #fff;
             font-family: Oswald, sans-serif;
-            z-index: 10001; /* above nav (9999) and theme toggle (10000) */
             display: none;
             align-items: center;
             gap: 12px;
-            padding: 10px 15px 10px 0;
-            transition: transform 0.3s ease, opacity 0.3s ease;
+            padding: 0 15px 0 0;
         }
 
         #mini-player.visible {
@@ -1442,7 +1441,6 @@
             background: #000;
             overflow: hidden;
             flex-shrink: 0;
-            margin: -10px 0 -10px 0;
         }
 
         #mini-player #mini-video {
@@ -1491,27 +1489,18 @@
             fill: #fff;
         }
 
-        /* Desktop: top-left */
-        @media (min-width: 768px) {
-            #mini-player {
-                top: 0;
-                left: 0;
-                padding: 0 15px 0 0;
-            }
-            #mini-player .mini-video-wrap {
-                margin: 0;
-            }
-        }
-
-        /* Mobile: bottom sticky bar */
+        /* Mobile: bottom sticky bar — must escape nav's stacking context */
         @media (max-width: 767px) {
             #mini-player {
+                position: fixed;
+                top: auto;
                 bottom: 0;
                 left: 0;
                 right: 0;
                 justify-content: space-between;
                 border-top: 1px solid #333;
                 padding: 0 12px 0 0;
+                z-index: 10001;
             }
             #mini-player .mini-video-wrap {
                 width: 120px;
@@ -1844,33 +1833,31 @@
         </button>
     </div>
 
-    <!-- Top Nav -->
+    <!-- Top Nav (mini-player lives inside nav — no z-index battle) -->
     <div id="top-nav">
+        <div id="mini-player">
+            <div class="mini-video-wrap">
+                <video id="mini-video" muted playsinline></video>
+            </div>
+            <div class="mini-info">
+                <div class="mini-status">LIVE</div>
+                <div class="mini-title">Loading...</div>
+            </div>
+            <div class="mini-controls">
+                <button class="mini-btn" id="mini-play-btn" title="Play/Pause">
+                    <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                </button>
+                <button class="mini-btn" id="mini-mute-btn" title="Mute/Unmute">
+                    <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                </button>
+                <button class="mini-btn" id="mini-cast-btn" title="Cast / AirPlay" style="display:none">
+                    <svg viewBox="0 0 24 24"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                </button>
+            </div>
+        </div>
         <button class="nav-link active" id="nav-live-btn" onclick="showView('live')">Ronaut Radio</button>
         <div style="display:flex; gap:24px; align-items:center;">
             <button class="nav-link" id="nav-sets-btn" onclick="showView('sets')">Sets</button>
-        </div>
-    </div>
-
-    <!-- Mini Player (appears when scrolling) -->
-    <div id="mini-player">
-        <div class="mini-video-wrap">
-            <video id="mini-video" muted playsinline></video>
-        </div>
-        <div class="mini-info">
-            <div class="mini-status">LIVE</div>
-            <div class="mini-title">Loading...</div>
-        </div>
-        <div class="mini-controls">
-            <button class="mini-btn" id="mini-play-btn" title="Play/Pause">
-                <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-            </button>
-            <button class="mini-btn" id="mini-mute-btn" title="Mute/Unmute">
-                <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-            </button>
-            <button class="mini-btn" id="mini-cast-btn" title="Cast / AirPlay" style="display:none">
-                <svg viewBox="0 0 24 24"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
-            </button>
         </div>
     </div>
 
