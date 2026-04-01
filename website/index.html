@@ -79,12 +79,16 @@
 
         body {
             margin: 0;
-            padding-top: 49px;
+            padding-top: 49px; /* mobile: nav ~49px */
             font-family: Oswald, sans-serif;
             text-align: center;
             background-color: var(--bg-primary);
             color: var(--text-primary);
             transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        @media (min-width: 768px) {
+            body { padding-top: 101px; } /* desktop: nav 101px = mini player height */
         }
 
         .w-container {
@@ -1572,6 +1576,10 @@
             position: fixed;
             top: 0; left: 0; right: 0;
             z-index: 9999;
+            box-sizing: border-box;
+        }
+        @media (min-width: 768px) {
+            #top-nav { height: 101px; } /* match mini player height */
         }
         .nav-link {
             font-family: Oswald, sans-serif;
@@ -1585,12 +1593,17 @@
             background: none;
             border: none;
             padding: 0;
+            transition: margin-left 0.3s ease;
         }
         .nav-link:hover { color: var(--text-primary); }
         .nav-link.active {
             color: var(--text-primary);
             border-bottom: 2px solid var(--text-primary);
             padding-bottom: 2px;
+        }
+        /* Shift "Ronaut Radio" right when mini player is visible (desktop) */
+        @media (min-width: 768px) {
+            #nav-live-btn.mini-shifted { margin-left: 185px; }
         }
 
         /* ─── SETS VIEW ─── */
@@ -2353,12 +2366,14 @@
             var liveVideo = document.getElementById('ronaut-player');
             if (liveVideo && !liveVideo.paused) liveVideo.pause();
 
-            // Auto-show mini player
+            // Auto-show mini player + shift nav
             var mp = document.getElementById('mini-player');
             if (mp) {
                 mp.classList.add('visible');
                 if (window._ronautMiniInit) window._ronautMiniInit();
             }
+            var navLiveBtn = document.getElementById('nav-live-btn');
+            if (navLiveBtn && window.innerWidth >= 768) navLiveBtn.classList.add('mini-shifted');
 
             // Load sets then auto-select slug if provided
             if (!setsViewLoaded) {
@@ -2859,6 +2874,14 @@
                 var lastScrollY = 0;
                 var ticking = false;
                 var wasVisible = false;
+                var navLiveBtn = document.getElementById('nav-live-btn');
+
+                function setMiniShift(on) {
+                    if (!navLiveBtn || window.innerWidth < 768) return;
+                    if (on) navLiveBtn.classList.add('mini-shifted');
+                    else navLiveBtn.classList.remove('mini-shifted');
+                }
+
                 window.addEventListener('scroll', function() {
                     lastScrollY = window.scrollY;
                     if (!ticking) {
@@ -2867,12 +2890,14 @@
                             var playerHidden = rect.bottom < 100;
                             if (playerHidden) {
                                 miniPlayer.classList.add('visible');
+                                setMiniShift(true);
                                 if (!wasVisible) {
                                     initMiniVideo();
                                     wasVisible = true;
                                 }
                             } else {
                                 miniPlayer.classList.remove('visible');
+                                setMiniShift(false);
                                 if (wasVisible) {
                                     hideMiniVideo();
                                     wasVisible = false;
