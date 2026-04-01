@@ -1,0 +1,5 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><script>
+var p = new URLSearchParams(location.search);
+var slug = p.get('set');
+location.replace('/' + (slug ? '?view=sets&set=' + encodeURIComponent(slug) : '?view=sets'));
+</script></head></html>

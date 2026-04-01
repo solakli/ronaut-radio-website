@@ -79,6 +79,7 @@
 
         body {
             margin: 0;
+            padding-top: 49px;
             font-family: Oswald, sans-serif;
             text-align: center;
             background-color: var(--bg-primary);
@@ -1559,6 +1560,253 @@
             }
         }
 
+        /* ─── TOP NAV ─── */
+        #top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px;
+            padding-right: 140px; /* clear fixed theme toggle */
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 9999;
+        }
+        .nav-link {
+            font-family: Oswald, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+        .nav-link:hover { color: var(--text-primary); }
+        .nav-link.active {
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--text-primary);
+            padding-bottom: 2px;
+        }
+
+        /* ─── SETS VIEW ─── */
+        #sets-view { padding-top: 20px; min-height: 100vh; }
+
+        /* ─── SETS PAGE HEADER ─── */
+        #sets-page-header {
+            max-width: 1200px;
+            margin: 40px auto 0;
+            padding: 0 24px;
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+        }
+        #sets-page-header h1 {
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin: 0;
+        }
+        #sets-total-count {
+            font-size: 12px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* ─── GENRE FILTER (shared + sets-specific) ─── */
+        #sets-genre-filter {
+            max-width: 1200px;
+            margin: 20px auto 0;
+            padding: 0 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* ─── SETS FEATURED PLAYER ─── */
+        #sets-featured-section {
+            max-width: 1200px;
+            margin: 32px auto 0;
+            padding: 0 24px;
+        }
+        #sets-featured-inner {
+            display: flex;
+            gap: 32px;
+            align-items: flex-start;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+        }
+        #sets-featured-video-wrap {
+            flex: 0 0 48%;
+            position: relative;
+        }
+        #sets-featured-video {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            display: block;
+        }
+        #sets-feat-meta {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+        #sets-feat-number {
+            font-size: 11px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        #sets-feat-title {
+            font-size: 26px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 0;
+            line-height: 1.2;
+        }
+        #sets-feat-desc {
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        #sets-feat-genres {
+            font-size: 11px;
+            font-weight: 300;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        #sets-feat-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+        .feat-btn {
+            font-family: Oswald, sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 8px 18px;
+            cursor: pointer;
+            border: 1px solid var(--text-primary);
+            background: transparent;
+            color: var(--text-primary);
+            transition: background 0.15s, color 0.15s;
+        }
+        .feat-btn:hover { background: var(--text-primary); color: var(--bg-primary); }
+        .feat-btn.close-btn { border-color: var(--border-color); color: var(--text-muted); }
+        .feat-btn.close-btn:hover { border-color: var(--text-primary); background: transparent; color: var(--text-primary); }
+        #sets-feat-tracklist {
+            margin-top: 12px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .tl-header {
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+        .tl-item {
+            font-size: 12px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            padding: 4px 0;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .tl-item:last-child { border-bottom: none; }
+        .tl-time { color: var(--text-muted); margin-right: 6px; font-size: 11px; }
+
+        /* ─── SETS GRID ─── */
+        #sets-grid {
+            max-width: 1200px;
+            margin: 32px auto 60px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 28px;
+        }
+        .set-card { cursor: pointer; text-align: left; transition: opacity 0.2s; }
+        .set-card:hover { opacity: 0.8; }
+        .set-card.active .card-thumb-wrap::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 2px solid var(--text-primary);
+            pointer-events: none;
+        }
+        .card-thumb-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: var(--border-color);
+            overflow: hidden;
+        }
+        .card-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .card-num {
+            position: absolute;
+            top: 8px; left: 8px;
+            background: rgba(0,0,0,0.75);
+            color: #fff;
+            font-family: Oswald, sans-serif;
+            font-size: 11px; font-weight: 400; letter-spacing: 1px;
+            padding: 3px 7px;
+        }
+        .card-playing-badge {
+            position: absolute;
+            bottom: 8px; left: 8px;
+            background: var(--text-primary);
+            color: var(--bg-primary);
+            font-family: Oswald, sans-serif;
+            font-size: 10px; font-weight: 400; letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 3px 8px;
+        }
+        .card-title { font-size: 15px; font-weight: 400; letter-spacing: 0.5px; margin-top: 10px; text-transform: uppercase; }
+        .card-desc { font-size: 12px; font-weight: 300; color: var(--text-muted); margin-top: 4px; }
+        .card-genres { font-size: 10px; font-weight: 300; color: var(--text-muted); margin-top: 5px; letter-spacing: 0.5px; text-transform: uppercase; }
+        #sets-loading {
+            text-align: center;
+            padding: 60px 24px;
+            font-size: 13px; font-weight: 300; letter-spacing: 2px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            grid-column: 1 / -1;
+        }
+
+        /* ─── SETS RESPONSIVE ─── */
+        @media (max-width: 900px) {
+            #sets-featured-inner { flex-direction: column; }
+            #sets-featured-video-wrap { flex: none; width: 100%; }
+        }
+        @media (max-width: 600px) {
+            #sets-page-header h1 { font-size: 24px; }
+            #sets-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        }
+        @media (max-width: 400px) {
+            #sets-grid { grid-template-columns: 1fr; }
+        }
+
         /* Asteroid Canvas Background */
         #asteroid-canvas {
             position: fixed;
@@ -1583,6 +1831,14 @@
         </button>
     </div>
 
+    <!-- Top Nav -->
+    <div id="top-nav">
+        <button class="nav-link active" id="nav-live-btn" onclick="showView('live')">Ronaut Radio</button>
+        <div style="display:flex; gap:24px; align-items:center;">
+            <button class="nav-link" id="nav-sets-btn" onclick="showView('sets')">Sets</button>
+        </div>
+    </div>
+
     <!-- Mini Player (appears when scrolling) -->
     <div id="mini-player">
         <div class="mini-video-wrap">
@@ -1604,6 +1860,9 @@
             </button>
         </div>
     </div>
+
+    <!-- LIVE VIEW -->
+    <div id="live-view">
 
     <div id="top-player-container">
         <div id="player-container">
@@ -1767,6 +2026,40 @@
         <div id='collection-component-1618238023055'></div>
     </div>
 
+    </div><!-- #live-view -->
+
+    <!-- SETS VIEW -->
+    <div id="sets-view" style="display:none">
+        <!-- Featured Player (hidden until set selected) -->
+        <div id="sets-featured-section" style="display:none">
+            <div id="sets-featured-inner">
+                <div id="sets-featured-video-wrap">
+                    <video id="sets-featured-video" controls playsinline></video>
+                </div>
+                <div id="sets-feat-meta">
+                    <div id="sets-feat-number"></div>
+                    <h2 id="sets-feat-title"></h2>
+                    <p id="sets-feat-desc"></p>
+                    <div id="sets-feat-genres"></div>
+                    <div id="sets-feat-actions">
+                        <button class="feat-btn" id="sets-feat-copy-btn" onclick="setsCopyLink()">Copy Link</button>
+                        <button class="feat-btn close-btn" onclick="setsCloseFeatured()">&#10005; Close</button>
+                    </div>
+                    <div id="sets-feat-tracklist" style="display:none"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Page Header -->
+        <div id="sets-page-header">
+            <h1>Sets</h1>
+            <span id="sets-total-count"></span>
+        </div>
+        <!-- Genre Filter -->
+        <div id="sets-genre-filter"></div>
+        <!-- Grid -->
+        <div id="sets-grid"><div id="sets-loading">Loading sets...</div></div>
+    </div><!-- #sets-view -->
+
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src='https://unpkg.com/popper.js/dist/umd/popper.min.js'></script>
@@ -1778,6 +2071,14 @@
     var isPlayingPick = false;
     var currentPickTitle = '';
     var currentVodUrl = ''; // Store VOD URL for mini player
+
+    // Sets view state
+    var setsViewLoaded = false;
+    var setsViewAllSets = [];
+    var setsViewHlsInstance = null;
+    var setsViewActiveSlug = null;
+    var setsViewActiveGenre = 'all';
+    var currentView = 'live';
 
     function escapeHtml(text) {
         var div = document.createElement('div');
@@ -2031,6 +2332,65 @@
         // Re-preload mini video for live stream (mobile)
         if (window.preloadMiniVideo) {
             window.preloadMiniVideo();
+        }
+    }
+
+    function showView(view, slug, pushState) {
+        if (pushState === undefined) pushState = true;
+        currentView = view;
+        var liveView = document.getElementById('live-view');
+        var setsView = document.getElementById('sets-view');
+        var navLive = document.getElementById('nav-live-btn');
+        var navSets = document.getElementById('nav-sets-btn');
+
+        if (view === 'sets') {
+            liveView.style.display = 'none';
+            setsView.style.display = '';
+            if (navLive) { navLive.classList.remove('active'); }
+            if (navSets) { navSets.classList.add('active'); }
+
+            // Pause live stream to avoid audio overlap
+            var liveVideo = document.getElementById('ronaut-player');
+            if (liveVideo && !liveVideo.paused) liveVideo.pause();
+
+            // Auto-show mini player
+            var mp = document.getElementById('mini-player');
+            if (mp) {
+                mp.classList.add('visible');
+                if (window._ronautMiniInit) window._ronautMiniInit();
+            }
+
+            // Load sets then auto-select slug if provided
+            if (!setsViewLoaded) {
+                loadSetsView().then(function() {
+                    if (slug) setsViewSelectBySlug(slug);
+                });
+            } else {
+                if (slug) setsViewSelectBySlug(slug);
+            }
+
+            if (pushState) {
+                var url = '/?view=sets' + (slug ? '&set=' + encodeURIComponent(slug) : '');
+                window.history.pushState({ view: 'sets', slug: slug || null }, '', url);
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        } else {
+            liveView.style.display = '';
+            setsView.style.display = 'none';
+            if (navLive) { navLive.classList.add('active'); }
+            if (navSets) { navSets.classList.remove('active'); }
+
+            // Stop sets player
+            if (setsViewHlsInstance) { setsViewHlsInstance.destroy(); setsViewHlsInstance = null; }
+            var featVid = document.getElementById('sets-featured-video');
+            if (featVid) { featVid.pause(); featVid.src = ''; }
+
+            // Resume live stream
+            var liveVideo = document.getElementById('ronaut-player');
+            if (liveVideo && liveVideo.paused) liveVideo.play().catch(function(){});
+
+            if (pushState) window.history.pushState({ view: 'live' }, '', '/');
         }
     }
 
@@ -2573,8 +2933,15 @@
 
                 // Click mini video to scroll to main player
                 miniVideo.addEventListener('click', function() {
-                    playerContainer.scrollIntoView({ behavior: 'smooth' });
+                    if (currentView === 'live') {
+                        playerContainer.scrollIntoView({ behavior: 'smooth' });
+                    }
                 });
+
+                // Expose for sets view to force mini player visible
+                window._ronautMiniInit = function() {
+                    if (!wasVisible) { initMiniVideo(); wasVisible = true; }
+                };
 
             })();
 
@@ -3017,11 +3384,7 @@
                 return parts.join('/');
             }
             function displayPickTitle(pick) {
-                var filenameTitle = pick.filename ? pick.filename.replace(/\.mp4$/i, '') : '';
-                if (filenameTitle && /^Ronaut\[\d+\]/i.test(filenameTitle)) {
-                    return filenameTitle;
-                }
-                return pick.title || filenameTitle || 'Untitled';
+                return pick.title || (pick.filename ? pick.filename.replace(/\.mp4$/i, '') : '') || 'Untitled';
             }
 
             async function loadStaffPicks() {
@@ -3143,7 +3506,9 @@
                                 e.target.closest('.pick-tracklist')) {
                                 return;
                             }
-                            playPick(this.getAttribute('data-url'), this.getAttribute('data-title'));
+                            var encodedUrl = this.getAttribute('data-url');
+                            var slug = decodeURIComponent(encodedUrl.split('/').pop().replace(/\.m3u8$/, ''));
+                            showView('sets', slug);
                         });
                     }
 
@@ -3203,6 +3568,195 @@
             }
 
             loadStaffPicks();
+        })();
+
+        // Sets View
+        (function() {
+            var API = 'https://stream.ronautradio.la';
+
+            function setsGetSlug(set) {
+                if (set.url && set.url.indexOf('.m3u8') !== -1) {
+                    return set.url.split('/').pop().replace('.m3u8', '');
+                }
+                return (set.filename || '').replace(/\.mp4$/i, '').replace(/^ronaut\[\d+\]-?/i, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            }
+
+            function setsGetNumber(filename) {
+                var m = (filename || '').match(/\[(\d+)\]/);
+                return m ? m[1] : '';
+            }
+
+            function setsEsc(s) {
+                return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            }
+
+            window.loadSetsView = async function() {
+                try {
+                    var res = await fetch(API + '/api/sets');
+                    var data = await res.json();
+                    setsViewAllSets = (data.sets || []).sort(function(a, b) {
+                        return parseInt(setsGetNumber(b.filename) || '0') - parseInt(setsGetNumber(a.filename) || '0');
+                    });
+                    setsViewLoaded = true;
+                    setsRenderFilters();
+                    setsRenderGrid();
+                } catch(e) {
+                    var grid = document.getElementById('sets-grid');
+                    if (grid) grid.innerHTML = '<div id="sets-loading">Failed to load sets.</div>';
+                }
+            };
+
+            function setsRenderFilters() {
+                var genres = ['all'];
+                setsViewAllSets.forEach(function(s) {
+                    (s.genres || []).forEach(function(g) { if (genres.indexOf(g) === -1) genres.push(g); });
+                });
+                var el = document.getElementById('sets-genre-filter');
+                if (!el) return;
+                el.innerHTML = genres.map(function(g) {
+                    return '<button class="genre-btn' + (g === setsViewActiveGenre ? ' active' : '') + '" onclick="setsFilterGenre(\'' + setsEsc(g) + '\')">' + setsEsc(g === 'all' ? 'All' : g) + '</button>';
+                }).join('');
+            }
+
+            window.setsFilterGenre = function(genre) {
+                setsViewActiveGenre = genre;
+                setsRenderFilters();
+                setsRenderGrid();
+            };
+
+            function setsRenderGrid() {
+                var filtered = setsViewActiveGenre === 'all' ? setsViewAllSets : setsViewAllSets.filter(function(s) {
+                    return (s.genres || []).indexOf(setsViewActiveGenre) !== -1;
+                });
+                var countEl = document.getElementById('sets-total-count');
+                if (countEl) countEl.textContent = filtered.length + ' set' + (filtered.length !== 1 ? 's' : '');
+                var grid = document.getElementById('sets-grid');
+                if (!grid) return;
+                if (filtered.length === 0) {
+                    grid.innerHTML = '<div id="sets-loading">No sets in this genre.</div>';
+                    return;
+                }
+                grid.innerHTML = filtered.map(function(set) {
+                    var slug = setsGetSlug(set);
+                    var num = setsGetNumber(set.filename);
+                    var genres = (set.genres || []).join(' · ');
+                    var isActive = slug === setsViewActiveSlug;
+                    var thumbUrl = API + set.thumbnail;
+                    return '<div class="set-card' + (isActive ? ' active' : '') + '" onclick="setsViewSelectBySlug(\'' + setsEsc(slug) + '\')">' +
+                        '<div class="card-thumb-wrap">' +
+                        '<img src="' + setsEsc(thumbUrl) + '" alt="' + setsEsc(set.title) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+                        (num ? '<span class="card-num">' + setsEsc(num) + '</span>' : '') +
+                        (isActive ? '<span class="card-playing-badge">&#9654; Playing</span>' : '') +
+                        '</div>' +
+                        '<div class="card-title">' + setsEsc(set.title) + '</div>' +
+                        (set.description ? '<div class="card-desc">' + setsEsc(set.description) + '</div>' : '') +
+                        (genres ? '<div class="card-genres">' + setsEsc(genres) + '</div>' : '') +
+                        '</div>';
+                }).join('');
+            }
+
+            window.setsViewSelectBySlug = function(slug) {
+                var found = setsViewAllSets.find(function(s) { return setsGetSlug(s) === slug; });
+                if (found) setsViewSelectSet(found, true);
+            };
+
+            function setsViewSelectSet(set, pushHistory) {
+                var slug = setsGetSlug(set);
+                setsViewActiveSlug = slug;
+
+                if (pushHistory) {
+                    window.history.pushState({ view: 'sets', slug: slug }, '', '/?view=sets&set=' + encodeURIComponent(slug));
+                }
+
+                var numEl = document.getElementById('sets-feat-number');
+                var titleEl = document.getElementById('sets-feat-title');
+                var descEl = document.getElementById('sets-feat-desc');
+                var genresEl = document.getElementById('sets-feat-genres');
+                var num = setsGetNumber(set.filename);
+                if (numEl) numEl.textContent = num ? 'Set ' + num : '';
+                if (titleEl) titleEl.textContent = set.title || '';
+                if (descEl) descEl.textContent = set.description || '';
+                if (genresEl) genresEl.textContent = (set.genres || []).join(' · ').toUpperCase();
+
+                // Tracklist
+                var tl = (set.tracklist || []).filter(function(t) { return !t.needs_id; });
+                var tlEl = document.getElementById('sets-feat-tracklist');
+                if (tlEl) {
+                    if (tl.length > 0) {
+                        tlEl.innerHTML = '<div class="tl-header">Tracklist</div>' +
+                            tl.map(function(t, i) {
+                                var artist = (t.artists && t.artists.length) ? t.artists.join(', ') + ' \u2014 ' : '';
+                                var time = t.start_time_formatted ? '<span class="tl-time">' + t.start_time_formatted + '</span>' : '';
+                                return '<div class="tl-item">' + (i+1) + '. ' + time + setsEsc(artist + (t.title || '')) + '</div>';
+                            }).join('');
+                        tlEl.style.display = '';
+                    } else {
+                        tlEl.style.display = 'none';
+                    }
+                }
+
+                setsLoadFeaturedPlayer(set);
+
+                var featSection = document.getElementById('sets-featured-section');
+                if (featSection) featSection.style.display = '';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setsRenderGrid();
+            }
+
+            function setsLoadFeaturedPlayer(set) {
+                var video = document.getElementById('sets-featured-video');
+                if (!video) return;
+                if (setsViewHlsInstance) { setsViewHlsInstance.destroy(); setsViewHlsInstance = null; }
+                video.src = '';
+                video.poster = API + set.thumbnail;
+
+                var fullUrl = API + set.url;
+                if (set.url && set.url.indexOf('.m3u8') !== -1 && Hls.isSupported()) {
+                    setsViewHlsInstance = new Hls();
+                    setsViewHlsInstance.loadSource(fullUrl);
+                    setsViewHlsInstance.attachMedia(video);
+                    setsViewHlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
+                        video.play().catch(function() {});
+                    });
+                    setsViewHlsInstance.on(Hls.Events.ERROR, function(event, data) {
+                        if (data.fatal) {
+                            if (data.type === Hls.ErrorTypes.NETWORK_ERROR) setsViewHlsInstance.startLoad();
+                            else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) setsViewHlsInstance.recoverMediaError();
+                        }
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = fullUrl;
+                    video.play().catch(function() {});
+                } else {
+                    video.src = fullUrl;
+                    video.play().catch(function() {});
+                }
+            }
+
+            window.setsCloseFeatured = function() {
+                if (setsViewHlsInstance) { setsViewHlsInstance.destroy(); setsViewHlsInstance = null; }
+                var video = document.getElementById('sets-featured-video');
+                if (video) { video.pause(); video.src = ''; }
+                var featSection = document.getElementById('sets-featured-section');
+                if (featSection) featSection.style.display = 'none';
+                setsViewActiveSlug = null;
+                window.history.pushState({ view: 'sets' }, '', '/?view=sets');
+                setsRenderGrid();
+            };
+
+            window.setsCopyLink = function() {
+                var btn = document.getElementById('sets-feat-copy-btn');
+                var url = window.location.href;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(url).then(function() {
+                        if (btn) { btn.textContent = 'Copied!'; setTimeout(function() { btn.textContent = 'Copy Link'; }, 2000); }
+                    });
+                } else {
+                    var ta = document.createElement('textarea');
+                    ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+                    if (btn) { btn.textContent = 'Copied!'; setTimeout(function() { btn.textContent = 'Copy Link'; }, 2000); }
+                }
+            };
         })();
 
         // Chat
@@ -3591,6 +4145,23 @@
                 banner.classList.remove('visible');
             }, 5000);
         }
+
+        // URL routing: handle ?view=sets on load
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            if (params.get('view') === 'sets') {
+                setTimeout(function() {
+                    showView('sets', params.get('set') || null, false);
+                }, 0);
+            }
+        })();
+    });
+
+    // Browser back/forward navigation
+    window.addEventListener('popstate', function() {
+        var params = new URLSearchParams(window.location.search);
+        var view = params.get('view') || 'live';
+        showView(view, params.get('set') || null, false);
     });
     </script>
 
