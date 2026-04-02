@@ -1590,9 +1590,31 @@
             border-bottom: 2px solid var(--text-primary);
             padding-bottom: 2px;
         }
-        /* Shift "Ronaut Radio" right when mini player is visible (desktop) */
+        /* Shift "Ronaut Radio" right when mini player is visible (desktop only) */
         @media (min-width: 768px) {
-            #nav-live-btn.mini-shifted { margin-left: 185px; }
+            /* Only show video + controls in nav — hide info text to keep nav compact */
+            #mini-player .mini-info { display: none; }
+            #nav-live-btn.mini-shifted { margin-left: 280px; }
+        }
+
+        /* Section nav links */
+        .nav-section-link {
+            font-family: Oswald, sans-serif;
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            white-space: nowrap;
+        }
+        .nav-section-link:hover { color: var(--text-primary); }
+        /* Hide section links on small desktops / tablets */
+        @media (max-width: 1023px) {
+            #nav-section-links { display: none; }
         }
 
         /* ─── SETS VIEW ─── */
@@ -1857,6 +1879,12 @@
         </div>
         <button class="nav-link active" id="nav-live-btn" onclick="showView('live')">Ronaut Radio</button>
         <div style="display:flex; gap:24px; align-items:center;">
+            <div id="nav-section-links" style="display:flex; gap:20px; align-items:center;">
+                <button class="nav-section-link" onclick="scrollToSection('programme-chat-row')">Programme</button>
+                <button class="nav-section-link" onclick="scrollToSection('featured-residents')">Residents</button>
+                <button class="nav-section-link" onclick="scrollToSection('staff-picks')">Staff Picks</button>
+                <button class="nav-section-link" onclick="scrollToSection('upcoming-shows-section')">Events</button>
+            </div>
             <button class="nav-link" id="nav-sets-btn" onclick="showView('sets')">Sets</button>
         </div>
     </div>
@@ -2012,7 +2040,7 @@
     </div>
 
     <!-- UPCOMING SHOWS SECTION -->
-    <div class="w-container" style="margin-top: 60px; margin-bottom: 40px;">
+    <div id="upcoming-shows-section" class="w-container" style="margin-top: 60px; margin-bottom: 40px;">
       <h2 style="font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;">UPCOMING SHOWS</h2>
       <div style="text-align: center; margin-bottom: 30px;">
         <a href="https://calendar.google.com/calendar/u/0?cid=cm9uYXV0cmFkaW9AZ21haWwuY29t" target="_blank" style="display: inline-block; background: #000; color: #fff; font-family: Oswald, sans-serif; font-weight: 400; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 8px 16px; text-decoration: none; margin: 3px;">Subscribe to All</a>
@@ -2332,6 +2360,19 @@
         // Re-preload mini video for live stream (mobile)
         if (window.preloadMiniVideo) {
             window.preloadMiniVideo();
+        }
+    }
+
+    function scrollToSection(id) {
+        if (currentView !== 'live') {
+            showView('live', null, true);
+            setTimeout(function() {
+                var el = document.getElementById(id);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
+        } else {
+            var el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
