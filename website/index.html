@@ -80,6 +80,7 @@
         body {
             margin: 0;
             padding-top: 49px; /* mobile: nav ~49px */
+            padding-bottom: 60px; /* mobile: clear always-visible bottom player bar */
             font-family: Oswald, sans-serif;
             text-align: center;
             background-color: var(--bg-primary);
@@ -88,7 +89,7 @@
         }
 
         @media (min-width: 768px) {
-            body { padding-top: 96px; } /* desktop: nav row1 48px + player bar 48px */
+            body { padding-top: 96px; padding-bottom: 0; } /* desktop: nav row1 48px + player bar 48px */
         }
 
         .w-container {
@@ -603,14 +604,14 @@
             right: 15px;
             z-index: 1001;
             background: rgba(0, 0, 0, 0.7);
-            color: #ff0000;
+            color: #ff6600;
             font-family: Oswald, sans-serif;
             font-size: 14px;
             font-weight: 500;
             letter-spacing: 2px;
             text-transform: uppercase;
             padding: 6px 14px;
-            border: 1px solid #ff0000;
+            border: 1px solid #ff6600;
             align-items: center;
             gap: 8px;
         }
@@ -622,7 +623,7 @@
         #live-dot {
             width: 10px;
             height: 10px;
-            background: #ff0000;
+            background: #ff6600;
             border-radius: 50%;
             animation: pulse-dot 1.5s ease-in-out infinite;
         }
@@ -720,7 +721,7 @@
             top: 0;
             bottom: 0;
             width: 2px;
-            background: #ff0000;
+            background: #ff6600;
             transition: left 1s linear;
         }
 
@@ -738,7 +739,7 @@
         .now-playing-dot {
             width: 10px;
             height: 10px;
-            background: #ff0000;
+            background: #ff6600;
             border-radius: 50%;
             flex-shrink: 0;
             animation: pulse-dot 1.5s ease-in-out infinite;
@@ -1422,7 +1423,7 @@
                 z-index: 9998;
             }
         }
-        /* Mobile: bottom sticky bar, scroll-triggered */
+        /* Mobile: always-visible bottom bar (Lot Radio style) */
         @media (max-width: 767px) {
             #mini-player {
                 display: flex;
@@ -1431,10 +1432,7 @@
                 height: 60px;
                 border-top: 1px solid var(--border-color);
                 z-index: 10001;
-                transform: translateY(100%); /* off-screen below */
-                transition: transform 0.25s ease;
             }
-            #mini-player.visible { transform: translateY(0); }
         }
 
         /* ─── SCROLL-TRIGGERED VIDEO FRAME (desktop only, full nav height) ─── */
@@ -1511,14 +1509,14 @@
             font-weight: 500;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-            color: #ff4444;
+            color: #ff6600;
             white-space: nowrap;
             flex-shrink: 0;
         }
         #mini-player .mini-live-dot {
             width: 8px;
             height: 8px;
-            background: #ff0000;
+            background: #ff6600;
             border-radius: 50%;
             flex-shrink: 0;
             animation: pulse-dot 1.5s ease-in-out infinite;
@@ -1641,7 +1639,9 @@
             white-space: nowrap;
         }
         .nav-section-link:hover { color: var(--text-primary); }
-        /* Hide section links on small desktops / tablets */
+        /* Section links layout */
+        #nav-section-links { display: flex; gap: 20px; align-items: center; }
+        /* Hide section links on tablets and mobile */
         @media (max-width: 1023px) {
             #nav-section-links { display: none; }
         }
@@ -1890,7 +1890,7 @@
         <div id="nav-row-1">
             <button class="nav-link active" id="nav-live-btn" onclick="showView('live')">Ronaut Radio</button>
             <div style="display:flex; gap:24px; align-items:center;">
-                <div id="nav-section-links" style="display:flex; gap:20px; align-items:center;">
+                <div id="nav-section-links">
                     <button class="nav-section-link" onclick="scrollToSection('programme-chat-row')">Programme</button>
                     <button class="nav-section-link" onclick="scrollToSection('featured-residents')">Residents</button>
                     <button class="nav-section-link" onclick="scrollToSection('staff-picks')">Staff Picks</button>
@@ -2935,18 +2935,14 @@
                 function onPlayerVisibilityChange(hidden) {
                     var onMobile = window.innerWidth < 768;
                     if (hidden) {
-                        if (onMobile) {
-                            miniPlayer.classList.add('visible');
-                        } else {
+                        if (!onMobile) {
                             if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
                             if (topNav) topNav.classList.add('mini-active');
                             miniPlayer.classList.add('mini-active');
                         }
                         if (!wasVisible) { initMiniVideo(); wasVisible = true; }
                     } else {
-                        if (onMobile) {
-                            miniPlayer.classList.remove('visible');
-                        } else {
+                        if (!onMobile) {
                             if (miniVideoOverlay) miniVideoOverlay.classList.remove('visible');
                             if (topNav) topNav.classList.remove('mini-active');
                             miniPlayer.classList.remove('mini-active');
@@ -3039,9 +3035,8 @@
                         if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
                         if (topNav) topNav.classList.add('mini-active');
                         miniPlayer.classList.add('mini-active');
-                    } else {
-                        miniPlayer.classList.add('visible');
                     }
+                    // mobile bar is always visible, no toggle needed
                 };
 
             })();
