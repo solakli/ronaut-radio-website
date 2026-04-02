@@ -1593,7 +1593,7 @@
             border-bottom: 1px solid var(--border-color);
             box-sizing: border-box;
         }
-        @media (min-width: 768px) {
+        @media (min-width: 1024px) {
             #nav-row-1 { padding: 0 24px; padding-right: 140px; } /* clear fixed theme toggle */
         }
         .nav-link {
@@ -1617,6 +1617,14 @@
             color: var(--text-primary);
             border-bottom: 2px solid var(--text-primary);
             padding-bottom: 2px;
+        }
+        /* Non-brand nav items (Sets, section links) smaller than brand */
+        #nav-sets-btn {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+        }
+        @media (min-width: 1024px) {
+            #nav-sets-btn { font-size: 13px; letter-spacing: 2px; }
         }
         /* Section nav links */
         .nav-section-link {
@@ -2919,42 +2927,54 @@
                     }
                 }
 
-                // Scroll listener: video overlay for desktop, bottom bar for mobile
+                // Show/hide mini player when main player scrolls out of view
                 var wasVisible = false;
-                var ticking = false;
                 var topNav = document.getElementById('top-nav');
                 var miniVideoOverlay = document.getElementById('mini-video-overlay');
 
+                function onPlayerVisibilityChange(hidden) {
+                    var onMobile = window.innerWidth < 768;
+                    if (hidden) {
+                        if (onMobile) {
+                            miniPlayer.classList.add('visible');
+                        } else {
+                            if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
+                            if (topNav) topNav.classList.add('mini-active');
+                            miniPlayer.classList.add('mini-active');
+                        }
+                        if (!wasVisible) { initMiniVideo(); wasVisible = true; }
+                    } else {
+                        if (onMobile) {
+                            miniPlayer.classList.remove('visible');
+                        } else {
+                            if (miniVideoOverlay) miniVideoOverlay.classList.remove('visible');
+                            if (topNav) topNav.classList.remove('mini-active');
+                            miniPlayer.classList.remove('mini-active');
+                        }
+                        if (wasVisible) { hideMiniVideo(); wasVisible = false; }
+                    }
+                }
+
+                // Primary: IntersectionObserver (reliable on iOS Safari + all mobile)
+                if ('IntersectionObserver' in window) {
+                    var playerObserver = new IntersectionObserver(function(entries) {
+                        onPlayerVisibilityChange(!entries[0].isIntersecting);
+                    }, { rootMargin: '-100px 0px 0px 0px', threshold: 0 });
+                    playerObserver.observe(playerContainer);
+                }
+
+                // Fallback: scroll event (for very old browsers)
+                var ticking = false;
                 window.addEventListener('scroll', function() {
                     if (!ticking) {
                         window.requestAnimationFrame(function() {
                             var rect = playerContainer.getBoundingClientRect();
-                            var playerHidden = rect.bottom < 100;
-                            var onMobile = window.innerWidth < 768;
-                            if (playerHidden) {
-                                if (onMobile) {
-                                    miniPlayer.classList.add('visible');
-                                } else {
-                                    if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
-                                    if (topNav) topNav.classList.add('mini-active');
-                                    miniPlayer.classList.add('mini-active');
-                                }
-                                if (!wasVisible) { initMiniVideo(); wasVisible = true; }
-                            } else {
-                                if (onMobile) {
-                                    miniPlayer.classList.remove('visible');
-                                } else {
-                                    if (miniVideoOverlay) miniVideoOverlay.classList.remove('visible');
-                                    if (topNav) topNav.classList.remove('mini-active');
-                                    miniPlayer.classList.remove('mini-active');
-                                }
-                                if (wasVisible) { hideMiniVideo(); wasVisible = false; }
-                            }
+                            onPlayerVisibilityChange(rect.bottom < 100);
                             ticking = false;
                         });
                         ticking = true;
                     }
-                });
+                }, { passive: true });
 
                 // Mini player controls
                 miniPlayBtn.addEventListener('click', function() {
