@@ -3541,6 +3541,7 @@
                     var html = '';
                     for (var i = 0; i < data.sets.length; i++) {
                         var pick = data.sets[i];
+                        if (pick.featured === false) continue;
                         var encodedUrl = encodePickPath(pick.url);
                         var title = displayPickTitle(pick);
                         setsData[encodedUrl] = pick;
