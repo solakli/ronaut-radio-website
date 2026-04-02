@@ -1425,14 +1425,16 @@
         /* Mobile: bottom sticky bar, scroll-triggered */
         @media (max-width: 767px) {
             #mini-player {
-                display: none;
+                display: flex;
                 position: fixed;
                 bottom: 0; left: 0; right: 0;
                 height: 60px;
                 border-top: 1px solid var(--border-color);
                 z-index: 10001;
+                transform: translateY(100%); /* off-screen below */
+                transition: transform 0.25s ease;
             }
-            #mini-player.visible { display: flex; }
+            #mini-player.visible { transform: translateY(0); }
         }
 
         /* ─── SCROLL-TRIGGERED VIDEO FRAME (desktop only, full nav height) ─── */
@@ -1500,8 +1502,7 @@
             align-items: center;
             gap: 8px;
             padding: 0 16px;
-            flex: 1;
-            min-width: 0;
+            overflow: hidden;
             cursor: pointer;
         }
         #mini-player .mini-info:hover .mini-title { text-decoration: underline; }
@@ -1510,7 +1511,7 @@
             font-weight: 500;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-            color: var(--text-primary);
+            color: #ff4444;
             white-space: nowrap;
             flex-shrink: 0;
         }
@@ -1529,7 +1530,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            flex: 1;
+            max-width: 420px;
         }
 
         /* Responsive */
@@ -1587,17 +1588,19 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 24px;
-            padding-right: 140px; /* clear fixed theme toggle */
+            padding: 0 16px;
             height: 48px;
             border-bottom: 1px solid var(--border-color);
             box-sizing: border-box;
         }
+        @media (min-width: 768px) {
+            #nav-row-1 { padding: 0 24px; padding-right: 140px; } /* clear fixed theme toggle */
+        }
         .nav-link {
             font-family: Oswald, sans-serif;
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 500;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             text-transform: uppercase;
             color: var(--text-muted);
             text-decoration: none;
@@ -1605,6 +1608,9 @@
             background: none;
             border: none;
             padding: 0;
+        }
+        @media (min-width: 1024px) {
+            .nav-link { font-size: 16px; letter-spacing: 2px; }
         }
         .nav-link:hover { color: var(--text-primary); }
         .nav-link.active {
@@ -1630,11 +1636,6 @@
         /* Hide section links on small desktops / tablets */
         @media (max-width: 1023px) {
             #nav-section-links { display: none; }
-        }
-        /* Mobile: reduce nav padding + smaller text so SETS fits */
-        @media (max-width: 767px) {
-            .nav-link { font-size: 13px; letter-spacing: 1px; }
-            #nav-row-1 { padding-right: 16px; } /* override 140px desktop clearance for theme toggle */
         }
 
         /* ─── SETS VIEW ─── */
@@ -2933,7 +2934,6 @@
                             if (playerHidden) {
                                 if (onMobile) {
                                     miniPlayer.classList.add('visible');
-                                    miniPlayer.style.display = 'flex';
                                 } else {
                                     if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
                                     if (topNav) topNav.classList.add('mini-active');
@@ -2943,7 +2943,6 @@
                             } else {
                                 if (onMobile) {
                                     miniPlayer.classList.remove('visible');
-                                    miniPlayer.style.display = '';
                                 } else {
                                     if (miniVideoOverlay) miniVideoOverlay.classList.remove('visible');
                                     if (topNav) topNav.classList.remove('mini-active');
