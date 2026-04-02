@@ -1506,23 +1506,25 @@
         }
         #mini-player .mini-info:hover .mini-title { text-decoration: underline; }
         #mini-player .mini-status {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 500;
             letter-spacing: 1.5px;
             text-transform: uppercase;
-            color: #ff4444;
+            color: var(--text-primary);
             white-space: nowrap;
             flex-shrink: 0;
         }
-        #mini-player .mini-sep {
-            font-size: 5px;
-            color: var(--text-muted);
+        #mini-player .mini-live-dot {
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
             flex-shrink: 0;
-            line-height: 1;
+            animation: pulse-dot 1.5s ease-in-out infinite;
         }
         #mini-player .mini-title {
-            font-size: 14px;
-            font-weight: 400;
+            font-size: 17px;
+            font-weight: 300;
             letter-spacing: 0.5px;
             white-space: nowrap;
             overflow: hidden;
@@ -1629,9 +1631,10 @@
         @media (max-width: 1023px) {
             #nav-section-links { display: none; }
         }
-        /* Mobile: smaller nav text so SETS fits */
+        /* Mobile: reduce nav padding + smaller text so SETS fits */
         @media (max-width: 767px) {
             .nav-link { font-size: 13px; letter-spacing: 1px; }
+            #nav-row-1 { padding-right: 16px; } /* override 140px desktop clearance for theme toggle */
         }
 
         /* ─── SETS VIEW ─── */
@@ -1906,8 +1909,8 @@
             </button>
         </div>
         <div class="mini-info">
-            <span class="mini-status">LIVE</span>
-            <span class="mini-sep">●</span>
+            <span class="mini-status">NOW PLAYING</span>
+            <span class="mini-live-dot"></span>
             <span class="mini-title">Loading...</span>
         </div>
     </div>
@@ -2930,6 +2933,7 @@
                             if (playerHidden) {
                                 if (onMobile) {
                                     miniPlayer.classList.add('visible');
+                                    miniPlayer.style.display = 'flex';
                                 } else {
                                     if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
                                     if (topNav) topNav.classList.add('mini-active');
@@ -2939,6 +2943,7 @@
                             } else {
                                 if (onMobile) {
                                     miniPlayer.classList.remove('visible');
+                                    miniPlayer.style.display = '';
                                 } else {
                                     if (miniVideoOverlay) miniVideoOverlay.classList.remove('visible');
                                     if (topNav) topNav.classList.remove('mini-active');
