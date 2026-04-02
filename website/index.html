@@ -2683,7 +2683,8 @@
                 programmeLiveMsg.style.display = 'none';
 
                 try {
-                    var res = await fetch("https://stream.ronautradio.la/api/programme?count=9&recent=2");
+                    var programmeCount = window.innerWidth < 768 ? 6 : 9;
+                    var res = await fetch("https://stream.ronautradio.la/api/programme?count=" + programmeCount + "&recent=2");
                     var data = await res.json();
 
                     if (!data.current && (!data.upcoming || data.upcoming.length === 0)) {
