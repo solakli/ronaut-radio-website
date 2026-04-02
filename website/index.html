@@ -1275,10 +1275,10 @@
         [data-theme="dark"] .programme-item.now-playing {
             background: #2e2e2e;
             color: #fff;
-            border: 1px solid rgba(200, 0, 0, 0.45);
+            border: 1px solid rgba(255, 102, 0, 0.45);
         }
         [data-theme="dark"] .programme-item.now-playing .track-time {
-            color: #ff3333;
+            color: #ff6600;
             opacity: 1;
         }
         [data-theme="dark"] .pick-card .pick-desc { color: #bbb; }
@@ -1433,6 +1433,27 @@
                 border-top: 1px solid var(--border-color);
                 z-index: 10001;
             }
+        }
+        /* Mobile video thumbnail — slides in from left on scroll */
+        #mini-thumb-mobile { display: none; }
+        @media (max-width: 767px) {
+            #mini-thumb-mobile {
+                display: block;
+                width: 0;
+                height: 60px;
+                overflow: hidden;
+                flex-shrink: 0;
+                background: #000;
+                transition: width 0.3s ease;
+                border-right: 1px solid var(--border-color);
+            }
+            #mini-thumb-mobile video {
+                height: 60px;
+                width: 107px; /* 16:9 at 60px height */
+                object-fit: cover;
+                display: block;
+            }
+            #mini-player.scrolled #mini-thumb-mobile { width: 107px; }
         }
 
         /* ─── SCROLL-TRIGGERED VIDEO FRAME (desktop only, full nav height) ─── */
@@ -1616,13 +1637,10 @@
             border-bottom: 2px solid var(--text-primary);
             padding-bottom: 2px;
         }
-        /* Non-brand nav items (Sets, section links) smaller than brand */
-        #nav-sets-btn {
-            font-size: 11px;
-            letter-spacing: 1.5px;
-        }
+        /* Sets button: same size as brand on mobile, slightly larger on desktop */
+        #nav-sets-btn { font-size: 13px; letter-spacing: 1px; }
         @media (min-width: 1024px) {
-            #nav-sets-btn { font-size: 13px; letter-spacing: 2px; }
+            #nav-sets-btn { font-size: 16px; letter-spacing: 2px; }
         }
         /* Section nav links */
         .nav-section-link {
@@ -1904,8 +1922,12 @@
             <video id="mini-video" muted playsinline></video>
         </div>
     </div>
-    <!-- Player bar: always visible on desktop (row 2), scroll-triggered bottom bar on mobile -->
+    <!-- Player bar: always visible on desktop (row 2), always-on bottom bar on mobile -->
     <div id="mini-player">
+        <!-- Mobile: video thumbnail slides in from left on scroll (Lot Radio style) -->
+        <div id="mini-thumb-mobile">
+            <video id="mini-video-mobile" muted playsinline></video>
+        </div>
         <div class="mini-controls">
             <button class="mini-btn" id="mini-play-btn" title="Play/Pause">
                 <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
@@ -2932,17 +2954,43 @@
                 var topNav = document.getElementById('top-nav');
                 var miniVideoOverlay = document.getElementById('mini-video-overlay');
 
+                var mobileThumbLoaded = false;
+
+                function loadMobileThumb() {
+                    if (mobileThumbLoaded) return;
+                    mobileThumbLoaded = true;
+                    var tv = document.getElementById('mini-video-mobile');
+                    if (!tv) return;
+                    if (video.captureStream) {
+                        try { tv.srcObject = video.captureStream(); tv.play().catch(function(){}); return; } catch(e) {}
+                    }
+                    if (Hls.isSupported()) {
+                        var h = new Hls();
+                        h.loadSource('https://stream.ronautradio.la/live/hls/stream.m3u8');
+                        h.attachMedia(tv);
+                        h.on(Hls.Events.MANIFEST_PARSED, function() { tv.play().catch(function(){}); });
+                    } else if (tv.canPlayType('application/vnd.apple.mpegurl')) {
+                        tv.src = 'https://stream.ronautradio.la/live/hls/stream.m3u8';
+                        tv.play().catch(function(){});
+                    }
+                }
+
                 function onPlayerVisibilityChange(hidden) {
                     var onMobile = window.innerWidth < 768;
                     if (hidden) {
-                        if (!onMobile) {
+                        if (onMobile) {
+                            miniPlayer.classList.add('scrolled');
+                            loadMobileThumb();
+                        } else {
                             if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
                             if (topNav) topNav.classList.add('mini-active');
                             miniPlayer.classList.add('mini-active');
                         }
                         if (!wasVisible) { initMiniVideo(); wasVisible = true; }
                     } else {
-                        if (!onMobile) {
+                        if (onMobile) {
+                            miniPlayer.classList.remove('scrolled');
+                        } else {
                             if (miniVideoOverlay) miniVideoOverlay.classList.remove('visible');
                             if (topNav) topNav.classList.remove('mini-active');
                             miniPlayer.classList.remove('mini-active');
