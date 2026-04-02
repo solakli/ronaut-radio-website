@@ -1457,9 +1457,9 @@
             }
             /* Shift row 1 "Ronaut Radio" right when video appears */
             #nav-live-btn { transition: margin-left 0.3s ease; }
-            #top-nav.mini-active #nav-live-btn { margin-left: 147px; } /* 171 - 24px padding */
+            #top-nav.mini-active #nav-live-btn { margin-left: 175px; } /* 171px video + 4px gap - 0px (padding handles it) */
             /* Shift player bar contents right when video appears */
-            #top-nav.mini-active #mini-player { padding-left: 171px; }
+            #top-nav.mini-active #mini-player { padding-left: 175px; }
         }
 
         #mini-player .mini-controls {
@@ -1559,9 +1559,9 @@
                 padding: 4px 8px;
                 font-size: 10px;
             }
-            /* Mobile theme toggle — JS positions it dynamically via scroll */
+            /* Mobile theme toggle — sits below the 48px nav bar */
             #theme-toggle-bar {
-                top: 60px; /* safe initial fallback; JS overrides immediately */
+                top: 52px; /* 48px nav + 4px gap */
                 right: 5px;
                 transition: top 0.08s linear;
             }
@@ -1590,7 +1590,7 @@
         }
         .nav-link {
             font-family: Oswald, sans-serif;
-            font-size: 13px;
+            font-size: 16px;
             font-weight: 500;
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -1610,7 +1610,7 @@
         /* Section nav links */
         .nav-section-link {
             font-family: Oswald, sans-serif;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 400;
             letter-spacing: 1.5px;
             text-transform: uppercase;
@@ -2919,8 +2919,9 @@
                         window.requestAnimationFrame(function() {
                             var rect = playerContainer.getBoundingClientRect();
                             var playerHidden = rect.bottom < 100;
+                            var onMobile = window.innerWidth < 768;
                             if (playerHidden) {
-                                if (isMobile) {
+                                if (onMobile) {
                                     miniPlayer.classList.add('visible');
                                 } else {
                                     if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
@@ -2928,7 +2929,7 @@
                                 }
                                 if (!wasVisible) { initMiniVideo(); wasVisible = true; }
                             } else {
-                                if (isMobile) {
+                                if (onMobile) {
                                     miniPlayer.classList.remove('visible');
                                 } else {
                                     if (miniVideoOverlay) miniVideoOverlay.classList.remove('visible');
@@ -3001,7 +3002,7 @@
                 // Expose for sets view: show video overlay + init
                 window._ronautMiniInit = function() {
                     if (!wasVisible) { initMiniVideo(); wasVisible = true; }
-                    if (!isMobile) {
+                    if (window.innerWidth >= 768) {
                         if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
                         if (topNav) topNav.classList.add('mini-active');
                     } else {
@@ -4763,7 +4764,7 @@
             rafPending = true;
             requestAnimationFrame(function() {
                 var playerBottom = playerEl.getBoundingClientRect().bottom;
-                themeBar.style.top = Math.max(8, playerBottom + 6) + 'px';
+                themeBar.style.top = Math.max(52, playerBottom + 6) + 'px'; /* min 52px = below 48px nav */
                 rafPending = false;
             });
         }
