@@ -736,6 +736,27 @@
             letter-spacing: 1px;
         }
 
+        /* Programme hover: reveal countdown + genres in place of the time */
+        .programme-item { position: relative; }
+        .programme-item:not(.now-playing):not(.programme-past) { cursor: default; }
+        .programme-item:not(.now-playing):not(.programme-past):hover { background: var(--bg-secondary); }
+        .track-hover-info {
+            position: absolute;
+            right: 16px; top: 50%; transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            font-size: 13px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            color: var(--text-muted);
+        }
+        .programme-item:not(.now-playing):not(.programme-past):hover .track-time { opacity: 0; transition: opacity 0.2s; }
+        .programme-item:not(.now-playing):not(.programme-past):hover .track-hover-info { opacity: 1; }
+        .programme-item.peeking .track-time { opacity: 0; }
+        .programme-item.peeking .track-hover-info { opacity: 1; }
+
         .now-playing-dot {
             width: 10px;
             height: 10px;
@@ -1161,11 +1182,12 @@
         .pick-card {
             cursor: pointer;
             text-align: left;
-            transition: opacity 0.2s;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .pick-card:hover {
-            opacity: 0.8;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(255, 102, 0, 0.15);
         }
 
         .pick-card img {
@@ -1546,10 +1568,19 @@
             font-size: 17px;
             font-weight: 300;
             letter-spacing: 0.5px;
-            white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis;
             max-width: 420px;
+        }
+        #mini-player .mini-title-inner {
+            display: inline-block;
+            white-space: nowrap;
+        }
+        #mini-player .mini-title.marquee .mini-title-inner {
+            animation: mini-marquee 12s ease-in-out infinite;
+        }
+        @keyframes mini-marquee {
+            0%, 20% { transform: translateX(0); }
+            80%, 100% { transform: translateX(var(--marquee-shift, 0px)); }
         }
 
         /* Responsive */
@@ -1888,6 +1919,11 @@
             z-index: -1;
             pointer-events: none;
         }
+
+        /* Smooth theme crossfade */
+        html.theme-fade, html.theme-fade * {
+            transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease !important;
+        }
     </style>
 </head>
 <body>
@@ -1942,7 +1978,7 @@
         <div class="mini-info">
             <span class="mini-status">NOW PLAYING</span>
             <span class="mini-live-dot"></span>
-            <span class="mini-title">Loading...</span>
+            <span class="mini-title"><span class="mini-title-inner">Loading...</span></span>
         </div>
     </div>
 
@@ -2383,9 +2419,9 @@
 
         // Update mini player title for VOD
         var miniStatus = document.querySelector('#mini-player .mini-status');
-        var miniTitle = document.querySelector('#mini-player .mini-title');
+        var miniTitle = document.querySelector('#mini-player .mini-title-inner');
         if (miniStatus) miniStatus.textContent = 'PLAYING';
-        if (miniTitle) miniTitle.textContent = title;
+        if (miniTitle) { miniTitle.textContent = title; updateMiniTitleMarquee(); }
 
         // Preload mini video for faster mini player
         var miniVideo = document.getElementById('mini-video');
@@ -2546,6 +2582,39 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
+        // ── Aesthetic helpers ──────────────────────────────────────────────
+        var programmeGenreMap = {};
+
+        function normalizeForMatch(s) {
+            return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function formatCountdown(startTs) {
+            var diff = Math.floor(startTs - Date.now() / 1000);
+            if (diff < 90) return 'soon';
+            var mins = Math.floor(diff / 60);
+            if (mins < 60) return 'in ' + mins + 'm';
+            var hrs = Math.floor(mins / 60);
+            var rem = mins % 60;
+            return 'in ' + hrs + 'h' + (rem > 0 ? ' ' + rem + 'm' : '');
+        }
+
+        function updateMiniTitleMarquee() {
+            var outer = document.querySelector('#mini-player .mini-title');
+            var inner = document.querySelector('#mini-player .mini-title-inner');
+            if (!outer || !inner) return;
+            outer.classList.remove('marquee');
+            inner.style.removeProperty('--marquee-shift');
+            requestAnimationFrame(function() {
+                var overflow = inner.scrollWidth - outer.clientWidth;
+                if (overflow > 10) {
+                    inner.style.setProperty('--marquee-shift', '-' + overflow + 'px');
+                    outer.classList.add('marquee');
+                }
+            });
+        }
+        // ──────────────────────────────────────────────────────────────────
+
         // Media Session API for iOS Control Center / Lock Screen controls
         function updateMediaSession(title, artist) {
             if ('mediaSession' in navigator) {
@@ -2619,7 +2688,7 @@
                     currentMode = data.mode || 'offline';
 
                     var miniStatus = document.querySelector('#mini-player .mini-status');
-                    var miniTitle = document.querySelector('#mini-player .mini-title');
+                    var miniTitle = document.querySelector('#mini-player .mini-title-inner');
                     var currentTrackEl = document.getElementById('current-track');
 
                     if (currentMode === 'live') {
@@ -2629,7 +2698,7 @@
                         ticker.style.display = 'block';
                         if (currentTrackEl) currentTrackEl.style.display = 'none';
                         if (miniStatus) miniStatus.textContent = 'LIVE';
-                        if (miniTitle) miniTitle.textContent = 'Live Broadcast';
+                        if (miniTitle) { miniTitle.textContent = 'Live Broadcast'; updateMiniTitleMarquee(); }
                         updateMediaSession('Live Broadcast', 'Ronaut Radio');
                     } else {
                         liveBadge.classList.remove('active');
@@ -2638,13 +2707,13 @@
                             ticker.textContent = 'Now Playing: ' + data.now_playing;
                             ticker.style.display = 'block';
                             if (miniStatus) miniStatus.textContent = 'NOW PLAYING';
-                            if (miniTitle) miniTitle.textContent = data.now_playing;
+                            if (miniTitle) { miniTitle.textContent = data.now_playing; updateMiniTitleMarquee(); }
                             updateMediaSession(data.now_playing, 'Ronaut Radio');
                         } else {
                             ticker.textContent = 'Stream offline';
                             ticker.style.display = 'block';
                             if (miniStatus) miniStatus.textContent = 'OFFLINE';
-                            if (miniTitle) miniTitle.textContent = 'Stream offline';
+                            if (miniTitle) { miniTitle.textContent = 'Stream offline'; updateMiniTitleMarquee(); }
                             updateMediaSession('Stream Offline', 'Ronaut Radio');
                         }
                         // Show current track (artist/title within the set)
@@ -2725,13 +2794,30 @@
                         for (var i = 0; i < data.upcoming.length; i++) {
                             var track = data.upcoming[i];
                             var timeStr = formatTime(track.estimated_start);
+                            var countdown = formatCountdown(track.estimated_start);
+                            var lookupKey = normalizeForMatch(track.display_name);
+                            var gArr = programmeGenreMap[lookupKey];
+                            var hoverText = countdown;
+                            if (gArr && gArr.length > 0) hoverText += ' · ' + gArr.slice(0, 2).join(' · ');
                             html += '<div class="programme-item">';
                             html += '<span class="track-name">' + escapeHtml(track.display_name) + '</span>';
                             html += '<span class="track-time">' + timeStr + '</span>';
+                            html += '<span class="track-hover-info">' + escapeHtml(hoverText) + '</span>';
                             html += '</div>';
                         }
                     }
                     programmeList.innerHTML = html;
+                    // Mobile: tap to peek genres/countdown
+                    if ('ontouchstart' in window) {
+                        var peekItems = programmeList.querySelectorAll('.programme-item:not(.now-playing):not(.programme-past)');
+                        peekItems.forEach(function(el) {
+                            el.addEventListener('click', function() {
+                                var isOpen = el.classList.contains('peeking');
+                                programmeList.querySelectorAll('.programme-item.peeking').forEach(function(x) { x.classList.remove('peeking'); });
+                                if (!isOpen) el.classList.add('peeking');
+                            });
+                        });
+                    }
                 } catch (err) {
                     console.error("Failed to fetch programme:", err);
                 }
@@ -3538,6 +3624,19 @@
                     var data = await res.json();
                     if (!data.sets || data.sets.length === 0) return;
 
+                    // Build genre lookup for programme hover
+                    programmeGenreMap = {};
+                    for (var gi = 0; gi < data.sets.length; gi++) {
+                        var ps = data.sets[gi];
+                        if (!ps.genres || ps.genres.length === 0) continue;
+                        var g2 = ps.genres.slice(0, 2);
+                        var fnKey = normalizeForMatch((ps.filename || '').replace(/^Ronaut\[\d+\]-/i, '').replace(/\.mp4$/i, ''));
+                        var titleKey = normalizeForMatch(ps.title || '');
+                        if (fnKey) programmeGenreMap[fnKey] = g2;
+                        if (titleKey && !programmeGenreMap[titleKey]) programmeGenreMap[titleKey] = g2;
+                    }
+                    updateProgramme(); // re-render programme now that genres are available
+
                     var html = '';
                     for (var i = 0; i < data.sets.length; i++) {
                         var pick = data.sets[i];
@@ -4081,12 +4180,14 @@
                 html.setAttribute('data-theme', 'dark');
             }
 
-            // Toggle theme on button click
+            // Toggle theme on button click (with smooth crossfade)
             themeBtn.addEventListener('click', function() {
+                document.documentElement.classList.add('theme-fade');
                 var currentTheme = html.getAttribute('data-theme');
                 var newTheme = currentTheme === 'dark' ? 'light' : 'dark';
                 html.setAttribute('data-theme', newTheme);
                 localStorage.setItem('ronaut_theme', newTheme);
+                setTimeout(function() { document.documentElement.classList.remove('theme-fade'); }, 400);
             });
 
             // Listen for system theme changes
