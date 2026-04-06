@@ -2795,7 +2795,7 @@
                             var track = data.upcoming[i];
                             var timeStr = formatTime(track.estimated_start);
                             var countdown = formatCountdown(track.estimated_start);
-                            var lookupKey = normalizeForMatch(track.display_name);
+                            var lookupKey = normalizeForMatch(track.display_name.replace(/^\d+\s*-\s*/, ''));
                             var gArr = programmeGenreMap[lookupKey];
                             var hoverText = countdown;
                             if (gArr && gArr.length > 0) hoverText += ' · ' + gArr.slice(0, 2).join(' · ');
@@ -3628,14 +3628,27 @@
                     programmeGenreMap = {};
                     for (var gi = 0; gi < data.sets.length; gi++) {
                         var ps = data.sets[gi];
-                        if (!ps.genres || ps.genres.length === 0) continue;
+                        if (!ps.genres || !ps.genres.length) continue;
                         var g2 = ps.genres.slice(0, 2);
-                        var fnKey = normalizeForMatch((ps.filename || '').replace(/^Ronaut\[\d+\]-/i, '').replace(/\.mp4$/i, ''));
+                        var fnKey = normalizeForMatch((ps.filename || '').replace(/^Ronaut\[\d+\]-?/i, '').replace(/\.mp4$/i, ''));
                         var titleKey = normalizeForMatch(ps.title || '');
                         if (fnKey) programmeGenreMap[fnKey] = g2;
                         if (titleKey && !programmeGenreMap[titleKey]) programmeGenreMap[titleKey] = g2;
                     }
-                    updateProgramme(); // re-render programme now that genres are available
+                    // Patch genres into already-rendered programme items (no re-fetch)
+                    setTimeout(function() {
+                        var progItems = document.querySelectorAll('.programme-item:not(.now-playing):not(.programme-past)');
+                        for (var pi = 0; pi < progItems.length; pi++) {
+                            var hoverEl = progItems[pi].querySelector('.track-hover-info');
+                            var nameEl = progItems[pi].querySelector('.track-name');
+                            if (!hoverEl || !nameEl) continue;
+                            var pKey = normalizeForMatch(nameEl.textContent.replace(/^\d+\s*-\s*/, ''));
+                            var pGenres = programmeGenreMap[pKey];
+                            if (pGenres && pGenres.length && hoverEl.textContent.indexOf('\xb7') === -1) {
+                                hoverEl.textContent = hoverEl.textContent + ' \xb7 ' + pGenres.join(' \xb7 ');
+                            }
+                        }
+                    }, 200);
 
                     var html = '';
                     for (var i = 0; i < data.sets.length; i++) {
