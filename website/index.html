@@ -1952,6 +1952,9 @@
             cursor: pointer;
             z-index: 4;
         }
+        /* Live mode: read-only ticker, no seeking */
+        #mini-seek-bar.live { cursor: default; }
+        #mini-seek-bar.live input[type=range] { pointer-events: none; }
         /* Time display — current / duration, right side of mini bar */
         #mini-time-display {
             font-family: 'Courier New', monospace;
@@ -2790,6 +2793,23 @@
                 return m + ':' + s.toString().padStart(2, '0');
             }
 
+            // Live seek bar state — updated by updateNowPlaying, interpolated by setInterval
+            var _liveSeekElapsed = 0, _liveSeekDuration = 0, _liveSeekFetchedAt = 0, _liveSeekInterval = null;
+
+            function updateLiveSeekBar() {
+                if (window._miniInSetsMode || !_liveSeekDuration) return;
+                var fmt = window._formatMiniTime || function(s) { return Math.floor(s/60) + ':' + ('0'+Math.floor(s%60)).slice(-2); };
+                var now = Date.now() / 1000;
+                var elapsed = Math.min(_liveSeekElapsed + (now - _liveSeekFetchedAt), _liveSeekDuration);
+                var pct = (elapsed / _liveSeekDuration) * 100;
+                var fill = document.getElementById('mini-seek-fill');
+                var ct = document.getElementById('mini-current-time');
+                var dur = document.getElementById('mini-duration');
+                if (fill) fill.style.width = pct + '%';
+                if (ct) ct.textContent = fmt(elapsed);
+                if (dur) dur.textContent = fmt(_liveSeekDuration);
+            }
+
             async function updateNowPlaying() {
                 if (isPlayingPick || window._miniInSetsMode) return; // Don't override ticker when playing a pick or VOD set
                 try {
@@ -2800,6 +2820,8 @@
                     var miniStatus = document.querySelector('#mini-player .mini-status');
                     var miniTitle = document.querySelector('#mini-player .mini-title-inner');
                     var currentTrackEl = document.getElementById('current-track');
+                    var seekBarEl = document.getElementById('mini-seek-bar');
+                    var timeEl = document.getElementById('mini-time-display');
 
                     if (currentMode === 'live') {
                         liveBadge.classList.add('active');
@@ -2810,6 +2832,10 @@
                         if (miniStatus) miniStatus.textContent = 'LIVE';
                         if (miniTitle) { miniTitle.textContent = 'Live Broadcast'; updateMiniTitleMarquee(); }
                         updateMediaSession('Live Broadcast', 'Ronaut Radio');
+                        // No position bar for OBS live
+                        if (seekBarEl) { seekBarEl.classList.remove('visible'); seekBarEl.classList.remove('live'); }
+                        if (timeEl) timeEl.classList.remove('visible');
+                        if (_liveSeekInterval) { clearInterval(_liveSeekInterval); _liveSeekInterval = null; }
                     } else {
                         liveBadge.classList.remove('active');
                         liveBadge.style.display = 'none';
@@ -2836,6 +2862,23 @@
                             } else {
                                 currentTrackEl.style.display = 'none';
                             }
+                        }
+                        // Live set progress ticker
+                        if (currentMode === 'auto' && data.duration > 0) {
+                            _liveSeekElapsed = data.elapsed || 0;
+                            _liveSeekDuration = data.duration;
+                            _liveSeekFetchedAt = Date.now() / 1000;
+                            if (seekBarEl) { seekBarEl.classList.add('visible'); seekBarEl.classList.add('live'); }
+                            if (timeEl) timeEl.classList.add('visible');
+                            updateLiveSeekBar();
+                            // Interpolate every second between API polls
+                            if (!_liveSeekInterval) {
+                                _liveSeekInterval = setInterval(updateLiveSeekBar, 1000);
+                            }
+                        } else {
+                            if (seekBarEl) { seekBarEl.classList.remove('visible'); seekBarEl.classList.remove('live'); }
+                            if (timeEl) timeEl.classList.remove('visible');
+                            if (_liveSeekInterval) { clearInterval(_liveSeekInterval); _liveSeekInterval = null; }
                         }
                     }
                 } catch (err) {
@@ -3480,6 +3523,9 @@
                         updateNowPlaying(); // refresh live info
                     }
                 };
+
+                // Expose formatTime for use in updateNowPlaying (live seek bar)
+                window._formatMiniTime = formatTime;
 
             })();
 
