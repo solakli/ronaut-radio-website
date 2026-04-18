@@ -4004,7 +4004,9 @@
 
             window.setsCopyLink = function() {
                 var btn = document.getElementById('sets-feat-copy-btn');
-                var url = window.location.href;
+                var url = setsViewActiveSlug
+                    ? 'https://stream.ronautradio.la/share/sets/' + encodeURIComponent(setsViewActiveSlug)
+                    : window.location.href;
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(url).then(function() {
                         if (btn) { btn.textContent = 'Copied!'; setTimeout(function() { btn.textContent = 'Copy Link'; }, 2000); }
