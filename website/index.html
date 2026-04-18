@@ -3248,13 +3248,74 @@
                     // mobile bar is always visible, no toggle needed
                 };
 
+                var mobileMiniHls = null; // tracks set HLS loaded into #mini-video-mobile
+
                 // Switch mini player to control a different video source
-                // Pass info = { status, title } for sets mode, null to revert to live
+                // Pass info = { status, title, hlsUrl } for sets mode, null to revert to live
                 window._ronautMiniSetActive = function(videoEl, info) {
                     unbindActiveVideoEvents(video);
                     video = videoEl;
                     bindActiveVideoEvents(video);
                     updateMiniPlayerButtons();
+
+                    // Update mini video frame
+                    if (info && info.hlsUrl) {
+                        // Switching to a VOD set
+                        if (!isMobile && miniActive) {
+                            // Desktop: captureStream from the sets video element
+                            try {
+                                if (videoEl.captureStream) {
+                                    miniVideo.srcObject = videoEl.captureStream();
+                                    miniVideo.play().catch(function(e) {});
+                                } else if (videoEl.mozCaptureStream) {
+                                    miniVideo.srcObject = videoEl.mozCaptureStream();
+                                    miniVideo.play().catch(function(e) {});
+                                }
+                            } catch(e) {}
+                        }
+                        if (isMobile) {
+                            // Mobile: load set HLS into #mini-video-mobile thumbnail strip
+                            var tv = document.getElementById('mini-video-mobile');
+                            if (mobileMiniHls) { mobileMiniHls.destroy(); mobileMiniHls = null; }
+                            if (tv) {
+                                if (Hls.isSupported()) {
+                                    mobileMiniHls = new Hls();
+                                    mobileMiniHls.loadSource(info.hlsUrl);
+                                    mobileMiniHls.attachMedia(tv);
+                                    mobileMiniHls.on(Hls.Events.MANIFEST_PARSED, function() {
+                                        tv.muted = true;
+                                        tv.play().catch(function(e) {});
+                                    });
+                                } else if (tv.canPlayType('application/vnd.apple.mpegurl')) {
+                                    tv.src = info.hlsUrl;
+                                    tv.muted = true;
+                                    tv.play().catch(function(e) {});
+                                }
+                                mobileThumbLoaded = true; // prevent loadMobileThumb from overriding
+                            }
+                        }
+                    } else {
+                        // Reverting to live stream
+                        if (!isMobile && miniActive) {
+                            var livePlayer = document.getElementById('ronaut-player');
+                            try {
+                                if (livePlayer.captureStream) {
+                                    miniVideo.srcObject = livePlayer.captureStream();
+                                    miniVideo.play().catch(function(e) {});
+                                } else if (livePlayer.mozCaptureStream) {
+                                    miniVideo.srcObject = livePlayer.mozCaptureStream();
+                                    miniVideo.play().catch(function(e) {});
+                                }
+                            } catch(e) {}
+                        }
+                        if (isMobile) {
+                            if (mobileMiniHls) { mobileMiniHls.destroy(); mobileMiniHls = null; }
+                            mobileThumbLoaded = false;
+                            loadMobileThumb(); // reload live stream into thumbnail
+                        }
+                    }
+
+                    // Update info text
                     var statusEl = document.querySelector('#mini-player .mini-status');
                     var titleEl = document.querySelector('#mini-player .mini-title-inner');
                     var dotEl = document.querySelector('#mini-player .mini-live-dot');
@@ -4086,12 +4147,13 @@
                     video.play().catch(function() {});
                 }
 
-                // Point mini player controls + info at this set
+                // Point mini player controls, info, and video frame at this set
                 if (window._ronautMiniSetActive) {
                     var num = setsGetNumber(set.filename);
                     window._ronautMiniSetActive(video, {
                         status: num ? 'SET ' + num : 'NOW PLAYING',
-                        title: set.title || ''
+                        title: set.title || '',
+                        hlsUrl: fullUrl
                     });
                 }
             }
