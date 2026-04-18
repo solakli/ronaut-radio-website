@@ -1756,6 +1756,27 @@
             background: #000;
             display: block;
         }
+        #sets-back-to-live-btn {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.85);
+            color: rgba(255,255,255,0.85);
+            font-family: Oswald, sans-serif;
+            font-size: 12px; font-weight: 400;
+            letter-spacing: 2px; text-transform: uppercase;
+            padding: 10px 20px;
+            cursor: pointer;
+            display: flex; align-items: center; gap: 10px;
+            z-index: 10;
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+        #sets-back-to-live-btn:hover {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
         #sets-feat-meta {
             flex: 1;
             display: flex;
@@ -2156,6 +2177,7 @@
             <div id="sets-featured-inner">
                 <div id="sets-featured-video-wrap">
                     <video id="sets-featured-video" controls playsinline></video>
+                    <button id="sets-back-to-live-btn" onclick="showView('live')">Back to Ronaut Live &#9654;</button>
                 </div>
                 <div id="sets-feat-meta">
                     <div id="sets-feat-number"></div>
