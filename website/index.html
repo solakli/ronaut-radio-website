@@ -2566,6 +2566,11 @@
     }
 
     function resumeLiveFromSet() {
+        // Revert mini player back to live stream first
+        if (window._ronautMiniSetActive) {
+            window._ronautMiniSetActive(document.getElementById('ronaut-player'), null);
+        }
+
         // Stop sets player
         if (setsViewHlsInstance) { setsViewHlsInstance.destroy(); setsViewHlsInstance = null; }
         var featVid = document.getElementById('sets-featured-video');
@@ -2737,7 +2742,7 @@
             }
 
             async function updateNowPlaying() {
-                if (isPlayingPick) return; // Don't override ticker when playing a staff pick
+                if (isPlayingPick || window._miniInSetsMode) return; // Don't override ticker when playing a pick or VOD set
                 try {
                     var res = await fetch("https://stream.ronautradio.la/api/now-playing");
                     var data = await res.json();
@@ -3163,7 +3168,43 @@
                     }
                 }, { passive: true });
 
-                // Mini player controls
+                // Named event handlers so they can be rebound when active source changes
+                function onActiveVideoPlay() {
+                    updateMiniPlayerButtons();
+                    if (isPlayingPick && miniVideo.src && miniVideo.paused) {
+                        miniVideo.play().catch(function(e) {});
+                    }
+                }
+                function onActiveVideoPause() {
+                    updateMiniPlayerButtons();
+                    if (isPlayingPick && miniVideo.src && !miniVideo.paused) {
+                        miniVideo.pause();
+                    }
+                }
+                function onActiveVideoVolumeChange() { updateMiniPlayerButtons(); }
+                function onActiveVideoTimeUpdate() {
+                    if (isPlayingPick && wasVisible && miniVideo.src) {
+                        if (Math.abs(video.currentTime - miniVideo.currentTime) > 2) {
+                            miniVideo.currentTime = video.currentTime;
+                        }
+                    }
+                }
+
+                function bindActiveVideoEvents(vid) {
+                    vid.addEventListener('play', onActiveVideoPlay);
+                    vid.addEventListener('pause', onActiveVideoPause);
+                    vid.addEventListener('volumechange', onActiveVideoVolumeChange);
+                    vid.addEventListener('timeupdate', onActiveVideoTimeUpdate);
+                }
+                function unbindActiveVideoEvents(vid) {
+                    vid.removeEventListener('play', onActiveVideoPlay);
+                    vid.removeEventListener('pause', onActiveVideoPause);
+                    vid.removeEventListener('volumechange', onActiveVideoVolumeChange);
+                    vid.removeEventListener('timeupdate', onActiveVideoTimeUpdate);
+                }
+                bindActiveVideoEvents(video); // initial bind to live player
+
+                // Mini player controls — target current active `video` (reassignable)
                 miniPlayBtn.addEventListener('click', function() {
                     if (video.paused) {
                         video.play().catch(function(e) { console.log('Play prevented', e); });
@@ -3178,36 +3219,13 @@
                     updateMiniPlayerButtons();
                 });
 
-                // Update buttons when video state changes
-                video.addEventListener('play', function() {
-                    updateMiniPlayerButtons();
-                    // Sync miniVideo play state for VOD
-                    if (isPlayingPick && miniVideo.src && miniVideo.paused) {
-                        miniVideo.play().catch(function(e) {});
-                    }
-                });
-                video.addEventListener('pause', function() {
-                    updateMiniPlayerButtons();
-                    // Sync miniVideo pause state for VOD
-                    if (isPlayingPick && miniVideo.src && !miniVideo.paused) {
-                        miniVideo.pause();
-                    }
-                });
-                video.addEventListener('volumechange', updateMiniPlayerButtons);
-
-                // Sync mini video time with main video for VOD playback
-                video.addEventListener('timeupdate', function() {
-                    if (isPlayingPick && wasVisible && miniVideo.src) {
-                        // Sync if more than 2 seconds apart
-                        if (Math.abs(video.currentTime - miniVideo.currentTime) > 2) {
-                            miniVideo.currentTime = video.currentTime;
-                        }
-                    }
-                });
-
-                // Click mini player to scroll to main player
+                // Click mini info: go to sets view when a set is active, else scroll to player
                 miniPlayer.querySelector('.mini-info').addEventListener('click', function() {
-                    playerContainer.scrollIntoView({ behavior: 'smooth' });
+                    if (window._miniInSetsMode) {
+                        showView('sets');
+                    } else {
+                        playerContainer.scrollIntoView({ behavior: 'smooth' });
+                    }
                 });
 
                 // Click video overlay to scroll back to main player
@@ -3228,6 +3246,28 @@
                         miniPlayer.classList.add('mini-active');
                     }
                     // mobile bar is always visible, no toggle needed
+                };
+
+                // Switch mini player to control a different video source
+                // Pass info = { status, title } for sets mode, null to revert to live
+                window._ronautMiniSetActive = function(videoEl, info) {
+                    unbindActiveVideoEvents(video);
+                    video = videoEl;
+                    bindActiveVideoEvents(video);
+                    updateMiniPlayerButtons();
+                    var statusEl = document.querySelector('#mini-player .mini-status');
+                    var titleEl = document.querySelector('#mini-player .mini-title-inner');
+                    var dotEl = document.querySelector('#mini-player .mini-live-dot');
+                    if (info) {
+                        window._miniInSetsMode = true;
+                        if (statusEl) statusEl.textContent = info.status || 'NOW PLAYING';
+                        if (titleEl) { titleEl.textContent = info.title || ''; updateMiniTitleMarquee(); }
+                        if (dotEl) dotEl.style.display = 'none';
+                    } else {
+                        window._miniInSetsMode = false;
+                        if (dotEl) dotEl.style.display = '';
+                        updateNowPlaying(); // refresh live info
+                    }
                 };
 
             })();
@@ -4045,6 +4085,15 @@
                     video.src = fullUrl;
                     video.play().catch(function() {});
                 }
+
+                // Point mini player controls + info at this set
+                if (window._ronautMiniSetActive) {
+                    var num = setsGetNumber(set.filename);
+                    window._ronautMiniSetActive(video, {
+                        status: num ? 'SET ' + num : 'NOW PLAYING',
+                        title: set.title || ''
+                    });
+                }
             }
 
             window.setsCloseFeatured = function() {
@@ -4056,6 +4105,10 @@
                 setsViewActiveSlug = null;
                 window.history.pushState({ view: 'sets' }, '', '/?view=sets');
                 setsRenderGrid();
+                // Revert mini player back to live stream
+                if (window._ronautMiniSetActive) {
+                    window._ronautMiniSetActive(document.getElementById('ronaut-player'), null);
+                }
             };
 
             window.setsCopyLink = function() {
