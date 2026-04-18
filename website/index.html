@@ -1924,6 +1924,36 @@
         html.theme-fade, html.theme-fade * {
             transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease !important;
         }
+
+        /* Set playing overlay — shown on main player when browsing live view while a set plays in background */
+        #set-playing-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: black;
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        #set-playing-overlay.visible {
+            display: flex;
+        }
+        #back-to-live-btn {
+            font-family: Oswald, sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: white;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.45);
+            padding: 13px 28px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        #back-to-live-btn:hover {
+            border-color: white;
+        }
     </style>
 </head>
 <body>
@@ -2007,6 +2037,10 @@
                     <canvas id="waveform-canvas"></canvas>
                 </div>
                 <div id="next-live-banner"></div>
+            </div>
+            <!-- SET PLAYING OVERLAY: shown when user returns to live view while a set is playing in background -->
+            <div id="set-playing-overlay">
+                <button id="back-to-live-btn" onclick="resumeLiveFromSet()">&#9654; Back to Ronaut Live</button>
             </div>
         </div>
     </div>
@@ -2483,6 +2517,10 @@
             if (navLive) { navLive.classList.remove('active'); }
             if (navSets) { navSets.classList.add('active'); }
 
+            // Hide the "back to live" overlay when going to sets
+            var setOverlay = document.getElementById('set-playing-overlay');
+            if (setOverlay) setOverlay.classList.remove('visible');
+
             // Pause live stream to avoid audio overlap
             var liveVideo = document.getElementById('ronaut-player');
             if (liveVideo && !liveVideo.paused) liveVideo.pause();
@@ -2511,17 +2549,35 @@
             if (navLive) { navLive.classList.add('active'); }
             if (navSets) { navSets.classList.remove('active'); }
 
-            // Stop sets player
-            if (setsViewHlsInstance) { setsViewHlsInstance.destroy(); setsViewHlsInstance = null; }
+            // Check if a set is actively playing — if so, keep it going in background
             var featVid = document.getElementById('sets-featured-video');
-            if (featVid) { featVid.pause(); featVid.src = ''; }
+            var setIsPlaying = setsViewHlsInstance && featVid && !featVid.paused;
 
-            // Resume live stream
-            var liveVideo = document.getElementById('ronaut-player');
-            if (liveVideo && liveVideo.paused) liveVideo.play().catch(function(){});
+            if (setIsPlaying) {
+                // Show blank player with "Back to Ronaut Live" button
+                document.getElementById('set-playing-overlay').classList.add('visible');
+                // Don't resume live — user chooses when to go back
+            } else {
+                resumeLiveFromSet();
+            }
 
             if (pushState) window.history.pushState({ view: 'live' }, '', '/');
         }
+    }
+
+    function resumeLiveFromSet() {
+        // Stop sets player
+        if (setsViewHlsInstance) { setsViewHlsInstance.destroy(); setsViewHlsInstance = null; }
+        var featVid = document.getElementById('sets-featured-video');
+        if (featVid) { featVid.pause(); featVid.src = ''; }
+
+        // Hide overlay
+        var overlay = document.getElementById('set-playing-overlay');
+        if (overlay) overlay.classList.remove('visible');
+
+        // Resume live stream
+        var liveVideo = document.getElementById('ronaut-player');
+        if (liveVideo && liveVideo.paused) liveVideo.play().catch(function(){});
     }
 
     // Help ID Modal
