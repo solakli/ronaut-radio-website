@@ -1925,6 +1925,48 @@
             transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease !important;
         }
 
+        /* Mini player seek bar — thin progress line at bottom of mini bar, only shown for VOD sets */
+        #mini-seek-bar {
+            display: none;
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--border-color);
+            z-index: 3;
+            cursor: pointer;
+        }
+        #mini-seek-bar.visible { display: block; }
+        #mini-seek-fill {
+            height: 100%;
+            background: rgba(255,255,255,0.85);
+            width: 0%;
+            pointer-events: none;
+            transition: width 0.25s linear;
+        }
+        #mini-seek-bar input[type=range] {
+            position: absolute;
+            top: -12px; left: 0;
+            width: 100%; height: 27px;
+            margin: 0; padding: 0;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 4;
+        }
+        /* Time display — current / duration, right side of mini bar */
+        #mini-time-display {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            padding: 0 14px 0 6px;
+            margin-left: auto;
+            flex-shrink: 0;
+            display: none;
+            letter-spacing: 0;
+        }
+        #mini-time-display.visible { display: block; }
+        #mini-time-display .sep { opacity: 0.4; margin: 0 2px; }
+
         /* Set playing overlay — shown on main player when browsing live view while a set plays in background */
         #set-playing-overlay {
             display: none;
@@ -2009,6 +2051,13 @@
             <span class="mini-status">NOW PLAYING</span>
             <span class="mini-live-dot"></span>
             <span class="mini-title"><span class="mini-title-inner">Loading...</span></span>
+        </div>
+        <div id="mini-time-display">
+            <span id="mini-current-time">0:00</span><span class="sep">/</span><span id="mini-duration">0:00</span>
+        </div>
+        <div id="mini-seek-bar">
+            <div id="mini-seek-fill"></div>
+            <input type="range" id="mini-seek" min="0" max="100" value="0" step="0.1">
         </div>
     </div>
 
@@ -3124,6 +3173,7 @@
                 }
 
                 function onPlayerVisibilityChange(hidden) {
+                    if (currentView === 'sets') return; // sets view controls its own overlay via watchSetsVideo
                     var onMobile = window.innerWidth < 768;
                     if (hidden) {
                         if (onMobile) {
@@ -3168,6 +3218,15 @@
                     }
                 }, { passive: true });
 
+                function formatTime(s) {
+                    s = Math.floor(s || 0);
+                    var h = Math.floor(s / 3600);
+                    var m = Math.floor((s % 3600) / 60);
+                    var sec = s % 60;
+                    if (h > 0) return h + ':' + (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
+                    return m + ':' + (sec < 10 ? '0' : '') + sec;
+                }
+
                 // Named event handlers so they can be rebound when active source changes
                 function onActiveVideoPlay() {
                     updateMiniPlayerButtons();
@@ -3188,6 +3247,25 @@
                             miniVideo.currentTime = video.currentTime;
                         }
                     }
+                    // Update seek bar when a VOD set is playing
+                    if (window._miniInSetsMode) {
+                        var dur = video.duration || 0;
+                        var fill = document.getElementById('mini-seek-fill');
+                        var sk = document.getElementById('mini-seek');
+                        var ct = document.getElementById('mini-current-time');
+                        if (dur > 0) {
+                            var pct = (video.currentTime / dur) * 100;
+                            if (fill) fill.style.width = pct + '%';
+                            if (sk && !sk._dragging) sk.value = pct;
+                        }
+                        if (ct) ct.textContent = formatTime(video.currentTime);
+                    }
+                }
+                function onActiveVideoDurationChange() {
+                    if (window._miniInSetsMode) {
+                        var durEl = document.getElementById('mini-duration');
+                        if (durEl) durEl.textContent = formatTime(video.duration);
+                    }
                 }
 
                 function bindActiveVideoEvents(vid) {
@@ -3195,12 +3273,14 @@
                     vid.addEventListener('pause', onActiveVideoPause);
                     vid.addEventListener('volumechange', onActiveVideoVolumeChange);
                     vid.addEventListener('timeupdate', onActiveVideoTimeUpdate);
+                    vid.addEventListener('durationchange', onActiveVideoDurationChange);
                 }
                 function unbindActiveVideoEvents(vid) {
                     vid.removeEventListener('play', onActiveVideoPlay);
                     vid.removeEventListener('pause', onActiveVideoPause);
                     vid.removeEventListener('volumechange', onActiveVideoVolumeChange);
                     vid.removeEventListener('timeupdate', onActiveVideoTimeUpdate);
+                    vid.removeEventListener('durationchange', onActiveVideoDurationChange);
                 }
                 bindActiveVideoEvents(video); // initial bind to live player
 
@@ -3218,6 +3298,27 @@
                     video.muted = !video.muted;
                     updateMiniPlayerButtons();
                 });
+
+                // Seek bar — scrub the active VOD set
+                var seekInput = document.getElementById('mini-seek');
+                if (seekInput) {
+                    seekInput.addEventListener('mousedown', function() { seekInput._dragging = true; });
+                    seekInput.addEventListener('touchstart', function() { seekInput._dragging = true; }, { passive: true });
+                    seekInput.addEventListener('change', function() {
+                        seekInput._dragging = false;
+                        if (!window._miniInSetsMode) return;
+                        var dur = video.duration || 0;
+                        if (dur > 0) video.currentTime = (seekInput.value / 100) * dur;
+                    });
+                    seekInput.addEventListener('input', function() {
+                        // Update fill visually while dragging
+                        var fill = document.getElementById('mini-seek-fill');
+                        if (fill) fill.style.width = seekInput.value + '%';
+                        var ct = document.getElementById('mini-current-time');
+                        var dur = video.duration || 0;
+                        if (ct && dur > 0) ct.textContent = formatTime((seekInput.value / 100) * dur);
+                    });
+                }
 
                 // Click mini info: go to sets view when a set is active, else scroll to player
                 miniPlayer.querySelector('.mini-info').addEventListener('click', function() {
@@ -3241,12 +3342,41 @@
                 window._ronautMiniInit = function() {
                     if (!wasVisible) { initMiniVideo(); wasVisible = true; }
                     if (window.innerWidth >= 768) {
-                        if (miniVideoOverlay) miniVideoOverlay.classList.add('visible');
+                        // Don't show video overlay here — watchSetsVideo handles it in sets view,
+                        // and onPlayerVisibilityChange handles it in live view on scroll
                         if (topNav) topNav.classList.add('mini-active');
                         miniPlayer.classList.add('mini-active');
                     }
                     // mobile bar is always visible, no toggle needed
                 };
+
+                // IntersectionObserver for the sets featured section:
+                // shows the mini video frame only when featured player scrolls off screen
+                var setsVideoObserver = null;
+                function watchSetsVideo(start) {
+                    if (setsVideoObserver) { setsVideoObserver.disconnect(); setsVideoObserver = null; }
+                    if (!start) {
+                        // Leaving sets mode — hide video frame (live scroll will restore it)
+                        if (miniVideoOverlay) miniVideoOverlay.classList.remove('visible');
+                        miniPlayer.classList.remove('scrolled');
+                        return;
+                    }
+                    var featSection = document.getElementById('sets-featured-section');
+                    if (!featSection || !('IntersectionObserver' in window)) return;
+                    setsVideoObserver = new IntersectionObserver(function(entries) {
+                        var onMobile = window.innerWidth < 768;
+                        if (!entries[0].isIntersecting) {
+                            // Featured player scrolled off — reveal video frame in mini
+                            if (!onMobile && miniVideoOverlay) miniVideoOverlay.classList.add('visible');
+                            if (onMobile) miniPlayer.classList.add('scrolled');
+                        } else {
+                            // Featured player visible — hide video frame, controls only
+                            if (!onMobile && miniVideoOverlay) miniVideoOverlay.classList.remove('visible');
+                            if (onMobile) miniPlayer.classList.remove('scrolled');
+                        }
+                    }, { rootMargin: '-48px 0px 0px 0px', threshold: 0 });
+                    setsVideoObserver.observe(featSection);
+                }
 
                 var mobileMiniHls = null; // tracks set HLS loaded into #mini-video-mobile
 
@@ -3319,14 +3449,34 @@
                     var statusEl = document.querySelector('#mini-player .mini-status');
                     var titleEl = document.querySelector('#mini-player .mini-title-inner');
                     var dotEl = document.querySelector('#mini-player .mini-live-dot');
+                    var seekBarEl = document.getElementById('mini-seek-bar');
+                    var timeEl = document.getElementById('mini-time-display');
+                    var sk = document.getElementById('mini-seek');
+                    var fill = document.getElementById('mini-seek-fill');
                     if (info) {
                         window._miniInSetsMode = true;
                         if (statusEl) statusEl.textContent = info.status || 'NOW PLAYING';
                         if (titleEl) { titleEl.textContent = info.title || ''; updateMiniTitleMarquee(); }
                         if (dotEl) dotEl.style.display = 'none';
+                        // Show seek bar + time display
+                        if (seekBarEl) seekBarEl.classList.add('visible');
+                        if (timeEl) timeEl.classList.add('visible');
+                        if (sk) sk.value = 0;
+                        if (fill) fill.style.width = '0%';
+                        var durEl = document.getElementById('mini-duration');
+                        var ctEl = document.getElementById('mini-current-time');
+                        if (durEl) durEl.textContent = formatTime(videoEl.duration || 0);
+                        if (ctEl) ctEl.textContent = '0:00';
+                        // Start watching featured section to show/hide video frame on scroll
+                        watchSetsVideo(true);
                     } else {
                         window._miniInSetsMode = false;
                         if (dotEl) dotEl.style.display = '';
+                        // Hide seek bar + time display
+                        if (seekBarEl) seekBarEl.classList.remove('visible');
+                        if (timeEl) timeEl.classList.remove('visible');
+                        // Stop watching featured section
+                        watchSetsVideo(false);
                         updateNowPlaying(); // refresh live info
                     }
                 };
@@ -4114,6 +4264,18 @@
 
                 var featSection = document.getElementById('sets-featured-section');
                 if (featSection) featSection.style.display = '';
+
+                // Update mini player after featured section is visible (so IntersectionObserver sees it)
+                if (window._ronautMiniSetActive) {
+                    var featVid = document.getElementById('sets-featured-video');
+                    var setNum = setsGetNumber(set.filename);
+                    window._ronautMiniSetActive(featVid, {
+                        status: setNum ? 'SET ' + setNum : 'NOW PLAYING',
+                        title: set.title || '',
+                        hlsUrl: API + set.url
+                    });
+                }
+
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 setsRenderGrid();
             }
@@ -4147,15 +4309,6 @@
                     video.play().catch(function() {});
                 }
 
-                // Point mini player controls, info, and video frame at this set
-                if (window._ronautMiniSetActive) {
-                    var num = setsGetNumber(set.filename);
-                    window._ronautMiniSetActive(video, {
-                        status: num ? 'SET ' + num : 'NOW PLAYING',
-                        title: set.title || '',
-                        hlsUrl: fullUrl
-                    });
-                }
             }
 
             window.setsCloseFeatured = function() {
