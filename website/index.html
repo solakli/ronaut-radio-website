@@ -1938,11 +1938,12 @@
         #mini-seek-bar.visible { display: block; }
         #mini-seek-fill {
             position: absolute;
-            top: 0; left: 0; bottom: 0;
-            width: 0%;
-            background: rgba(255, 102, 0, 0.18);
+            top: 0; bottom: 0;
+            left: 0%;
+            width: 2px;
+            background: #ff6600;
             pointer-events: none;
-            transition: width 0.15s linear;
+            transition: left 0.15s linear;
         }
         /* Live (auto-rotating stream): read-only ticker, no clicking */
         #mini-seek-bar.live { pointer-events: none; cursor: default; }
@@ -2816,7 +2817,7 @@
                 var fill = document.getElementById('mini-seek-fill');
                 var ct = document.getElementById('mini-current-time');
                 var dur = document.getElementById('mini-duration');
-                if (fill) fill.style.width = pct + '%';
+                if (fill) fill.style.left = pct + '%';
                 if (ct) ct.textContent = fmt(elapsed);
                 if (dur) dur.textContent = fmt(_liveSeekDuration);
             }
@@ -3308,7 +3309,7 @@
                         var ct = document.getElementById('mini-current-time');
                         if (dur > 0) {
                             var pct = (video.currentTime / dur) * 100;
-                            if (fill) fill.style.width = pct + '%';
+                            if (fill) fill.style.left = pct + '%';
                         }
                         if (ct) ct.textContent = formatTime(video.currentTime);
                     }
@@ -3360,7 +3361,7 @@
                     var rect = seekBarEl.getBoundingClientRect();
                     var pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
                     var fill = document.getElementById('mini-seek-fill');
-                    if (fill) fill.style.width = (pct * 100) + '%';
+                    if (fill) fill.style.left = (pct * 100) + '%';
                     var ct = document.getElementById('mini-current-time');
                     var dur = video.duration || 0;
                     if (ct && dur > 0) ct.textContent = formatTime(pct * dur);
@@ -3535,7 +3536,7 @@
                         // Show seek bar + time display
                         if (seekBarEl) { seekBarEl.classList.add('visible'); seekBarEl.classList.remove('live'); }
                         if (timeEl) timeEl.classList.add('visible');
-                        if (fill) fill.style.width = '0%';
+                        if (fill) fill.style.left = '0%';
                         var durEl = document.getElementById('mini-duration');
                         var ctEl = document.getElementById('mini-current-time');
                         if (durEl) durEl.textContent = formatTime(videoEl.duration || 0);
