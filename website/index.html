@@ -1545,8 +1545,6 @@
             padding: 0 16px;
             overflow: hidden;
             cursor: pointer;
-            flex-shrink: 1;
-            min-width: 0;
         }
         #mini-player .mini-info:hover .mini-title { text-decoration: underline; }
         #mini-player .mini-status {
@@ -1957,7 +1955,7 @@
         /* Live mode: read-only ticker, no seeking */
         #mini-seek-bar.live { cursor: default; }
         #mini-seek-bar.live input[type=range] { pointer-events: none; }
-        /* Time display — fills middle space between controls and title */
+        /* Time display — current / duration, sits right after controls */
         #mini-time-display {
             font-family: Oswald, sans-serif;
             font-size: 12px;
@@ -1965,13 +1963,12 @@
             font-variant-numeric: tabular-nums;
             color: var(--text-muted);
             white-space: nowrap;
-            padding: 0 16px;
-            flex: 1;
+            padding: 0 12px 0 4px;
+            flex-shrink: 0;
             display: none;
             letter-spacing: 0.5px;
-            border-right: 1px solid var(--border-color);
         }
-        #mini-time-display.visible { display: flex; align-items: center; }
+        #mini-time-display.visible { display: block; }
         #mini-time-display .sep { opacity: 0.35; margin: 0 3px; }
 
         /* Set playing overlay — shown on main player when browsing live view while a set plays in background */
