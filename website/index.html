@@ -1931,7 +1931,8 @@
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 0;
-            pointer-events: none; /* clicks pass through to controls */
+            pointer-events: auto;
+            cursor: pointer;
             overflow: hidden;
         }
         #mini-seek-bar.visible { display: block; }
@@ -1941,21 +1942,10 @@
             width: 0%;
             background: rgba(255, 102, 0, 0.18);
             pointer-events: none;
-            transition: width 0.25s linear;
+            transition: width 0.15s linear;
         }
-        /* Scrub handle: thin invisible range at bottom, re-enables pointer events */
-        #mini-seek-bar input[type=range] {
-            position: absolute;
-            bottom: 0; left: 0;
-            width: 100%; height: 20px;
-            margin: 0; padding: 0;
-            opacity: 0;
-            cursor: pointer;
-            z-index: 4;
-            pointer-events: auto;
-        }
-        /* Live mode: read-only, no scrubbing */
-        #mini-seek-bar.live input[type=range] { pointer-events: none; cursor: default; }
+        /* Live (auto-rotating stream): read-only ticker, no clicking */
+        #mini-seek-bar.live { pointer-events: none; cursor: default; }
         /* Right section — fill is anchored here, starts after mute button */
         #mini-player-right {
             position: relative;
@@ -2073,7 +2063,6 @@
             <!-- Full-height orange fill — anchored inside this container -->
             <div id="mini-seek-bar">
                 <div id="mini-seek-fill"></div>
-                <input type="range" id="mini-seek" min="0" max="100" value="0" step="0.1">
             </div>
             <div id="mini-time-display">
                 <span id="mini-current-time">0:00</span><span class="sep">/</span><span id="mini-duration">0:00</span>
@@ -3313,15 +3302,13 @@
                         }
                     }
                     // Update seek bar when a VOD set is playing
-                    if (window._miniInSetsMode) {
+                    if (window._miniInSetsMode && !_seekDragging) {
                         var dur = video.duration || 0;
                         var fill = document.getElementById('mini-seek-fill');
-                        var sk = document.getElementById('mini-seek');
                         var ct = document.getElementById('mini-current-time');
                         if (dur > 0) {
                             var pct = (video.currentTime / dur) * 100;
                             if (fill) fill.style.width = pct + '%';
-                            if (sk && !sk._dragging) sk.value = pct;
                         }
                         if (ct) ct.textContent = formatTime(video.currentTime);
                     }
@@ -3364,24 +3351,47 @@
                     updateMiniPlayerButtons();
                 });
 
-                // Seek bar — scrub the active VOD set
-                var seekInput = document.getElementById('mini-seek');
-                if (seekInput) {
-                    seekInput.addEventListener('mousedown', function() { seekInput._dragging = true; });
-                    seekInput.addEventListener('touchstart', function() { seekInput._dragging = true; }, { passive: true });
-                    seekInput.addEventListener('change', function() {
-                        seekInput._dragging = false;
+                // Seek bar — click or drag anywhere on the fill to scrub VOD set
+                var seekBarEl = document.getElementById('mini-seek-bar');
+                var _seekDragging = false;
+
+                function doSeekAt(clientX) {
+                    if (!window._miniInSetsMode) return;
+                    var rect = seekBarEl.getBoundingClientRect();
+                    var pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                    var fill = document.getElementById('mini-seek-fill');
+                    if (fill) fill.style.width = (pct * 100) + '%';
+                    var ct = document.getElementById('mini-current-time');
+                    var dur = video.duration || 0;
+                    if (ct && dur > 0) ct.textContent = formatTime(pct * dur);
+                    if (dur > 0) video.currentTime = pct * dur;
+                }
+
+                if (seekBarEl) {
+                    seekBarEl.addEventListener('mousedown', function(e) {
                         if (!window._miniInSetsMode) return;
-                        var dur = video.duration || 0;
-                        if (dur > 0) video.currentTime = (seekInput.value / 100) * dur;
+                        _seekDragging = true;
+                        doSeekAt(e.clientX);
+                        e.preventDefault();
                     });
-                    seekInput.addEventListener('input', function() {
-                        // Update fill visually while dragging
-                        var fill = document.getElementById('mini-seek-fill');
-                        if (fill) fill.style.width = seekInput.value + '%';
-                        var ct = document.getElementById('mini-current-time');
-                        var dur = video.duration || 0;
-                        if (ct && dur > 0) ct.textContent = formatTime((seekInput.value / 100) * dur);
+                    document.addEventListener('mousemove', function(e) {
+                        if (!_seekDragging) return;
+                        doSeekAt(e.clientX);
+                    });
+                    document.addEventListener('mouseup', function() {
+                        _seekDragging = false;
+                    });
+                    seekBarEl.addEventListener('touchstart', function(e) {
+                        if (!window._miniInSetsMode) return;
+                        _seekDragging = true;
+                        doSeekAt(e.touches[0].clientX);
+                    }, { passive: true });
+                    document.addEventListener('touchmove', function(e) {
+                        if (!_seekDragging || !e.touches.length) return;
+                        doSeekAt(e.touches[0].clientX);
+                    }, { passive: true });
+                    document.addEventListener('touchend', function() {
+                        _seekDragging = false;
                     });
                 }
 
@@ -3516,7 +3526,6 @@
                     var dotEl = document.querySelector('#mini-player .mini-live-dot');
                     var seekBarEl = document.getElementById('mini-seek-bar');
                     var timeEl = document.getElementById('mini-time-display');
-                    var sk = document.getElementById('mini-seek');
                     var fill = document.getElementById('mini-seek-fill');
                     if (info) {
                         window._miniInSetsMode = true;
@@ -3524,9 +3533,8 @@
                         if (titleEl) { titleEl.textContent = info.title || ''; updateMiniTitleMarquee(); }
                         if (dotEl) dotEl.style.display = 'none';
                         // Show seek bar + time display
-                        if (seekBarEl) seekBarEl.classList.add('visible');
+                        if (seekBarEl) { seekBarEl.classList.add('visible'); seekBarEl.classList.remove('live'); }
                         if (timeEl) timeEl.classList.add('visible');
-                        if (sk) sk.value = 0;
                         if (fill) fill.style.width = '0%';
                         var durEl = document.getElementById('mini-duration');
                         var ctEl = document.getElementById('mini-current-time');
