@@ -1925,37 +1925,43 @@
             transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease !important;
         }
 
-        /* Mini player seek bar — progress bar at bottom of mini player */
+        /* Mini player seek bar — full-height background fill (like Lot Radio blue fill) */
         #mini-seek-bar {
             display: none;
             position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 6px;
-            background: var(--border-color);
-            z-index: 3;
-            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            pointer-events: none; /* clicks pass through to controls */
+            overflow: hidden;
         }
         #mini-seek-bar.visible { display: block; }
         #mini-seek-fill {
-            height: 100%;
-            background: #ff6600;
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
             width: 0%;
+            background: rgba(255, 102, 0, 0.18);
             pointer-events: none;
             transition: width 0.25s linear;
         }
+        /* Scrub handle: thin invisible range at bottom, re-enables pointer events */
         #mini-seek-bar input[type=range] {
             position: absolute;
-            top: -10px; left: 0;
-            width: 100%; height: 26px;
+            bottom: 0; left: 0;
+            width: 100%; height: 20px;
             margin: 0; padding: 0;
             opacity: 0;
             cursor: pointer;
             z-index: 4;
+            pointer-events: auto;
         }
-        /* Live mode: read-only ticker, no seeking */
-        #mini-seek-bar.live { cursor: default; }
-        #mini-seek-bar.live input[type=range] { pointer-events: none; }
-        /* Time display — current / duration, sits right after controls */
+        /* Live mode: read-only, no scrubbing */
+        #mini-seek-bar.live input[type=range] { pointer-events: none; cursor: default; }
+        /* Ensure controls/info render above the fill */
+        #mini-player .mini-controls,
+        #mini-player .mini-info,
+        #mini-player #mini-time-display,
+        #mini-player #mini-thumb-mobile { position: relative; z-index: 1; }
+        /* Time display — hover only */
         #mini-time-display {
             font-family: Oswald, sans-serif;
             font-size: 12px;
@@ -1968,7 +1974,9 @@
             display: none;
             letter-spacing: 0.5px;
         }
-        #mini-time-display.visible { display: block; }
+        /* .visible means eligible; only actually shown on hover */
+        #mini-time-display.visible { display: none; }
+        #mini-player:hover #mini-time-display.visible { display: block; }
         #mini-time-display .sep { opacity: 0.35; margin: 0 3px; }
 
         /* Set playing overlay — shown on main player when browsing live view while a set plays in background */
@@ -2036,6 +2044,11 @@
     </div>
     <!-- Player bar: always visible on desktop (row 2), always-on bottom bar on mobile -->
     <div id="mini-player">
+        <!-- Full-height progress fill behind everything (like Lot Radio's blue fill) -->
+        <div id="mini-seek-bar">
+            <div id="mini-seek-fill"></div>
+            <input type="range" id="mini-seek" min="0" max="100" value="0" step="0.1">
+        </div>
         <!-- Mobile: video thumbnail slides in from left on scroll (Lot Radio style) -->
         <div id="mini-thumb-mobile">
             <video id="mini-video-mobile" muted playsinline></video>
@@ -2058,10 +2071,6 @@
             <span class="mini-status">NOW PLAYING</span>
             <span class="mini-live-dot"></span>
             <span class="mini-title"><span class="mini-title-inner">Loading...</span></span>
-        </div>
-        <div id="mini-seek-bar">
-            <div id="mini-seek-fill"></div>
-            <input type="range" id="mini-seek" min="0" max="100" value="0" step="0.1">
         </div>
     </div>
 
