@@ -1956,10 +1956,19 @@
         }
         /* Live mode: read-only, no scrubbing */
         #mini-seek-bar.live input[type=range] { pointer-events: none; cursor: default; }
+        /* Right section — fill is anchored here, starts after mute button */
+        #mini-player-right {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            height: 100%;
+        }
         /* Ensure controls/info render above the fill */
         #mini-player .mini-controls,
-        #mini-player .mini-info,
-        #mini-player #mini-time-display,
+        #mini-player-right .mini-info,
+        #mini-player-right #mini-time-display,
         #mini-player #mini-thumb-mobile { position: relative; z-index: 1; }
         /* Time display — hover only */
         #mini-time-display {
@@ -2044,11 +2053,6 @@
     </div>
     <!-- Player bar: always visible on desktop (row 2), always-on bottom bar on mobile -->
     <div id="mini-player">
-        <!-- Full-height progress fill behind everything (like Lot Radio's blue fill) -->
-        <div id="mini-seek-bar">
-            <div id="mini-seek-fill"></div>
-            <input type="range" id="mini-seek" min="0" max="100" value="0" step="0.1">
-        </div>
         <!-- Mobile: video thumbnail slides in from left on scroll (Lot Radio style) -->
         <div id="mini-thumb-mobile">
             <video id="mini-video-mobile" muted playsinline></video>
@@ -2064,13 +2068,21 @@
                 <svg viewBox="0 0 24 24"><path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5v1.63c3.96 1.28 7.09 4.41 8.37 8.37H19V7zM1 10v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11zm20-7H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
             </button>
         </div>
-        <div id="mini-time-display">
-            <span id="mini-current-time">0:00</span><span class="sep">/</span><span id="mini-duration">0:00</span>
-        </div>
-        <div class="mini-info">
-            <span class="mini-status">NOW PLAYING</span>
-            <span class="mini-live-dot"></span>
-            <span class="mini-title"><span class="mini-title-inner">Loading...</span></span>
+        <!-- Right section: fill starts here (after mute button) -->
+        <div id="mini-player-right">
+            <!-- Full-height orange fill — anchored inside this container -->
+            <div id="mini-seek-bar">
+                <div id="mini-seek-fill"></div>
+                <input type="range" id="mini-seek" min="0" max="100" value="0" step="0.1">
+            </div>
+            <div id="mini-time-display">
+                <span id="mini-current-time">0:00</span><span class="sep">/</span><span id="mini-duration">0:00</span>
+            </div>
+            <div class="mini-info">
+                <span class="mini-status">NOW PLAYING</span>
+                <span class="mini-live-dot"></span>
+                <span class="mini-title"><span class="mini-title-inner">Loading...</span></span>
+            </div>
         </div>
     </div>
 
