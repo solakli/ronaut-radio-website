@@ -229,6 +229,10 @@
   </div>
 </div>
 
+<div class="warn-banner cpu-warn" id="ram-warn">
+  <span>⚠</span>
+  <span>Free RAM at <strong id="ram-warn-val">—</strong>MB — server is low on memory</span>
+</div>
 <div class="warn-banner cpu-warn" id="cpu-warn">
   <span>⚠</span>
   <span>System CPU at <strong id="cpu-warn-val">—</strong> — server is under heavy load</span>
@@ -370,6 +374,13 @@ function render(raw, sum, play) {
   pill.className = 'status-pill ' + st;
   document.getElementById('status-text').textContent = st.toUpperCase();
 
+  // RAM warning
+  if (curRamMb > 0 && curRamMb < 500) {
+    const w = document.getElementById('ram-warn');
+    w.className = 'warn-banner cpu-warn visible';
+    document.getElementById('ram-warn-val').textContent = curRamMb;
+  }
+
   // CPU warning
   const curCpu = toNum(L.ffmpeg_cpu_pct);
   if (curCpu > 80) {
@@ -395,10 +406,12 @@ function render(raw, sum, play) {
   const cpus      = rows.map(r => toNum(r.ffmpeg_cpu_pct));
   const listeners = rows.map(r => toInt(r.live_listeners));
   const drifts    = rows.map(r => r.av_drift_s ? toNum(r.av_drift_s) : null);
+  const rams      = rows.map(r => r.ram_free_mb ? toInt(r.ram_free_mb) : null);
 
   const curAge    = toInt(L.segment_age_s);
   const curSpeed  = toNum(L.ffmpeg_speed);
   const curList   = toInt(L.live_listeners);
+  const curRamMb  = toInt(L.ram_free_mb);
   const curFreeze = toInt(L.freeze_today);
   const curRstart = toInt(L.restarts_today);
   const curUptMin = toInt(L.ffmpeg_uptime_min);
@@ -450,6 +463,11 @@ function render(raw, sum, play) {
         <div class="card-sub">${curDrift <= 0 ? '—' : curDrift < 0.5 ? 'sync OK' : curDrift < 2 ? 'watch closely' : 'startup delay likely'}</div>
       </div>
       <div class="card">
+        <div class="card-label">Free RAM</div>
+        <div class="card-value ${curRamMb <= 0 ? '' : curRamMb > 2000 ? 'green' : curRamMb > 500 ? 'amber' : 'red'}">${curRamMb > 0 ? curRamMb.toLocaleString() : '—'}<span style="font-size:14px;font-weight:400">MB</span></div>
+        <div class="card-sub">${curRamMb <= 0 ? '—' : curRamMb > 2000 ? 'healthy' : curRamMb > 500 ? 'watch closely' : '⚠ critically low'}</div>
+      </div>
+      <div class="card">
         <div class="card-label">ffmpeg Uptime</div>
         <div class="card-value" style="font-size:22px">${upStr || '—'}</div>
         <div class="card-sub">${rows.length} snapshots · 5min intervals</div>
@@ -485,9 +503,13 @@ function render(raw, sum, play) {
           <div class="chart-label">Live Listeners<span class="current-val">${curList} now</span></div>
           <canvas id="c-listeners" height="130"></canvas>
         </div>
-        <div class="chart-card" style="grid-column: 1 / -1">
-          <div class="chart-label">A/V Drift <span style="color:#555">(warn &gt;1s · danger &gt;3s · causes startup delay)</span><span class="current-val" style="color:${curDrift < 0.5 ? 'var(--green)' : curDrift < 2 ? 'var(--amber)' : 'var(--red)'}">${curDrift > 0 ? curDrift.toFixed(2) + 's' : '—'}</span></div>
-          <canvas id="c-drift" height="100"></canvas>
+        <div class="chart-card">
+          <div class="chart-label">A/V Drift <span style="color:#555">(warn &gt;1s · danger &gt;3s)</span><span class="current-val" style="color:${curDrift < 0.5 ? 'var(--green)' : curDrift < 2 ? 'var(--amber)' : 'var(--red)'}">${curDrift > 0 ? curDrift.toFixed(2) + 's' : '—'}</span></div>
+          <canvas id="c-drift" height="130"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-label">Free RAM <span style="color:#555">(danger &lt;300MB)</span><span class="current-val" style="color:${curRamMb > 2000 ? 'var(--green)' : curRamMb > 500 ? 'var(--amber)' : 'var(--red)'}">${curRamMb > 0 ? curRamMb.toLocaleString() + 'MB' : '—'}</span></div>
+          <canvas id="c-ram" height="130"></canvas>
         </div>
       </div>
     </div>
@@ -549,12 +571,14 @@ function render(raw, sum, play) {
   const dsCpus      = downsample(cpus,      TARGET);
   const dsListeners = downsample(listeners, TARGET);
   const dsDrifts    = downsample(drifts,    TARGET);
+  const dsRams      = downsample(rams,      TARGET);
 
   makeChart('c-seg',       dsSegAges,   dsLabels, '#ef4444', { unit: 's', suggestedMax: 35 });
   makeChart('c-speed',     dsSpeeds,    dsLabels, '#22c55e', { unit: '×', min: 0.7, suggestedMax: 1.1 });
   makeChart('c-cpu',       dsCpus,      dsLabels, '#f59e0b', { unit: '%', suggestedMax: 100 });
   makeChart('c-listeners', dsListeners, dsLabels, '#60a5fa', { unit: '' });
   makeChart('c-drift',     dsDrifts,    dsLabels, '#a78bfa', { unit: 's', suggestedMax: 5, threshold: 1 });
+  makeChart('c-ram',       dsRams,      dsLabels, '#34d399', { unit: 'MB', threshold: 300 });
 }
 
 load();
