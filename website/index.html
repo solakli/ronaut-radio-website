@@ -4406,7 +4406,7 @@
             window.setsCopyLink = function() {
                 var btn = document.getElementById('sets-feat-copy-btn');
                 var url = setsViewActiveSlug
-                    ? 'https://stream.ronautradio.la/share/sets/' + encodeURIComponent(setsViewActiveSlug)
+                    ? 'https://ronautradio.la/sets/' + setsViewActiveSlug
                     : window.location.href;
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(url).then(function() {
