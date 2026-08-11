@@ -433,6 +433,38 @@
             background: transparent;
         }
 
+        /* Releases section */
+        #releases-section {
+            margin-top: 60px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        #releases-section h2 {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+        }
+        .release-card {
+            display: inline-block;
+            max-width: 700px;
+            width: calc(100% - 48px);
+        }
+        .release-link {
+            display: block;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .release-link:hover { color: #ff6600; }
+
         /* Site footer */
         #site-footer {
             margin-top: 80px;
@@ -2427,6 +2459,19 @@
       <p id="no-upcoming" style="display: none;">Nothing scheduled &mdash; the rotation plays on</p>
     </div>
     
+    <!-- RELEASES -->
+    <div id="releases-section">
+        <h2>RELEASES</h2>
+        <div class="release-card">
+            <iframe title="Teapot EP by EMAMI" style="border: 0; width: 100%; max-width: 700px; height: 472px;"
+                src="https://bandcamp.com/EmbeddedPlayer/album=1421363698/size=large/bgcol=0f0f0f/linkcol=ff6600/artwork=small/tracklist=true/"
+                loading="lazy" seamless>
+                <a href="https://emami.bandcamp.com/album/teapot-ep">Teapot EP by EMAMI</a>
+            </iframe>
+            <a class="release-link" href="https://emami.bandcamp.com/album/teapot-ep" target="_blank" rel="noopener">EMAMI &mdash; Teapot EP &nbsp;&#9656;&nbsp; Bandcamp</a>
+        </div>
+    </div>
+
     <div class="section">
         <div id='collection-component-1618238023055'></div>
     </div>
