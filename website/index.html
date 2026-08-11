@@ -1892,6 +1892,18 @@
             line-height: 1;
         }
         .tl-discogs:hover { opacity: 1; color: #ff6600; }
+        .tl-wax {
+            color: #ff6600;
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            text-decoration: none;
+            opacity: 0.75;
+            transition: opacity 0.15s;
+        }
+        .tl-wax:hover { opacity: 1; text-decoration: underline; }
 
         /* ─── SETS GRID ─── */
         #sets-grid {
@@ -1961,6 +1973,7 @@
             #sets-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
             #sets-feat-info { padding: 16px; }
             #sets-feat-tracklist { padding: 12px 16px; }
+            .tl-item { flex-wrap: wrap; }
         }
         @media (max-width: 400px) {
             #sets-grid { grid-template-columns: 1fr; }
@@ -4407,11 +4420,20 @@
                                 var discogsEl = t.discogs_url
                                     ? '<a class="tl-discogs" href="' + t.discogs_url + '" target="_blank" rel="noopener" title="View on Discogs">↗</a>'
                                     : '';
+                                var waxEl = '';
+                                if (t.release_id && t.wax && t.wax.num_for_sale > 0 && t.wax.lowest_price != null) {
+                                    var waxCur = { USD: '$', EUR: '€', GBP: '£' }[t.wax.currency] || ((t.wax.currency || '') + ' ');
+                                    var waxPrice = waxCur + Number(t.wax.lowest_price).toFixed(2);
+                                    waxEl = '<a class="tl-wax" href="https://www.discogs.com/sell/release/' + t.release_id +
+                                        '" target="_blank" rel="noopener" title="Buy on Discogs">' +
+                                        t.wax.num_for_sale + ' from ' + waxPrice + '</a>';
+                                }
                                 return '<div class="tl-item">' +
                                     '<span class="tl-num">' + (i+1) + '</span>' +
                                     timeEl +
                                     '<span class="tl-track">' + trackInner + '</span>' +
                                     metaEl +
+                                    waxEl +
                                     discogsEl +
                                     '</div>';
                             }).join('');
