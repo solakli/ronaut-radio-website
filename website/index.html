@@ -410,22 +410,106 @@
         #btn-share {
             font-family: Oswald, sans-serif;
             margin-top: 0;
-            padding-left: 15px;
-            padding-right: 15px;
-            height: 52px;
-            background: grey;
-            border: 1px solid #000;
-            font-size: 16px;
-            color: #000;
-            font-weight: 500;
+            padding: 12px 28px;
+            background: transparent;
+            border: 1px solid var(--text-primary);
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: var(--text-primary);
+            font-weight: 400;
             text-transform: uppercase;
             width: auto;
             cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        #btn-share:hover {
+            background: var(--text-primary);
+            color: var(--bg-primary);
         }
 
         #btn-share:disabled {
-            background: #000;
-            color: #fff;
+            border-color: var(--border-color);
+            color: var(--text-muted);
+            background: transparent;
+        }
+
+        /* Site footer */
+        #site-footer {
+            margin-top: 80px;
+            border-top: 1px solid var(--border-color);
+            padding: 48px 24px 40px;
+            text-align: center;
+            background: var(--bg-primary);
+            position: relative;
+            z-index: 1;
+        }
+        .footer-wordmark {
+            font-family: Oswald, sans-serif;
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+        .footer-tagline {
+            margin-top: 6px;
+            font-size: 10px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        #site-footer .social-links { margin: 18px auto 6px; padding: 10px; }
+        .footer-meta {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .footer-meta a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .footer-meta a:hover { color: #ff6600; }
+        .footer-sep { color: var(--text-muted); margin: 0 8px; }
+        .footer-copy {
+            margin-top: 14px;
+            font-size: 9px;
+            font-weight: 300;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+        @media (max-width: 768px) {
+            #site-footer { padding-bottom: 130px; }
+        }
+
+        /* Calendar buttons + empty state */
+        .cal-btn {
+            display: inline-block;
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            font-family: Oswald, sans-serif;
+            font-weight: 400;
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 9px 18px;
+            text-decoration: none;
+            margin: 3px;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .cal-btn:hover { border-color: #ff6600; color: #ff6600; }
+        #no-upcoming {
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
         }
 
         /* Theme Toggle Bar - fixed at top */
@@ -2316,31 +2400,7 @@
     </div>
 
     <div class="share-container">
-        <button id="btn-share">Share the stream!</button>
-    </div>
-
-    <div class="social-links">
-        <a href="https://instagram.com/ronautradio" target="_blank" class="w-inline-block">
-            <img src="assets/6065dc53271cd689405645e3_social-instagram.svg" loading="lazy" alt="Instagram"/>
-        </a>
-        <a href="https://facebook.com/ronautradio" target="_blank" class="w-inline-block">
-            <img src="assets/6065e3ca47bb418dbc19f3ea_social-facebook.svg" loading="lazy" alt="Facebook"/>
-        </a>
-        <a href="https://soundcloud.com/ronautradio" target="_blank" class="w-inline-block">
-            <img src="assets/6065e41429ff79264e86b0d7_social-soundcloud.svg" loading="lazy" alt="Soundcloud"/>
-        </a>
-        <a href="https://mixcloud.com/ronautradio" target="_blank" class="w-inline-block">
-            <img src="assets/6065e43e39b94578e5cc3ea1_social-mixcloud.svg" loading="lazy" alt="Mixcloud"/>
-        </a>
-        <a href="https://youtube.com/ronautradio" target="_blank" class="w-inline-block">
-            <img src="assets/6065e46287c6313a761f2885_social-youtube.svg" loading="lazy" alt="YouTube"/>
-        </a>
-        <a href="https://twitter.com/ronautradiola" target="_blank" class="w-inline-block">
-            <img src="assets/6065e48787c63189c61f2aab_social-twitter.svg" loading="lazy" alt="Twitter"/>
-        </a>
-        <a href="https://discord.gg/rrnN2sSYAb" target="_blank" class="w-inline-block">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-        </a>
+        <button id="btn-share">Share the Stream</button>
     </div>
 
     <div class="w-container">
@@ -2360,11 +2420,11 @@
     <div id="upcoming-shows-section" class="w-container" style="margin-top: 60px; margin-bottom: 40px;">
       <h2 style="font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;">UPCOMING SHOWS</h2>
       <div style="text-align: center; margin-bottom: 30px;">
-        <a href="https://calendar.google.com/calendar/u/0?cid=cm9uYXV0cmFkaW9AZ21haWwuY29t" target="_blank" style="display: inline-block; background: #000; color: #fff; font-family: Oswald, sans-serif; font-weight: 400; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 8px 16px; text-decoration: none; margin: 3px;">Subscribe to All</a>
-        <a href="https://stream.ronautradio.la/api/calendar.ics" download="ronaut-radio.ics" style="display: inline-block; background: #fff; color: #000; border: 1px solid #000; font-family: Oswald, sans-serif; font-weight: 400; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 8px 16px; text-decoration: none; margin: 3px;">Download .ics</a>
+        <a href="https://calendar.google.com/calendar/u/0?cid=cm9uYXV0cmFkaW9AZ21haWwuY29t" target="_blank" class="cal-btn">Subscribe to All</a>
+        <a href="https://stream.ronautradio.la/api/calendar.ics" download="ronaut-radio.ics" class="cal-btn">Download .ics</a>
       </div>
       <div id="upcoming-events" style="max-width: 600px; margin: 0 auto;"></div>
-      <p id="no-upcoming" style="text-align: center; font-family: Oswald, sans-serif; font-weight: 300; font-size: 14px; color: #999; display: none;">No upcoming shows scheduled. Check back soon!</p>
+      <p id="no-upcoming" style="display: none;">Nothing scheduled &mdash; the rotation plays on</p>
     </div>
     
     <div class="section">
@@ -2413,6 +2473,43 @@
         <!-- Grid -->
         <div id="sets-grid"><div id="sets-loading">Loading sets...</div></div>
     </div><!-- #sets-view -->
+
+    <!-- FOOTER -->
+    <footer id="site-footer">
+        <div class="footer-wordmark">RONAUT RADIO</div>
+        <div class="footer-tagline">Los Angeles &bull; Vinyl Only &bull; 24/7</div>
+        <div class="social-links">
+            <a href="https://instagram.com/ronautradio" target="_blank" class="w-inline-block">
+                <img src="assets/6065dc53271cd689405645e3_social-instagram.svg" loading="lazy" alt="Instagram"/>
+            </a>
+            <a href="https://facebook.com/ronautradio" target="_blank" class="w-inline-block">
+                <img src="assets/6065e3ca47bb418dbc19f3ea_social-facebook.svg" loading="lazy" alt="Facebook"/>
+            </a>
+            <a href="https://soundcloud.com/ronautradio" target="_blank" class="w-inline-block">
+                <img src="assets/6065e41429ff79264e86b0d7_social-soundcloud.svg" loading="lazy" alt="Soundcloud"/>
+            </a>
+            <a href="https://mixcloud.com/ronautradio" target="_blank" class="w-inline-block">
+                <img src="assets/6065e43e39b94578e5cc3ea1_social-mixcloud.svg" loading="lazy" alt="Mixcloud"/>
+            </a>
+            <a href="https://youtube.com/ronautradio" target="_blank" class="w-inline-block">
+                <img src="assets/6065e46287c6313a761f2885_social-youtube.svg" loading="lazy" alt="YouTube"/>
+            </a>
+            <a href="https://twitter.com/ronautradiola" target="_blank" class="w-inline-block">
+                <img src="assets/6065e48787c63189c61f2aab_social-twitter.svg" loading="lazy" alt="Twitter"/>
+            </a>
+            <a href="https://discord.gg/rrnN2sSYAb" target="_blank" class="w-inline-block">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.6;"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+            </a>
+        </div>
+        <div class="footer-meta">
+            <a href="mailto:ronautradio@gmail.com">Contact</a>
+            <span class="footer-sep">&middot;</span>
+            <a href="https://discord.gg/rrnN2sSYAb" target="_blank" rel="noopener">Discord</a>
+            <span class="footer-sep">&middot;</span>
+            <a href="https://waxdigger.ai/?utm_source=ronautradio&utm_medium=footer" target="_blank" rel="noopener">Wax Digger</a>
+        </div>
+        <div class="footer-copy">&copy; 2026 Ronaut Radio &mdash; Los Angeles</div>
+    </footer>
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
