@@ -67,14 +67,14 @@
         }
 
         [data-theme="dark"] {
-            --bg-primary: #1a1a1a;
-            --bg-secondary: #2a2a2a;
-            --text-primary: #fff;
-            --text-secondary: #ccc;
-            --text-muted: #999;
-            --border-color: #444;
-            --card-bg: #2a2a2a;
-            --card-shadow: rgba(0, 0, 0, 0.3);
+            --bg-primary: #111;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #f0f0f0;
+            --text-secondary: #bbb;
+            --text-muted: #666;
+            --border-color: #2a2a2a;
+            --card-bg: #1a1a1a;
+            --card-shadow: rgba(0, 0, 0, 0.5);
         }
 
         body {
@@ -1841,26 +1841,57 @@
             font-size: 12px;
             font-weight: 300;
             letter-spacing: 0.3px;
-            padding: 6px 0;
+            padding: 9px 0;
             color: var(--text-secondary);
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: baseline;
-            gap: 8px;
+            gap: 10px;
         }
         .tl-item:last-child { border-bottom: none; }
-        .tl-num { color: var(--text-muted); font-size: 10px; min-width: 16px; flex-shrink: 0; }
+        .tl-num { color: var(--text-muted); font-size: 10px; min-width: 18px; flex-shrink: 0; font-family: 'Courier New', monospace; }
         .tl-time {
-            color: var(--accent, #ff6600);
+            color: #ff6600;
             font-size: 11px;
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             flex-shrink: 0;
             cursor: pointer;
             text-decoration: none;
+            letter-spacing: 0.5px;
         }
         .tl-time:hover { text-decoration: underline; }
-        .tl-track { flex: 1; min-width: 0; }
-        .tl-meta { color: var(--text-muted); font-size: 10px; white-space: nowrap; flex-shrink: 0; }
+        .tl-track { flex: 1; min-width: 0; line-height: 1.4; }
+        .tl-artist {
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+        .tl-sep { color: var(--text-muted); font-weight: 300; margin: 0 2px; }
+        .tl-title-text {
+            font-size: 12px;
+            font-weight: 300;
+            color: var(--text-secondary);
+        }
+        .tl-meta {
+            color: var(--text-muted);
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+            white-space: nowrap;
+            flex-shrink: 0;
+            letter-spacing: 0.3px;
+        }
+        .tl-discogs {
+            color: var(--text-muted);
+            font-size: 11px;
+            text-decoration: none;
+            flex-shrink: 0;
+            opacity: 0.5;
+            transition: opacity 0.15s, color 0.15s;
+            line-height: 1;
+        }
+        .tl-discogs:hover { opacity: 1; color: #ff6600; }
 
         /* ─── SETS GRID ─── */
         #sets-grid {
@@ -4355,23 +4386,33 @@
                 var tlEl = document.getElementById('sets-feat-tracklist');
                 if (tlEl) {
                     if (tl.length > 0) {
-                        tlEl.innerHTML = '<div class="tl-header">Tracklist &mdash; ' + tl.length + ' tracks</div>' +
+                        tlEl.innerHTML = '<div class="tl-header">Tracklist &mdash; ' + tl.length + ' tracks identified</div>' +
                             tl.map(function(t, i) {
-                                var artist = (t.artists && t.artists.length) ? t.artists.join(', ') + ' \u2014 ' : '';
+                                var artistName = (t.artists && t.artists.length) ? t.artists.join(', ') : '';
+                                var titleText = t.title || '';
                                 var startSec = t.start_time || 0;
                                 var timeStr = t.start_time_formatted || '';
                                 var timeEl = timeStr
                                     ? '<span class="tl-time" data-sec="' + startSec + '" onclick="setsSeekTo(' + startSec + ')">' + timeStr + '</span>'
                                     : '';
+                                var trackInner = artistName
+                                    ? '<span class="tl-artist">' + setsEsc(artistName) + '</span>' +
+                                      (titleText ? '<span class="tl-sep">&mdash;</span><span class="tl-title-text">' + setsEsc(titleText) + '</span>' : '')
+                                    : '<span class="tl-title-text">' + setsEsc(titleText) + '</span>';
                                 var meta = [];
                                 if (t.label) meta.push(t.label);
+                                if (t.catno) meta.push(t.catno);
                                 if (t.year) meta.push(t.year);
                                 var metaEl = meta.length ? '<span class="tl-meta">' + setsEsc(meta.join(' · ')) + '</span>' : '';
+                                var discogsEl = t.discogs_url
+                                    ? '<a class="tl-discogs" href="' + t.discogs_url + '" target="_blank" rel="noopener" title="View on Discogs">↗</a>'
+                                    : '';
                                 return '<div class="tl-item">' +
                                     '<span class="tl-num">' + (i+1) + '</span>' +
                                     timeEl +
-                                    '<span class="tl-track">' + setsEsc(artist + (t.title || '')) + '</span>' +
+                                    '<span class="tl-track">' + trackInner + '</span>' +
                                     metaEl +
+                                    discogsEl +
                                     '</div>';
                             }).join('');
                         tlEl.style.display = '';
@@ -4639,11 +4680,11 @@
             var themeBtn = document.getElementById('btn-theme');
             var html = document.documentElement;
 
-            // Check for saved theme or system preference
+            // Check for saved theme — default is always dark
             var savedTheme = localStorage.getItem('ronaut_theme');
             if (savedTheme) {
                 html.setAttribute('data-theme', savedTheme);
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            } else {
                 html.setAttribute('data-theme', 'dark');
             }
 
