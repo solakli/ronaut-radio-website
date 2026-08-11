@@ -1375,12 +1375,49 @@
         .pick-card .pick-tracklist .track {
             margin-bottom: 4px;
             line-height: 1.4;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            flex-wrap: wrap;
+            text-align: left;
         }
+
+        .pick-card .pick-tracklist .track-main { flex: 1; min-width: 0; }
+        .pick-card .pick-tracklist .track-artist {
+            text-transform: uppercase;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        .pick-card .pick-tracklist .track-meta {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            letter-spacing: 0.3px;
+            color: #999;
+            white-space: nowrap;
+        }
+        .pick-card .pick-tracklist .track-wax {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            letter-spacing: 0.3px;
+            color: #ff6600;
+            white-space: nowrap;
+            text-decoration: none;
+            opacity: 0.85;
+        }
+        .pick-card .pick-tracklist .track-wax:hover { opacity: 1; text-decoration: underline; }
+        .pick-card .pick-tracklist .track-discogs {
+            color: #999;
+            text-decoration: none;
+            font-size: 10px;
+            opacity: 0.6;
+            transition: opacity 0.15s, color 0.15s;
+        }
+        .pick-card .pick-tracklist .track-discogs:hover { color: #ff6600; opacity: 1; }
 
         .pick-card .pick-tracklist .track-time {
             color: #888;
-            margin-right: 6px;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .pick-card .pick-tracklist .track-time:hover {
@@ -1429,6 +1466,9 @@
         [data-theme="dark"] .pick-card .pick-tracklist .track-time { color: #ff6600; }
         [data-theme="dark"] .pick-card .pick-tracklist .track-time:hover { color: #ff8833; }
         [data-theme="dark"] .pick-card .pick-tracklist .track.unidentified { color: #b08060; border-left-color: #ff6600; }
+        [data-theme="dark"] .pick-card .pick-tracklist .track-meta { color: #b08060; }
+        [data-theme="dark"] .pick-card .pick-tracklist .track-discogs { color: #b08060; }
+        [data-theme="dark"] .pick-card .pick-tracklist .track-discogs:hover { color: #ff6600; }
 
         /* Help ID Modal */
         #help-id-modal {
@@ -4361,9 +4401,25 @@
                                 if (item.type === 'identified') {
                                     var track = item.data;
                                     var artist = track.artists && track.artists.length > 0 ? track.artists[0] : 'Unknown';
+                                    var pickJunk = /^(none|n\/a|unknown)$/i;
+                                    var pickMeta = [track.label, track.year].filter(function(v) {
+                                        return v && !pickJunk.test(String(v).trim());
+                                    }).join(' · ');
+                                    var pickWax = '';
+                                    if (track.release_id && track.wax && track.wax.num_for_sale > 0 && track.wax.lowest_price != null) {
+                                        var pickCur = { USD: '$', EUR: '€', GBP: '£' }[track.wax.currency] || ((track.wax.currency || '') + ' ');
+                                        pickWax = '<a class="track-wax" href="https://www.discogs.com/sell/release/' + track.release_id +
+                                            '" target="_blank" rel="noopener" title="Buy on Discogs">' +
+                                            track.wax.num_for_sale + ' from ' + pickCur + Number(track.wax.lowest_price).toFixed(2) + '</a>';
+                                    }
+                                    var pickDg = track.discogs_url
+                                        ? '<a class="track-discogs" href="' + track.discogs_url + '" target="_blank" rel="noopener" title="View on Discogs">↗</a>'
+                                        : '';
                                     html += '<div class="track">';
                                     html += '<span class="track-time" data-url="' + encodedUrl + '" data-time="' + track.start_time + '">' + track.start_time_formatted + '</span>';
-                                    html += escapeHtml(artist) + ' - ' + escapeHtml(track.title);
+                                    html += '<span class="track-main"><span class="track-artist">' + escapeHtml(artist) + '</span> — ' + escapeHtml(track.title) + '</span>';
+                                    if (pickMeta) html += '<span class="track-meta">' + escapeHtml(pickMeta) + '</span>';
+                                    html += pickWax + pickDg;
                                     html += '</div>';
                                 } else {
                                     var unid = item.data;
