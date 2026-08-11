@@ -1904,6 +1904,55 @@
             transition: opacity 0.15s;
         }
         .tl-wax:hover { opacity: 1; text-decoration: underline; }
+        .tl-waxy-credit {
+            display: block;
+            margin-top: 12px;
+            font-size: 9px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .tl-waxy-credit:hover { color: #ff6600; }
+        #waxy-promo {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding: 14px 20px;
+            border-top: 1px solid var(--border-color);
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        #waxy-promo:hover { background: rgba(255, 102, 0, 0.06); }
+        .waxy-promo-name {
+            font-size: 11px;
+            font-weight: 400;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+        .waxy-promo-line {
+            font-size: 10px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            flex: 1;
+            min-width: 0;
+        }
+        .waxy-promo-cta {
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+            color: #ff6600;
+            white-space: nowrap;
+        }
+        #waxy-promo:hover .waxy-promo-cta { text-decoration: underline; }
+        @media (max-width: 600px) {
+            #waxy-promo { flex-wrap: wrap; padding: 12px 16px; }
+        }
 
         /* ─── SETS GRID ─── */
         #sets-grid {
@@ -2338,6 +2387,11 @@
                     </div>
                     <div id="sets-feat-meta">
                         <div id="sets-feat-tracklist" style="display:none"></div>
+                        <a id="waxy-promo" href="https://waxdigger.ai/?utm_source=ronautradio&utm_medium=sets&utm_campaign=heard-on-ronaut" target="_blank" rel="noopener">
+                            <span class="waxy-promo-name">Wax Digger</span>
+                            <span class="waxy-promo-line">Search 12 record stores. See what&rsquo;s in stock. Buy it cheaper.</span>
+                            <span class="waxy-promo-cta">DIG &#9656;</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -4399,6 +4453,9 @@
                 var tlEl = document.getElementById('sets-feat-tracklist');
                 if (tlEl) {
                     if (tl.length > 0) {
+                        var tlHasWax = tl.some(function(t) {
+                            return t.release_id && t.wax && t.wax.num_for_sale > 0 && t.wax.lowest_price != null;
+                        });
                         tlEl.innerHTML = '<div class="tl-header">Tracklist &mdash; ' + tl.length + ' tracks identified</div>' +
                             tl.map(function(t, i) {
                                 var artistName = (t.artists && t.artists.length) ? t.artists.join(', ') : '';
@@ -4436,7 +4493,10 @@
                                     waxEl +
                                     discogsEl +
                                     '</div>';
-                            }).join('');
+                            }).join('') +
+                            (tlHasWax
+                                ? '<a class="tl-waxy-credit" href="https://waxdigger.ai/?utm_source=ronautradio&utm_medium=tracklist&utm_campaign=heard-on-ronaut" target="_blank" rel="noopener">Wax prices via waxdigger.ai &#9656;</a>'
+                                : '');
                         tlEl.style.display = '';
                     } else {
                         tlEl.style.display = 'none';
