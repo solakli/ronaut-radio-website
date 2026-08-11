@@ -3,15 +3,16 @@
 <head>
     <meta charset="utf-8" />
     <title>Ronaut Radio</title>
-    <link rel="icon" type="image/png" href="assets/favicon.png" />
-    <link rel="apple-touch-icon" href="assets/favicon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="assets/icon-512.png" />
+    <link rel="apple-touch-icon" href="assets/icon-180.png" />
     <meta content="Ronaut Radio - Los Angeles-based independent radio station dedicated to vinyl-only curation. Broadcasting live shows, rare finds, and timeless classics straight from the City of Angels." name="description" />
     <meta content="Ronaut Radio" property="og:title" />
     <meta content="Ronaut Radio - Los Angeles-based independent radio station dedicated to vinyl-only curation. Broadcasting live shows, rare finds, and timeless classics straight from the City of Angels." property="og:description" />
-    <meta content="https://ronautradio.la/assets/favicon.png" property="og:image" />
+    <meta content="https://ronautradio.la/assets/og-image.png" property="og:image" />
     <meta content="Ronaut Radio" property="twitter:title" />
     <meta content="Ronaut Radio - Los Angeles-based independent radio station dedicated to vinyl-only curation. Broadcasting live shows, rare finds, and timeless classics straight from the City of Angels." property="twitter:description" />
-    <meta content="https://ronautradio.la/assets/favicon.png" property="twitter:image" />
+    <meta content="https://ronautradio.la/assets/og-image.png" property="twitter:image" />
     <meta property="og:type" content="website" />
     <meta content="summary_large_image" name="twitter:card" />
     <meta content="width=device-width, initial-scale=1" name="viewport" />
@@ -22,7 +23,7 @@
     <link href="https://stream.ronautradio.la" rel="dns-prefetch" />
     <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js" type="text/javascript"></script>
     <script type="text/javascript">
-        WebFont.load({ google: { families: ["Oswald:200,300,400,500,600,700"] } });
+        WebFont.load({ google: { families: ["Oswald:200,300,400,500,600,700", "Space Mono:400,700"] } });
     </script>
     <script type="text/javascript">
         ! function(o, c) { var n = c.documentElement, t = " w-mod-"; n.className += t + "js", ("ontouchstart" in o || o.DocumentTouch && c instanceof DocumentTouch) && (n.className += t + "touch") }(window, document);
@@ -455,7 +456,7 @@
         .release-link {
             display: block;
             margin-top: 10px;
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             font-size: 10px;
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -493,7 +494,7 @@
         }
         #site-footer .social-links { margin: 18px auto 6px; padding: 10px; }
         .footer-meta {
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             font-size: 11px;
             letter-spacing: 1px;
             text-transform: uppercase;
@@ -537,7 +538,7 @@
         .cal-btn:hover { border-color: #ff6600; color: #ff6600; }
         #no-upcoming {
             text-align: center;
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             font-size: 11px;
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -1389,14 +1390,14 @@
             letter-spacing: 0.5px;
         }
         .pick-card .pick-tracklist .track-meta {
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             font-size: 9px;
             letter-spacing: 0.3px;
             color: #999;
             white-space: nowrap;
         }
         .pick-card .pick-tracklist .track-wax {
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             font-size: 9px;
             letter-spacing: 0.3px;
             color: #ff6600;
@@ -2012,11 +2013,11 @@
             gap: 10px;
         }
         .tl-item:last-child { border-bottom: none; }
-        .tl-num { color: var(--text-muted); font-size: 10px; min-width: 18px; flex-shrink: 0; font-family: 'Courier New', monospace; }
+        .tl-num { color: var(--text-muted); font-size: 10px; min-width: 18px; flex-shrink: 0; font-family: 'Space Mono', 'Courier New', monospace; }
         .tl-time {
             color: #ff6600;
             font-size: 11px;
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             flex-shrink: 0;
             cursor: pointer;
             text-decoration: none;
@@ -2040,7 +2041,7 @@
         .tl-meta {
             color: var(--text-muted);
             font-size: 10px;
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             white-space: nowrap;
             flex-shrink: 0;
             letter-spacing: 0.3px;
@@ -2058,7 +2059,7 @@
         .tl-wax {
             color: #ff6600;
             font-size: 10px;
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             letter-spacing: 0.3px;
             white-space: nowrap;
             flex-shrink: 0;
@@ -2071,7 +2072,7 @@
             display: block;
             margin-top: 12px;
             font-size: 9px;
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             letter-spacing: 2px;
             text-transform: uppercase;
             color: var(--text-muted);
@@ -2107,7 +2108,7 @@
         }
         .waxy-promo-cta {
             font-size: 10px;
-            font-family: 'Courier New', monospace;
+            font-family: 'Space Mono', 'Courier New', monospace;
             letter-spacing: 1px;
             color: #ff6600;
             white-space: nowrap;
