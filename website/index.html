@@ -1828,7 +1828,14 @@
             padding: 16px 20px;
             overflow-y: auto;
             max-height: 340px;
+            text-align: left;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
         }
+        #sets-feat-tracklist::-webkit-scrollbar { width: 6px; }
+        #sets-feat-tracklist::-webkit-scrollbar-track { background: transparent; }
+        #sets-feat-tracklist::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        #sets-feat-tracklist::-webkit-scrollbar-thumb:hover { background: #ff6600; }
         .tl-header {
             font-size: 10px;
             font-weight: 400;
@@ -4469,10 +4476,10 @@
                                     ? '<span class="tl-artist">' + setsEsc(artistName) + '</span>' +
                                       (titleText ? '<span class="tl-sep">&mdash;</span><span class="tl-title-text">' + setsEsc(titleText) + '</span>' : '')
                                     : '<span class="tl-title-text">' + setsEsc(titleText) + '</span>';
-                                var meta = [];
-                                if (t.label) meta.push(t.label);
-                                if (t.catno) meta.push(t.catno);
-                                if (t.year) meta.push(t.year);
+                                var junkMeta = /^(none|n\/a|unknown)$/i;
+                                var meta = [t.label, t.catno, t.year].filter(function(v) {
+                                    return v && !junkMeta.test(String(v).trim());
+                                });
                                 var metaEl = meta.length ? '<span class="tl-meta">' + setsEsc(meta.join(' · ')) + '</span>' : '';
                                 var discogsEl = t.discogs_url
                                     ? '<a class="tl-discogs" href="' + t.discogs_url + '" target="_blank" rel="noopener" title="View on Discogs">↗</a>'
