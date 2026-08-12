@@ -1825,6 +1825,43 @@
             border-bottom: 2px solid var(--text-primary);
             padding-bottom: 2px;
         }
+        /* Brand mark: isolated surfer in a white disc — matches the SoundCloud avatar */
+        #nav-live-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+        }
+        /* underline the wordmark only — not the disc */
+        #nav-live-btn.active { border-bottom: none; padding-bottom: 0; }
+        #nav-live-btn.active .nav-brand-text {
+            border-bottom: 2px solid var(--text-primary);
+            padding-bottom: 2px;
+        }
+        .nav-mark {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #0f0f0f;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            transition: transform 0.18s ease;
+        }
+        .nav-mark img { width: 22px; height: auto; display: block; }
+        #nav-live-btn:hover .nav-mark { transform: scale(1.08); }
+        @media (min-width: 1024px) {
+            .nav-mark { width: 32px; height: 32px; }
+            .nav-mark img { width: 25px; }
+        }
+        @media (max-width: 380px) {
+            .nav-mark { width: 24px; height: 24px; }
+            .nav-mark img { width: 19px; }
+            #nav-live-btn { gap: 7px; }
+        }
         /* Sets button: same size as brand on mobile, slightly larger on desktop */
         #nav-sets-btn { font-size: 13px; letter-spacing: 1px; }
         @media (min-width: 1024px) {
@@ -2341,7 +2378,7 @@
     <div id="top-nav">
         <!-- Row 1: brand + nav links -->
         <div id="nav-row-1">
-            <button class="nav-link active" id="nav-live-btn" onclick="showView('live')">Ronaut Radio</button>
+            <button class="nav-link active" id="nav-live-btn" onclick="showView('live')"><span class="nav-mark"><img src="assets/nav-surfer.png" alt="" /></span><span class="nav-brand-text">Ronaut Radio</span></button>
             <div style="display:flex; gap:24px; align-items:center;">
                 <div id="nav-section-links">
                     <button class="nav-section-link" onclick="scrollToSection('programme-chat-row')">Programme</button>
