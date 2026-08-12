@@ -2175,28 +2175,23 @@
             grid-column: 1 / -1;
         }
 
-        /* ─── WARPED VINYL LOADER ─── */
-        /* The real brand artwork (assets/vinyl-loader.png), rocking in 3D like a
-           heat-warped record. No recreation — the logo stays exactly as designed. */
+        /* ─── VINYL LOADER ─── */
+        /* The brand artwork, held still — no rotation, no perspective distortion.
+           Only a soft fade signals activity; the record itself stays exact. */
         .vinyl-wrap {
             width: 240px;
             margin: 0 auto 20px;
-            perspective: 700px;
         }
         .vinyl-wrap.sm { width: 132px; margin-bottom: 12px; }
         .vinyl-loader {
             display: block;
             width: 100%;
             height: auto;
-            transform-origin: 50% 50%;
-            animation: vinyl-warp 3.6s ease-in-out infinite;
+            animation: vinyl-breathe 2.8s ease-in-out infinite;
         }
-        @keyframes vinyl-warp {
-            0%   { transform: rotateX(0deg)  rotateY(0deg)  rotateZ(0deg); }
-            25%  { transform: rotateX(5deg)  rotateY(8deg)  rotateZ(-1deg); }
-            50%  { transform: rotateX(0deg)  rotateY(0deg)  rotateZ(0deg); }
-            75%  { transform: rotateX(-5deg) rotateY(-8deg) rotateZ(1deg); }
-            100% { transform: rotateX(0deg)  rotateY(0deg)  rotateZ(0deg); }
+        @keyframes vinyl-breathe {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.62; }
         }
         @media (prefers-reduced-motion: reduce) {
             .vinyl-loader { animation: none; }
