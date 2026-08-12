@@ -2166,7 +2166,7 @@
         .card-title { font-size: 15px; font-weight: 400; letter-spacing: 0.5px; margin-top: 10px; text-transform: uppercase; }
         .card-desc { font-size: 12px; font-weight: 300; color: var(--text-muted); margin-top: 4px; }
         .card-genres { font-size: 10px; font-weight: 300; color: var(--text-muted); margin-top: 5px; letter-spacing: 0.5px; text-transform: uppercase; }
-        #sets-loading {
+        #sets-loading, #picks-loading {
             text-align: center;
             padding: 60px 24px;
             font-size: 13px; font-weight: 300; letter-spacing: 2px;
@@ -2174,6 +2174,49 @@
             text-transform: uppercase;
             grid-column: 1 / -1;
         }
+
+        /* ─── SPINNING VINYL LOADER ─── */
+        /* Flattened brand vinyl: the ellipse frame and spindle stay fixed while the
+           grooves + label turn inside it — a record spinning on a platter, seen at an
+           angle. Geometry is circular inside a squashed group, so rotation stays true. */
+        .vinyl-wrap {
+            width: 150px;
+            margin: 0 auto 22px;
+            perspective: 420px;
+        }
+        .vinyl-wrap.sm { width: 84px; margin-bottom: 12px; }
+        /* Tilt + wobble = warped record. Wobble (3.4s) runs out of phase with the
+           spin (2.6s), so the motion never repeats the same way twice. */
+        .vinyl-tilt {
+            transform-style: preserve-3d;
+            animation: vinyl-warp 3.4s ease-in-out infinite;
+        }
+        .vinyl-loader {
+            display: block;
+            width: 100%;
+            height: auto;
+            overflow: visible;
+            animation: vinyl-spin 2.6s linear infinite;
+        }
+        @keyframes vinyl-warp {
+            0%   { transform: rotateX(66deg) rotateY(0deg); }
+            25%  { transform: rotateX(57deg) rotateY(5deg); }
+            50%  { transform: rotateX(66deg) rotateY(0deg); }
+            75%  { transform: rotateX(57deg) rotateY(-5deg); }
+            100% { transform: rotateX(66deg) rotateY(0deg); }
+        }
+        @keyframes vinyl-spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) {
+            .vinyl-loader { animation-duration: 12s; }
+            .vinyl-tilt { animation: none; transform: rotateX(62deg); }
+        }
+        .vinyl-plate { fill: #3a3a37; stroke: #0f0f0f; stroke-width: 3; }
+        [data-theme="light"] .vinyl-plate { fill: #4a4a46; }
+        .vinyl-groove { fill: none; stroke: #ff6600; stroke-width: 2; opacity: 0.65; stroke-linecap: round; }
+        .vinyl-label { fill: #ff6600; stroke: #0f0f0f; stroke-width: 2; }
+        .vinyl-mark { fill: #0f0f0f; font-family: 'Space Mono', monospace; font-size: 26px; font-weight: 700; }
+        .vinyl-lead { fill: none; stroke: #ffffff; stroke-width: 3; opacity: 0.16; stroke-linecap: round; }
+        .vinyl-hole { fill: #0f0f0f; }
 
         /* ─── SETS RESPONSIVE ─── */
         @media (max-width: 900px) {
@@ -2486,7 +2529,22 @@
     <div id="staff-picks">
         <h2>STAFF PICKS</h2>
         <div id="genre-filter"></div>
-        <div id="picks-grid"></div>
+        <div id="picks-grid"><div id="picks-loading">
+            <div class="vinyl-wrap"><div class="vinyl-tilt">
+                <svg class="vinyl-loader" viewBox="0 0 200 200" aria-hidden="true">
+                    <circle class="vinyl-plate" cx="100" cy="100" r="96"></circle>
+                    <circle class="vinyl-groove" cx="100" cy="100" r="86"></circle>
+                    <circle class="vinyl-groove" cx="100" cy="100" r="76"></circle>
+                    <circle class="vinyl-groove" cx="100" cy="100" r="66"></circle>
+                    <circle class="vinyl-groove" cx="100" cy="100" r="56"></circle>
+                    <path class="vinyl-lead" d="M 100 6 A 94 94 0 0 1 178 52"></path>
+                    <circle class="vinyl-label" cx="100" cy="100" r="38"></circle>
+                    <text class="vinyl-mark" x="100" y="108" text-anchor="middle">A</text>
+                    <circle class="vinyl-hole" cx="100" cy="100" r="5"></circle>
+                </svg>
+            </div></div>
+            Loading sets&hellip;
+        </div></div>
     </div>
 
     <!-- UPCOMING SHOWS SECTION -->
@@ -2557,7 +2615,22 @@
         <!-- Genre Filter -->
         <div id="sets-genre-filter"></div>
         <!-- Grid -->
-        <div id="sets-grid"><div id="sets-loading">Loading sets...</div></div>
+        <div id="sets-grid"><div id="sets-loading">
+            <div class="vinyl-wrap"><div class="vinyl-tilt">
+                <svg class="vinyl-loader" viewBox="0 0 200 200" aria-hidden="true">
+                    <circle class="vinyl-plate" cx="100" cy="100" r="96"></circle>
+                    <circle class="vinyl-groove" cx="100" cy="100" r="86"></circle>
+                    <circle class="vinyl-groove" cx="100" cy="100" r="76"></circle>
+                    <circle class="vinyl-groove" cx="100" cy="100" r="66"></circle>
+                    <circle class="vinyl-groove" cx="100" cy="100" r="56"></circle>
+                    <path class="vinyl-lead" d="M 100 6 A 94 94 0 0 1 178 52"></path>
+                    <circle class="vinyl-label" cx="100" cy="100" r="38"></circle>
+                    <text class="vinyl-mark" x="100" y="108" text-anchor="middle">A</text>
+                    <circle class="vinyl-hole" cx="100" cy="100" r="5"></circle>
+                </svg>
+            </div></div>
+            Loading sets&hellip;
+        </div></div>
     </div><!-- #sets-view -->
 
     <!-- FOOTER -->
