@@ -241,6 +241,10 @@
   <span>⚠</span>
   <span>A/V drift at <strong id="drift-warn-val">—</strong>s — listeners may experience <strong id="drift-warn-delay">—</strong>s startup delay. Restart the stream to reset.</span>
 </div>
+<div class="warn-banner cpu-warn" id="lag-warn">
+  <span>⚠</span>
+  <span>Stream fell <strong id="lag-warn-val">—</strong>s behind real time in the last 5 min — listeners likely heard buffering (usually CPU contention)</span>
+</div>
 
 <div class="main" id="main"><div class="loading">Loading stream data…</div></div>
 
@@ -268,8 +272,21 @@ function downsample(arr, targetLen) {
   return Array.from({ length: targetLen }, (_, i) => arr[Math.round(i * step)]);
 }
 
+// Spiky metrics: keep each bucket's worst value so short stalls survive the 7d view
+function downsampleMax(arr, targetLen) {
+  if (arr.length <= targetLen) return arr;
+  const step = arr.length / targetLen;
+  return Array.from({ length: targetLen }, (_, i) => {
+    const vals = arr.slice(Math.round(i * step), Math.round((i + 1) * step)).filter(v => v !== null);
+    return vals.length ? Math.max(...vals) : null;
+  });
+}
+
 const toNum = v => parseFloat(v) || 0;
 const toInt = v => parseInt(v) || 0;
+// stream_lag_s: '' on rows logged before the column existed, -1 if the logger couldn't measure
+const lagOf = r => (r.stream_lag_s === undefined || r.stream_lag_s === '' || toNum(r.stream_lag_s) < 0) ? null : toNum(r.stream_lag_s);
+const STALL_S = 12;  // players buffer ~3 segments (~12s); a bigger build-up is an audible stall
 
 function fmt(iso) {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -375,6 +392,7 @@ function render(raw, sum, play) {
   document.getElementById('status-text').textContent = st.toUpperCase();
 
   // RAM warning
+  const curRamMb = toInt(L.ram_free_mb);
   if (curRamMb > 0 && curRamMb < 500) {
     const w = document.getElementById('ram-warn');
     w.className = 'warn-banner cpu-warn visible';
@@ -399,6 +417,11 @@ function render(raw, sum, play) {
     document.getElementById('drift-warn-delay').textContent = estimatedDelay;
   }
 
+  // Stream lag warning
+  const curLag = lagOf(L);
+  document.getElementById('lag-warn').classList.toggle('visible', curLag !== null && curLag >= STALL_S);
+  if (curLag !== null) document.getElementById('lag-warn-val').textContent = curLag.toFixed(1);
+
   // Arrays
   const labels    = rows.map(r => fmt(r.timestamp));
   const segAges   = rows.map(r => toInt(r.segment_age_s));
@@ -407,11 +430,15 @@ function render(raw, sum, play) {
   const listeners = rows.map(r => toInt(r.live_listeners));
   const drifts    = rows.map(r => r.av_drift_s ? toNum(r.av_drift_s) : null);
   const rams      = rows.map(r => r.ram_free_mb ? toInt(r.ram_free_mb) : null);
+  const lags      = rows.map(lagOf);
+
+  const knownLags = lags.filter(v => v !== null);
+  const maxLag    = knownLags.length ? Math.max(...knownLags) : null;
+  const stalls    = knownLags.filter(v => v >= STALL_S).length;
 
   const curAge    = toInt(L.segment_age_s);
   const curSpeed  = toNum(L.ffmpeg_speed);
   const curList   = toInt(L.live_listeners);
-  const curRamMb  = toInt(L.ram_free_mb);
   const curFreeze = toInt(L.freeze_today);
   const curRstart = toInt(L.restarts_today);
   const curUptMin = toInt(L.ffmpeg_uptime_min);
@@ -436,6 +463,11 @@ function render(raw, sum, play) {
         <div class="card-label">Segment Age</div>
         <div class="card-value ${colorClass(curAge, 15, 30)}">${curAge}<span style="font-size:16px;font-weight:400">s</span></div>
         <div class="card-sub">avg <b>${sum.avg_segment_age_s ?? '—'}s</b> · max <b>${sum.max_segment_age_s ?? '—'}s</b></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Stream Lag</div>
+        <div class="card-value ${curLag === null ? '' : colorClass(curLag, 4, STALL_S)}">${curLag === null ? '—' : curLag.toFixed(1)}<span style="font-size:16px;font-weight:400">s</span></div>
+        <div class="card-sub">max <b>${maxLag === null ? '—' : maxLag.toFixed(1) + 's'}</b> · <b>${stalls}</b> stalls ${currentLabel}</div>
       </div>
       <div class="card">
         <div class="card-label">ffmpeg Speed</div>
@@ -487,6 +519,10 @@ function render(raw, sum, play) {
     <div class="section">
       <div class="section-title">Stream Health — Last ${currentLabel}</div>
       <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-label">Stream Lag <span style="color:#555">(stall &gt;${STALL_S}s)</span><span class="current-val">${curLag === null ? '—' : curLag.toFixed(1) + 's'}</span></div>
+          <canvas id="c-lag" height="130"></canvas>
+        </div>
         <div class="chart-card">
           <div class="chart-label">Segment Age <span style="color:#555">(frozen &gt;30s)</span><span class="current-val">${curAge}s</span></div>
           <canvas id="c-seg" height="130"></canvas>
@@ -559,7 +595,7 @@ function render(raw, sum, play) {
   rows.forEach(r => {
     const b = document.createElement('div');
     b.className = 'tl-seg ' + (r.status || 'unknown');
-    b.title = `${fmt(r.timestamp)} · ${r.status} · seg=${r.segment_age_s}s · speed=${r.ffmpeg_speed}x · cpu=${r.ffmpeg_cpu_pct}%`;
+    b.title = `${fmt(r.timestamp)} · ${r.status} · seg=${r.segment_age_s}s · lag=${lagOf(r) ?? '—'}s · speed=${r.ffmpeg_speed}x · cpu=${r.ffmpeg_cpu_pct}%`;
     tl.appendChild(b);
   });
 
@@ -572,7 +608,9 @@ function render(raw, sum, play) {
   const dsListeners = downsample(listeners, TARGET);
   const dsDrifts    = downsample(drifts,    TARGET);
   const dsRams      = downsample(rams,      TARGET);
+  const dsLags      = downsampleMax(lags,   TARGET);
 
+  makeChart('c-lag',       dsLags,      dsLabels, '#ff6600', { unit: 's', suggestedMax: 15, threshold: STALL_S });
   makeChart('c-seg',       dsSegAges,   dsLabels, '#ef4444', { unit: 's', suggestedMax: 35 });
   makeChart('c-speed',     dsSpeeds,    dsLabels, '#22c55e', { unit: '×', min: 0.7, suggestedMax: 1.1 });
   makeChart('c-cpu',       dsCpus,      dsLabels, '#f59e0b', { unit: '%', suggestedMax: 100 });
