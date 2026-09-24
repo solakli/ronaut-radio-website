@@ -5648,10 +5648,11 @@
         }
 
         // Flying surfers, sharing the sky with the meteors (Sep 2026).
-        // Every pose ships in two colourways so it reads on either theme:
+        // The 11 detailed comic-book surfers, knocked out to line art. Every pose
+        // ships in two colourways so it reads on either theme:
         // <pose>-dark.webp is white ink for dark mode, <pose>-light.webp black ink.
         // Sprites load lazily, only once a pose actually spawns in that theme.
-        var SURFER_POSES = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'];
+        var SURFER_POSES = ['c01', 'c02', 'c03', 'c04', 'c05', 'c06', 'c07', 'c08', 'c09', 'c10', 'c11'];
         // The original Silver Surfer keeps the close-up flyby. He's silver, not
         // ink, so one image works on both themes (the video poster loads it too).
         var ogSurfer = new Image();
@@ -5668,8 +5669,8 @@
 
         // Depth: small surfers read as far away (faint, slow), big ones as close
         var isMobile = window.innerWidth < 768;
-        var SURFER_MIN = isMobile ? 52 : 72;
-        var SURFER_MAX = isMobile ? 76 : 130;
+        var SURFER_MIN = isMobile ? 80 : 110; // Detailed line art turns to mush much smaller
+        var SURFER_MAX = isMobile ? 110 : 170;
 
         // hero = the rare close-up flyby; the rest of the flock loops forever
         function FlyingSurfer(hero, scatter) {
@@ -5687,7 +5688,7 @@
                 var depth = Math.random();
                 this.pose = SURFER_POSES[Math.floor(Math.random() * SURFER_POSES.length)];
                 this.size = SURFER_MIN + depth * (SURFER_MAX - SURFER_MIN);
-                this.opacity = 0.45 + depth * 0.4;
+                this.opacity = 0.5 + depth * 0.4;
                 this.speed = 0.5 + depth * 1.0;
                 this.parallax = 0.05 + depth * 0.15; // Near ones move more on scroll
             }
