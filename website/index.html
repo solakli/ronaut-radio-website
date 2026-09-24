@@ -5652,7 +5652,10 @@
         // <pose>-dark.webp is white ink for dark mode, <pose>-light.webp black ink.
         // Sprites load lazily, only once a pose actually spawns in that theme.
         var SURFER_POSES = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'];
-        var HERO_POSE = 'd2';
+        // The original Silver Surfer keeps the close-up flyby. He's silver, not
+        // ink, so one image works on both themes (the video poster loads it too).
+        var ogSurfer = new Image();
+        ogSurfer.src = 'assets/silver-surfer.png';
         var surferSprites = {};
         function surferSprite(pose, dark) {
             var key = pose + (dark ? '-dark' : '-light');
@@ -5675,8 +5678,8 @@
         }
         FlyingSurfer.prototype.init = function(scatter) {
             if (this.hero) {
-                this.pose = HERO_POSE;
-                this.size = 180;
+                this.pose = null;
+                this.size = Math.min(240, canvas.width * 0.45); // Big, but not a wall on phones
                 this.opacity = 0.9;
                 this.speed = 1.2;
                 this.parallax = 0.25; // Very reactive to scrolling
@@ -5779,7 +5782,7 @@
             }
 
             var dark = isDarkMode();
-            var img = surferSprite(this.pose, dark);
+            var img = this.hero ? ogSurfer : surferSprite(this.pose, dark);
             if (!img.complete || !img.naturalWidth) return; // Not loaded yet
 
             ctx.save();
@@ -5813,14 +5816,14 @@
             flock.push(new FlyingSurfer(false, true));
         }
 
-        // Rare close-up: every 45 seconds, a 15% chance
+        // OG close-up: every 30 seconds, a 40% chance (about one a minute or so)
         var hero = null;
         setInterval(function() {
-            if ((!hero || !hero.active) && Math.random() < 0.15) {
+            if ((!hero || !hero.active) && Math.random() < 0.4) {
                 hero = new FlyingSurfer(true, false);
                 console.log('🏄 Silver Surfer sighting!');
             }
-        }, 45000);
+        }, 30000);
 
         var scrollOffset = 0;
         var lastScrollOffset = 0;
