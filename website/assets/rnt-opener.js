@@ -197,21 +197,38 @@
     return wall;
   }
 
-  function tick() {
-    var s = S;
-    if (!s) return;
+  function logic(s) {
+    // timing and hand-over, run from a timer too: animation frames stop in a background tab, and the set
+    // must still come in with its sound if someone starts it and switches tabs
+    if (S !== s) return false;
     // the site loaded something else into this player (another set, back to live): let go
     // (currentSrc only: an empty src attribute reads back as the page's own URL)
     var src = s.video.currentSrc || '';
     if (!s.src && src) s.src = src;
-    else if (s.src && src && src !== s.src) { cancel(); return; }
-    if (++s.frames % 30 === 0) layout(s);
+    else if (s.src && src && src !== s.src) { cancel(); return false; }
     var T = now(s);
     s.t = T;
     if (!s.snapped && T >= LOCK) snap(s);
-    render(s, T);
-    dream(s, s.snapped ? 1 - E.enter(clamp((T - LOCK) / SNAP, 0, 1)) : 1);
-    if (s.snapped && T >= END) { finish(); return; }
+    if (s.snapped && T >= END) { finish(); return false; }
+    return true;
+  }
+
+  function reveal(s) {
+    // bring the player into view once it has a size (switching to the Sets page can leave it off-screen)
+    if (s.revealed || !s.container.clientWidth) return;
+    s.revealed = true;
+    var r = s.container.getBoundingClientRect();
+    if (r.top < 0 || r.top > window.innerHeight * 0.5) {
+      window.scrollTo({ top: Math.max(0, window.pageYOffset + r.top - 80), behavior: 'smooth' });
+    }
+  }
+
+  function tick() {
+    var s = S;
+    if (!s || !logic(s)) return;
+    if (++s.frames % 30 === 1) { layout(s); reveal(s); }
+    render(s, s.t);
+    dream(s, s.snapped ? 1 - E.enter(clamp((s.t - LOCK) / SNAP, 0, 1)) : 1);
     s.raf = requestAnimationFrame(tick);
   }
 
@@ -238,6 +255,7 @@
     window.removeEventListener('resize', s.onResize);
     s.ui.root.removeEventListener('click', s.onSkip);
     if (s.raf) cancelAnimationFrame(s.raf);
+    if (s.timer) clearInterval(s.timer);
     if (s.ui.root.parentNode) s.ui.root.parentNode.removeChild(s.ui.root);
     s.video.style.filter = s.origFilter;
     try { s.ident.pause(); } catch (e) {}
@@ -309,6 +327,7 @@
     render(s, 0);
     dream(s, 1);
     s.raf = requestAnimationFrame(tick);
+    s.timer = setInterval(function () { logic(s); }, 200);
     return true;
   }
 
