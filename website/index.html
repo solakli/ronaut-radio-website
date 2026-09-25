@@ -2916,7 +2916,7 @@
         var miniStatus = document.querySelector('#mini-player .mini-status');
         var miniTitle = document.querySelector('#mini-player .mini-title-inner');
         if (miniStatus) miniStatus.textContent = 'PLAYING';
-        if (miniTitle) { miniTitle.textContent = title; updateMiniTitleMarquee(); }
+        if (miniTitle) { miniTitle.textContent = title; if (window.updateMiniTitleMarquee) window.updateMiniTitleMarquee(); }
 
         // Preload mini video for faster mini player
         var miniVideo = document.getElementById('mini-video');
@@ -3137,6 +3137,7 @@
                 }
             });
         }
+        window.updateMiniTitleMarquee = updateMiniTitleMarquee; // playPick lives outside this handler
         // ──────────────────────────────────────────────────────────────────
 
         // Media Session API for iOS Control Center / Lock Screen controls
