@@ -259,6 +259,7 @@
     if (s.ui.root.parentNode) s.ui.root.parentNode.removeChild(s.ui.root);
     s.video.style.filter = s.origFilter;
     try { s.ident.pause(); } catch (e) {}
+    if (s.onIdent) { s.ident.removeEventListener('timeupdate', s.onIdent); s.ident.removeEventListener('ended', s.onIdent); }
   }
 
   function finish() { if (S) { var s = S; S = null; detach(s); } }
@@ -303,6 +304,11 @@
     s.ident.preload = 'auto';
     var vol = IDENT_VOLUME[slugOf(url)];
     s.ident.volume = clamp((typeof vol === 'number' ? vol : 0.8) * (video.volume || 1), 0, 1);
+    // the ident's own events keep time too: timers get throttled hard in background tabs, audio events don't,
+    // so the set comes in on cue (the ident ends exactly at the snap) even if the tab is hidden
+    s.onIdent = function () { logic(s); };
+    s.ident.addEventListener('timeupdate', s.onIdent);
+    s.ident.addEventListener('ended', s.onIdent);
     var pp = s.ident.play();
     s.identOk = true;
     if (pp && pp.then) pp.then(function () {}, function () { s.identOk = false; });
