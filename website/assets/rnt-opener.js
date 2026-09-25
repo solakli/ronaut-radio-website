@@ -201,11 +201,12 @@
     // timing and hand-over, run from a timer too: animation frames stop in a background tab, and the set
     // must still come in with its sound if someone starts it and switches tabs
     if (S !== s) return false;
-    // the site loaded something else into this player (another set, back to live): let go
+    // the site loaded something else into this player (another set, back to live): let go.
+    // Our source is the one whose loadstart comes after start(). Until then, currentSrc still names the
+    // previous set, so reading it any earlier would mistake the new set for "something else".
     // (currentSrc only: an empty src attribute reads back as the page's own URL)
     var src = s.video.currentSrc || '';
-    if (!s.src && src) s.src = src;
-    else if (s.src && src && src !== s.src) { cancel(); return false; }
+    if (s.src && src && src !== s.src) { cancel(); return false; }
     var T = now(s);
     s.t = T;
     if (!s.snapped && T >= LOCK) snap(s);
@@ -252,6 +253,7 @@
     s.video.removeEventListener('seeking', s.onSeeking);
     s.video.removeEventListener('pause', s.onPause);
     s.video.removeEventListener('loadedmetadata', s.onMeta);
+    s.video.removeEventListener('loadstart', s.onLoadStart);
     window.removeEventListener('resize', s.onResize);
     s.ui.root.removeEventListener('click', s.onSkip);
     if (s.raf) cancelAnimationFrame(s.raf);
@@ -321,11 +323,13 @@
     };
     s.onPause = function () { if (S === s && !s.snapped && !video.seeking && video.readyState > 2) cancel(); };
     s.onMeta = function () { if (S === s) layout(s); };
+    s.onLoadStart = function () { if (S === s && !s.src) s.src = video.currentSrc || ''; };
     s.onResize = function () { if (S === s) layout(s); };
     s.onSkip = function (e) { e.preventDefault(); e.stopPropagation(); skip(); };
     video.addEventListener('seeking', s.onSeeking);
     video.addEventListener('pause', s.onPause);
     video.addEventListener('loadedmetadata', s.onMeta);
+    video.addEventListener('loadstart', s.onLoadStart);
     window.addEventListener('resize', s.onResize);
     s.ui.root.addEventListener('click', s.onSkip);
     S = s;
