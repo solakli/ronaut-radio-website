@@ -547,16 +547,7 @@
             color: var(--text-muted);
         }
 
-        /* Theme Toggle Bar - fixed at top */
-        #theme-toggle-bar {
-            position: fixed;
-            top: 0;
-            right: 0;
-            z-index: 10000;
-            padding: 8px 12px;
-            transition: top 0.12s ease-out;
-        }
-
+        /* Theme toggle - last item in the nav's right group */
         #btn-theme {
             font-family: Oswald, sans-serif;
             padding: 6px 12px;
@@ -1770,15 +1761,13 @@
             .theme-text {
                 display: none;
             }
+            /* Mobile: icon-only square, big enough to tap */
             #btn-theme {
-                padding: 4px 8px;
-                font-size: 10px;
-            }
-            /* Mobile theme toggle — sits below the 48px nav bar */
-            #theme-toggle-bar {
-                top: 52px; /* 48px nav + 4px gap */
-                right: 5px;
-                transition: top 0.08s linear;
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                font-size: 14px;
+                line-height: 1;
             }
         }
 
@@ -1803,7 +1792,11 @@
             box-sizing: border-box;
         }
         @media (min-width: 1024px) {
-            #nav-row-1 { padding: 0 24px; padding-right: 140px; } /* clear fixed theme toggle */
+            #nav-row-1 { padding: 0 24px; }
+        }
+        #nav-right { display: flex; gap: 24px; align-items: center; }
+        @media (max-width: 767px) {
+            #nav-right { gap: 16px; }
         }
         .nav-link {
             font-family: Oswald, sans-serif;
@@ -2368,20 +2361,12 @@
     <!-- Asteroid Background Canvas -->
     <canvas id="asteroid-canvas"></canvas>
 
-    <!-- Theme Toggle Bar (fixed top) -->
-    <div id="theme-toggle-bar">
-        <button id="btn-theme" title="Toggle dark/light mode">
-            <span class="theme-icon-light"><span class="theme-symbol">&#9728;&#65038;</span><span class="theme-text"> Light Mode</span></span>
-            <span class="theme-icon-dark"><span class="theme-symbol">&#9790;&#65038;</span><span class="theme-text"> Dark Mode</span></span>
-        </button>
-    </div>
-
     <!-- Top Nav: Row 1 = brand/links, Row 2 = player bar (always visible) -->
     <div id="top-nav">
-        <!-- Row 1: brand + nav links -->
+        <!-- Row 1: brand + nav links + theme toggle -->
         <div id="nav-row-1">
             <button class="nav-link active" id="nav-live-btn" onclick="showView('live')"><span class="nav-mark"><img src="assets/nav-surfer.png" alt="" /></span><span class="nav-brand-text">Ronaut Radio</span></button>
-            <div style="display:flex; gap:24px; align-items:center;">
+            <div id="nav-right">
                 <div id="nav-section-links">
                     <button class="nav-section-link" onclick="scrollToSection('programme-chat-row')">Programme</button>
                     <button class="nav-section-link" onclick="scrollToSection('featured-residents')">Residents</button>
@@ -2389,6 +2374,10 @@
                     <button class="nav-section-link" onclick="scrollToSection('upcoming-shows-section')">Events</button>
                 </div>
                 <button class="nav-link" id="nav-sets-btn" onclick="showView('sets')">Sets</button>
+                <button id="btn-theme" title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
+                    <span class="theme-icon-light"><span class="theme-symbol">&#9728;&#65038;</span><span class="theme-text"> Light Mode</span></span>
+                    <span class="theme-icon-dark"><span class="theme-symbol">&#9790;&#65038;</span><span class="theme-text"> Dark Mode</span></span>
+                </button>
             </div>
         </div>
         <!-- Video frame: scroll-triggered, spans full nav height (desktop only) -->
@@ -5864,30 +5853,6 @@
     })();
     </script>
 
-    <!-- Mobile: scroll-driven dark mode toggle position -->
-    <script>
-    (function() {
-        if (window.innerWidth >= 768) return;
-        var themeBar = document.getElementById('theme-toggle-bar');
-        var playerEl = document.getElementById('top-player-container');
-        if (!themeBar || !playerEl) return;
-
-        var rafPending = false;
-        function positionThemeToggle() {
-            if (rafPending) return;
-            rafPending = true;
-            requestAnimationFrame(function() {
-                var playerBottom = playerEl.getBoundingClientRect().bottom;
-                themeBar.style.top = Math.max(52, playerBottom + 6) + 'px'; /* min 52px = below 48px nav */
-                rafPending = false;
-            });
-        }
-
-        window.addEventListener('scroll', positionThemeToggle, { passive: true });
-        // Run once after layout settles
-        setTimeout(positionThemeToggle, 100);
-    })();
-    </script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js');
