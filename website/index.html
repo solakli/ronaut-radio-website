@@ -314,6 +314,9 @@
             from { transform: translateX(100%); }
             to { transform: translateX(-100%); }
         }
+        @media (prefers-reduced-motion: reduce) {
+            #ticker { animation: none; right: 20px; text-overflow: ellipsis; }
+        }
 
         #current-track {
             position: absolute;
@@ -3561,6 +3564,9 @@
         if (window.preloadMiniVideo) {
             window.preloadMiniVideo();
         }
+
+        // The player bar, tab title and lock screen still show the pick until the next 10s poll otherwise
+        if (window._ronautRefreshNowPlaying) window._ronautRefreshNowPlaying();
     }
 
     function scrollToSection(id) {
@@ -4029,6 +4035,7 @@
             });
 
             // Poll: now-playing every 10s, programme every 30s
+            window._ronautRefreshNowPlaying = updateNowPlaying; // Back to Live refreshes straight away
             setInterval(updateNowPlaying, 10000);
             setInterval(updateProgramme, 30000);
 
@@ -4614,6 +4621,15 @@
                 var smoothedWaveform = null; // For temporal smoothing
                 var demoPhase = 0; // For demo mode animation
 
+                // Only draw while someone can see it: the player on screen and playing. Otherwise every frame
+                // forced a layout and repainted the blurred edge glow, even paused or scrolled away.
+                var playerOnScreen = true, visualsIdle = false;
+                if ('IntersectionObserver' in window) {
+                    new IntersectionObserver(function(entries) {
+                        playerOnScreen = entries[entries.length - 1].isIntersecting;
+                    }).observe(video);
+                }
+
                 // Resize waveform canvas
                 function resizeWaveCanvas() {
                     var container = document.getElementById('waveform-container');
@@ -4803,6 +4819,12 @@
                 // Animation loop
                 function animate() {
                     requestAnimationFrame(animate);
+
+                    if (!playerOnScreen || video.paused) {
+                        if (!visualsIdle) { visualsIdle = true; edgePulse.style.boxShadow = 'none'; }
+                        return;
+                    }
+                    visualsIdle = false;
 
                     // Draw waveform (works in both real and demo mode)
                     drawWaveform();
@@ -5046,7 +5068,7 @@
                 return parts.join('/');
             }
             function displayPickTitle(pick) {
-                return pick.title || (pick.filename ? pick.filename.replace(/\.mp4$/i, '') : '') || 'Untitled';
+                return pick.title || (pick.filename ? String(pick.filename).replace(/\.mp4$/i, '') : '') || 'Untitled';
             }
 
             async function loadStaffPicks() {
@@ -5061,7 +5083,7 @@
                         var ps = data.sets[gi];
                         if (!ps.genres || !ps.genres.length) continue;
                         var g2 = ps.genres.slice(0, 2);
-                        var fnKey = normalizeForMatch((ps.filename || '').replace(/^Ronaut\[\d+\]-?/i, '').replace(/\.mp4$/i, ''));
+                        var fnKey = normalizeForMatch(String(ps.filename || '').replace(/^Ronaut\[\d+\]-?/i, '').replace(/\.mp4$/i, ''));
                         var titleKey = normalizeForMatch(ps.title || '');
                         if (fnKey) programmeGenreMap[fnKey] = g2;
                         if (titleKey && !programmeGenreMap[titleKey]) programmeGenreMap[titleKey] = g2;
@@ -5154,7 +5176,7 @@
                                 } else {
                                     var unid = item.data;
                                     var timeRange = unid.start_time_formatted + ' - ' + unid.end_time_formatted;
-                                    var setName = pick.filename.replace('.mp4', '');
+                                    var setName = String(pick.filename || '').replace('.mp4', '');
                                     html += '<div class="track unidentified">';
                                     html += '<span class="track-time" data-url="' + encodedUrl + '" data-time="' + unid.start_time + '">' + timeRange + '</span>';
                                     html += escapeHtml(unid.title) + ' <span class="help-id" data-set="' + escapeHtml(setName) + '" data-start="' + unid.start_time + '" data-range="' + timeRange + '">[Help ID]</span>';
@@ -5283,7 +5305,7 @@
                 if (set.url && set.url.indexOf('.m3u8') !== -1) {
                     return set.url.split('/').pop().replace('.m3u8', '');
                 }
-                return (set.filename || '').replace(/\.mp4$/i, '').replace(/^ronaut\[\d+\]-?/i, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                return String(set.filename || '').replace(/\.mp4$/i, '').replace(/^ronaut\[\d+\]-?/i, '').toLowerCase().replace(/[^a-z0-9]/g, '');
             }
 
             function setsGetNumber(filename) {
