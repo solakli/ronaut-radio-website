@@ -1279,7 +1279,8 @@
 
         #picks-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            /* min(): phones narrower than 360px can't fit a 320px column plus the 20px gutters */
+            grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
             gap: 25px;
         }
 
