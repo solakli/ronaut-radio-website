@@ -2537,7 +2537,9 @@
             letter-spacing: 0.52cqw;
         }
         .rnt-cover-mark em i {
+            width: 16px;
             width: 5cqw;
+            height: 2px;
             height: max(2px, 0.42cqw);
             background: #ff6600;
         }
@@ -2756,7 +2758,8 @@
         @keyframes msg-in { from { opacity: 0; transform: translateX(-8px); } }
 
         /* Frosted nav and player bar: the page blurs as it scrolls under them */
-        @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        /* color-mix is required too: without it the var() background computes to transparent, not the solid one */
+        @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) and (background: color-mix(in srgb, red 50%, transparent)) {
             #top-nav, #mini-player {
                 background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
                 -webkit-backdrop-filter: blur(14px) saturate(1.3);
@@ -3295,7 +3298,7 @@
     // Goes inside a 16:9 box with the rnt-thumb class (Staff Picks cards and the Sets grid; SET THUMBNAILS styles).
     function rntSleeveHtml(thumbUrl, title, filename) {
         function attr(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
-        var num = ((filename || '').match(/\[(\d+)\]/) || String(title || '').match(/^\s*(\d+)\s*[-–—:|]/) || [])[1] || '';
+        var num = (String(filename || '').match(/\[(\d+)\]/) || String(title || '').match(/^\s*(\d+)\s*[-–—:|]/) || [])[1] || '';
         if (num && num.length < 3) num = ('00' + num).slice(-3);
         return '<div class="rnt-sleeve">' +
                 '<span class="rnt-frame"><img src="' + attr(thumbUrl) + '" alt="' + attr(title) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" /></span>' +
