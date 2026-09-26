@@ -3185,6 +3185,25 @@
             var miniTitleBox = document.querySelector('#mini-player .mini-title');
             if (miniTitleBox) new ResizeObserver(updateMiniTitleMarquee).observe(miniTitleBox);
         }
+
+        // Browser tab and lock screen follow the player bar, whatever is playing (live, rotation, a pick, a set)
+        (function() {
+            var info = document.querySelector('#mini-player .mini-info');
+            if (!info || !window.MutationObserver) return;
+            var statusEl = info.querySelector('.mini-status');
+            var titleEl = info.querySelector('.mini-title-inner');
+            function syncNowPlaying() {
+                var status = statusEl.textContent.trim().toUpperCase();
+                var title = titleEl.textContent.trim();
+                if (!title || title === 'Loading...' || status === 'OFFLINE') {
+                    document.title = 'Ronaut Radio';
+                    return;
+                }
+                document.title = (status === 'LIVE' ? '● LIVE' : title) + ' · Ronaut Radio';
+                updateMediaSession(title, 'Ronaut Radio');
+            }
+            new MutationObserver(syncNowPlaying).observe(info, { childList: true, characterData: true, subtree: true });
+        })();
         // ──────────────────────────────────────────────────────────────────
 
         // Media Session API for iOS Control Center / Lock Screen controls
