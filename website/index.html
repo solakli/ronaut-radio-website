@@ -2511,10 +2511,10 @@
 
         /* ─── SET THUMBNAILS (Staff Picks + Sets grid) ─── */
         /* Dressed like the YouTube thumbnails and the RNT opener: the frame blurred, darker and desaturated
-           (the opener's grade), the RO/NAUT/RADIO wordmark over it, RNT SESSIONS 016 and the name at the bottom.
-           Sizes are in container units, taken from the opener's 1920px stage (100cqw = the card's width), so
-           the design scales with the card. The picture is the record sleeve: hovering the card slides it
-           aside, the frame comes into focus and the record comes out. */
+           (the opener's grade), the RO/NAUT/RADIO wordmark over it and RNT SESSIONS 016 in the corner (the
+           name is on the card below). Sizes are in container units, taken from the opener's 1920px stage
+           (100cqw = the card's width), so the design scales with the card. The picture is the record sleeve:
+           hovering the card slides it aside, the frame comes into focus and the oval record comes out. */
         .rnt-thumb {
             position: relative;
             overflow: hidden;
@@ -2593,55 +2593,40 @@
         .rnt-cover-foot {
             position: absolute;
             left: 4.5%;
-            right: 4.5%;
-            bottom: 6%;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5cqw;
-        }
-        .rnt-cover-foot small {
+            bottom: 6.5%;
             font-family: 'Space Mono', 'Courier New', monospace;
-            font-size: 8px;
-            font-size: max(7px, 2.3cqw);
-            line-height: 1.2;
+            font-size: 9px;
+            font-size: max(8px, 2.6cqw);
+            line-height: 1;
             letter-spacing: 0.15em;
             color: #ff6600;
-        }
-        .rnt-cover-foot b {
-            font-family: 'Archivo Black', 'Arial Black', sans-serif;
-            font-weight: 400;
-            font-size: 12px;
-            font-size: max(9px, 3.3cqw);
-            line-height: 1.15;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
             text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
         }
+        /* The record is the oval logo (the Sets loader artwork). Rendered square, the drawn ellipse becomes a
+           true circle; tilted back 58deg it's the original oval again, so it can spin like a record on a
+           platter (cos 58 = the artwork's height/width) instead of tumbling like a flat ellipse. */
         .rnt-vinyl {
             position: absolute;
             z-index: 0;
-            top: 5%;
-            bottom: 5%;
-            right: 2%;
-            aspect-ratio: 1 / 1;
-            border-radius: 50%;
-            transform: translateX(-40%);
-            filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.3));
+            top: 50%;
+            right: 0.5%;
+            width: 68%;
+            aspect-ratio: 560 / 296;
+            perspective: 900px;
+            transform: translate(-45%, -50%);
+            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
         }
-        .rnt-vinyl svg { display: block; width: 100%; height: 100%; }
-        /* Studio-light sheen across the grooves: it stays put while the record turns under it */
-        .rnt-vinyl::after {
-            content: '';
+        .rnt-vinyl img {
             position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background: conic-gradient(from 30deg, transparent 0deg 25deg, rgba(255, 255, 255, 0.16) 45deg, transparent 65deg 205deg, rgba(255, 255, 255, 0.1) 225deg, transparent 245deg);
-            -webkit-mask: radial-gradient(circle, transparent 0 38%, #000 39%);
-            mask: radial-gradient(circle, transparent 0 38%, #000 39%);
-            pointer-events: none;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            margin: -50% 0 0;
+            object-fit: fill;   /* stretch, don't crop (the card img rules say cover) */
+            background: none;
+            transform: rotateX(58deg);
         }
         /* Where YouTube puts the duration, over the record */
         .rnt-play {
@@ -2668,21 +2653,20 @@
         html.motion .rnt-frame { transition: filter 0.6s ease; }
         html.motion .rnt-vinyl { transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1); }
         html.motion .rnt-play { transition: opacity 0.3s ease 0.15s, transform 0.3s ease 0.15s; }
-        html.motion .rnt-vinyl svg { animation: record-spin 1.8s linear infinite paused; } /* 33 1/3 rpm */
-        @keyframes record-spin { to { transform: rotate(360deg); } }
+        html.motion .rnt-vinyl img { animation: vinyl-spin 1.8s linear infinite paused; } /* 33 1/3 rpm */
         @media (hover: hover) {
             .pick-card:hover { box-shadow: none; }
             .set-card:hover { opacity: 1; }
             .pick-card:hover .rnt-sleeve, .set-card:hover .rnt-sleeve {
-                transform: scale(0.76);
+                transform: scale(0.72);
                 box-shadow: 10px 0 22px rgba(0, 0, 0, 0.35);
             }
             /* Focus pull, like the opener's snap */
             .pick-card:hover .rnt-frame, .set-card:hover .rnt-frame {
                 filter: blur(0.3cqw) saturate(0.9) brightness(0.7);
             }
-            .pick-card:hover .rnt-vinyl, .set-card:hover .rnt-vinyl { transform: none; }
-            .pick-card:hover .rnt-vinyl svg, .set-card:hover .rnt-vinyl svg { animation-play-state: running; }
+            .pick-card:hover .rnt-vinyl, .set-card:hover .rnt-vinyl { transform: translate(0, -50%); }
+            .pick-card:hover .rnt-vinyl img, .set-card:hover .rnt-vinyl img { animation-play-state: running; }
             .pick-card:hover .rnt-play, .set-card:hover .rnt-play { opacity: 1; transform: none; }
         }
         /* Genre filter: the cards left standing pop back in */
@@ -2841,28 +2825,6 @@
 <body>
     <!-- Asteroid Background Canvas -->
     <canvas id="asteroid-canvas"></canvas>
-
-    <!-- The record that comes out of the sleeve on set thumbnails (SET THUMBNAILS styles) -->
-    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-        <symbol id="rnt-record" viewBox="0 0 200 200">
-            <circle cx="100" cy="100" r="98.5" fill="#0d0d0d" stroke="#ffffff" stroke-opacity="0.22" stroke-width="1.5"/>
-            <g fill="none" stroke="#ffffff">
-                <circle cx="100" cy="100" r="92" stroke-opacity="0.07"/>
-                <circle cx="100" cy="100" r="86" stroke-opacity="0.05"/>
-                <circle cx="100" cy="100" r="79" stroke-opacity="0.11"/>
-                <circle cx="100" cy="100" r="73" stroke-opacity="0.05"/>
-                <circle cx="100" cy="100" r="66" stroke-opacity="0.07"/>
-                <circle cx="100" cy="100" r="59" stroke-opacity="0.11"/>
-                <circle cx="100" cy="100" r="52" stroke-opacity="0.05"/>
-                <circle cx="100" cy="100" r="45" stroke-opacity="0.08"/>
-            </g>
-            <circle cx="100" cy="100" r="37" fill="#ff6600"/>
-            <text x="100" y="82" text-anchor="middle" font-family="Oswald, sans-serif" font-size="15" font-weight="700" fill="#0f0f0f">A</text>
-            <text x="100" y="118" text-anchor="middle" font-family="Oswald, sans-serif" font-size="6.5" font-weight="500" letter-spacing="1.2" fill="#0f0f0f">RONAUT RADIO</text>
-            <text x="100" y="126" text-anchor="middle" font-family="Oswald, sans-serif" font-size="4.5" letter-spacing="1" fill="#0f0f0f">LOS ANGELES</text>
-            <circle cx="100" cy="100" r="3.2" fill="#f4f4f4"/>
-        </symbol>
-    </svg>
 
     <!-- Top Nav: Row 1 = brand/links, Row 2 = player bar (always visible) -->
     <div id="top-nav">
@@ -3429,24 +3391,21 @@
     }
 
     // Set thumbnail, dressed like the YouTube ones: the frame blurred like the RNT opener, the RO/NAUT/RADIO
-    // wordmark, RNT SESSIONS 016 and the name. The picture is the sleeve the record comes out of on hover.
+    // wordmark and RNT SESSIONS 016 (the name is on the card below). The picture is the sleeve the oval
+    // record logo comes out of on hover.
     // Goes inside a 16:9 box with the rnt-thumb class (Staff Picks cards and the Sets grid; SET THUMBNAILS styles).
     function rntSleeveHtml(thumbUrl, title, filename) {
         function attr(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
         var num = ((filename || '').match(/\[(\d+)\]/) || String(title || '').match(/^\s*(\d+)\s*[-–—:|]/) || [])[1] || '';
         if (num && num.length < 3) num = ('00' + num).slice(-3);
-        var name = String(title || '').replace(/^\s*\d+\s*[-–—:|]\s*/, '');
         return '<div class="rnt-sleeve">' +
                 '<span class="rnt-frame"><img src="' + attr(thumbUrl) + '" alt="' + attr(title) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" /></span>' +
                 '<div class="rnt-cover" aria-hidden="true">' +
                     '<div class="rnt-cover-mark"><span>RO</span><span>NAUT</span><span>RADIO</span><em><i></i>EST 2025</em></div>' +
-                    '<div class="rnt-cover-foot">' +
-                        (num ? '<small>RNT SESSIONS ' + num + '</small>' : '') +
-                        (name ? '<b>' + attr(name) + '</b>' : '') +
-                    '</div>' +
+                    (num ? '<div class="rnt-cover-foot">RNT SESSIONS ' + num + '</div>' : '') +
                 '</div>' +
             '</div>' +
-            '<span class="rnt-vinyl" aria-hidden="true"><svg viewBox="0 0 200 200"><use href="#rnt-record" width="200" height="200"/></svg></span>' +
+            '<span class="rnt-vinyl" aria-hidden="true"><img src="assets/vinyl-loader.png" alt="" /></span>' +
             '<span class="rnt-play" aria-hidden="true">&#9654; Play set</span>';
     }
 
