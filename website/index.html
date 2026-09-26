@@ -311,6 +311,18 @@
             display: none;
         }
 
+        /* The native video controls cover the bottom of the frame while the player is paused
+           or the pointer is active over it; fade the bottom overlays out of their way then */
+        #ticker, #current-track, #waveform-container, #energy-meter {
+            transition: opacity 0.25s ease;
+        }
+        #player-container.controls-up #ticker,
+        #player-container.controls-up #current-track,
+        #player-container.controls-up #waveform-container,
+        #player-container.controls-up #energy-meter {
+            opacity: 0;
+        }
+
         #cast-btn {
             position: absolute;
             bottom: 52px;
@@ -5862,6 +5874,34 @@
     })();
     </script>
 
+    <!-- Player: flag when the native controls are likely up (paused, or pointer active in the last 3s) -->
+    <script>
+    (function() {
+        var container = document.getElementById('player-container');
+        var video = document.getElementById('ronaut-player');
+        if (!container || !video) return;
+
+        var activeTimer = null;
+        function update() {
+            container.classList.toggle('controls-up', video.paused || activeTimer !== null);
+        }
+        function poke() {
+            clearTimeout(activeTimer);
+            activeTimer = setTimeout(function() { activeTimer = null; update(); }, 3000); /* ~ native auto-hide */
+            update();
+        }
+
+        ['play', 'playing', 'pause', 'emptied'].forEach(function(e) { video.addEventListener(e, update); });
+        container.addEventListener('mousemove', poke);
+        container.addEventListener('touchstart', poke, { passive: true });
+        container.addEventListener('mouseleave', function() {
+            clearTimeout(activeTimer);
+            activeTimer = null;
+            update();
+        });
+        update();
+    })();
+    </script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js');
