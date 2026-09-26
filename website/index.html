@@ -34,7 +34,17 @@
     <link href="index.html" rel="canonical" />
     <!-- PWA -->
     <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#111111" />
+    <script>
+        /* Theme before first paint (dark by default): waiting for DOMContentLoaded showed
+           dark-mode visitors the light page until every CDN script had loaded */
+        (function() {
+            var t = 'dark';
+            try { t = localStorage.getItem('ronaut_theme') || 'dark'; } catch (e) {}
+            document.documentElement.setAttribute('data-theme', t);
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', t === 'dark' ? '#111111' : '#f4f4f4');
+        })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
@@ -5089,13 +5099,13 @@
         (function() {
             var themeBtn = document.getElementById('btn-theme');
             var html = document.documentElement;
+            var themeColor = document.querySelector('meta[name="theme-color"]');
 
-            // Check for saved theme — default is always dark
-            var savedTheme = localStorage.getItem('ronaut_theme');
-            if (savedTheme) {
-                html.setAttribute('data-theme', savedTheme);
-            } else {
-                html.setAttribute('data-theme', 'dark');
+            // The saved theme (default dark) is already set by the script in <head>.
+            // theme-color tints the phone browser's address bar to match the page.
+            function applyTheme(theme) {
+                html.setAttribute('data-theme', theme);
+                if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#111111' : '#f4f4f4');
             }
 
             // Toggle theme on button click (with smooth crossfade)
@@ -5103,7 +5113,7 @@
                 document.documentElement.classList.add('theme-fade');
                 var currentTheme = html.getAttribute('data-theme');
                 var newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                html.setAttribute('data-theme', newTheme);
+                applyTheme(newTheme);
                 localStorage.setItem('ronaut_theme', newTheme);
                 setTimeout(function() { document.documentElement.classList.remove('theme-fade'); }, 400);
             });
@@ -5112,7 +5122,7 @@
             if (window.matchMedia) {
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
                     if (!localStorage.getItem('ronaut_theme')) {
-                        html.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+                        applyTheme(e.matches ? 'dark' : 'light');
                     }
                 });
             }
