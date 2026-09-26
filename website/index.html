@@ -34,7 +34,27 @@
     <link href="index.html" rel="canonical" />
     <!-- PWA -->
     <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#111111" />
+    <script>
+        /* Theme before first paint (dark by default): waiting for DOMContentLoaded showed
+           dark-mode visitors the light page until every CDN script had loaded */
+        (function() {
+            var t = 'dark';
+            try { t = localStorage.getItem('ronaut_theme') || 'dark'; } catch (e) {}
+            document.documentElement.setAttribute('data-theme', t);
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', t === 'dark' ? '#111111' : '#f4f4f4');
+        })();
+        /* Page motion (the script above the CDN scripts in <body>): flag it before the first paint so the
+           scroll-reveal content starts hidden instead of flashing in. Off for reduced motion. If that script
+           never runs, the flag comes off again and everything simply shows. */
+        (function() {
+            var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduce || !('IntersectionObserver' in window)) return;
+            var html = document.documentElement;
+            html.classList.add('motion');
+            setTimeout(function() { if (!window.RonautMotion) html.classList.remove('motion'); }, 4000);
+        })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
@@ -311,6 +331,18 @@
             display: none;
         }
 
+        /* The native video controls cover the bottom of the frame while the player is paused
+           or the pointer is active over it; fade the bottom overlays out of their way then */
+        #ticker, #current-track, #waveform-container, #energy-meter {
+            transition: opacity 0.25s ease;
+        }
+        #player-container.controls-up #ticker,
+        #player-container.controls-up #current-track,
+        #player-container.controls-up #waveform-container,
+        #player-container.controls-up #energy-meter {
+            opacity: 0;
+        }
+
         #cast-btn {
             position: absolute;
             bottom: 52px;
@@ -379,10 +411,13 @@
         #next-live-banner {
             color: white;
             font-size: 14px;
+            line-height: 1.35;
+            text-align: left;
             position: absolute;
             top: 15px;
             left: 20px;
-            white-space: nowrap;
+            /* wrap short of the LIVE badge / listener count in the right corner */
+            max-width: calc(100% - 140px);
             overflow: hidden;
             opacity: 0;
             transition: opacity 0.5s ease;
@@ -547,16 +582,7 @@
             color: var(--text-muted);
         }
 
-        /* Theme Toggle Bar - fixed at top */
-        #theme-toggle-bar {
-            position: fixed;
-            top: 0;
-            right: 0;
-            z-index: 10000;
-            padding: 8px 12px;
-            transition: top 0.12s ease-out;
-        }
-
+        /* Theme toggle - last item in the nav's right group */
         #btn-theme {
             font-family: Oswald, sans-serif;
             padding: 6px 12px;
@@ -738,6 +764,11 @@
         #live-badge.active {
             display: flex;
         }
+        /* Both live in the top-right corner: stack the listener count under the badge */
+        #live-badge.active ~ #listener-count {
+            top: 56px;
+            right: 15px;
+        }
 
         #live-dot {
             width: 10px;
@@ -875,15 +906,6 @@
         .programme-item:not(.now-playing):not(.programme-past):hover .track-hover-info { opacity: 1; }
         .programme-item.peeking .track-time { opacity: 0; }
         .programme-item.peeking .track-hover-info { opacity: 1; }
-
-        .now-playing-dot {
-            width: 10px;
-            height: 10px;
-            background: #ff6600;
-            border-radius: 50%;
-            flex-shrink: 0;
-            animation: pulse-dot 1.5s ease-in-out infinite;
-        }
 
         #programme-live-message {
             text-align: center;
@@ -1288,7 +1310,8 @@
 
         #picks-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            /* min(): phones narrower than 360px can't fit a 320px column plus the 20px gutters */
+            grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
             gap: 25px;
         }
 
@@ -1741,6 +1764,28 @@
             0%, 20% { transform: translateX(0); }
             80%, 100% { transform: translateX(var(--marquee-shift, 0px)); }
         }
+        /* Mobile: status + dot on a small first line, the title gets the whole second line
+           (side by side it was squeezed to a few letters once the thumbnail slid in) */
+        @media (max-width: 767px) {
+            #mini-player .mini-info {
+                flex: 1 1 auto;
+                min-width: 0;
+                flex-wrap: wrap;
+                align-content: center;
+                column-gap: 6px;
+                row-gap: 1px;
+                padding: 0 12px;
+                text-align: left;
+            }
+            #mini-player .mini-status { font-size: 10px; letter-spacing: 1.5px; line-height: 1.3; }
+            #mini-player .mini-live-dot { width: 6px; height: 6px; }
+            #mini-player .mini-title { flex-basis: 100%; max-width: none; font-size: 16px; line-height: 1.3; }
+        }
+        /* No scrolling title for reduced motion: cut it with an ellipsis instead */
+        @media (prefers-reduced-motion: reduce) {
+            #mini-player .mini-title { white-space: nowrap; text-overflow: ellipsis; }
+            #mini-player .mini-title .mini-title-inner { display: inline; animation: none; }
+        }
 
         /* Responsive */
         @media (max-width: 767px) {
@@ -1770,15 +1815,13 @@
             .theme-text {
                 display: none;
             }
+            /* Mobile: icon-only square, big enough to tap */
             #btn-theme {
-                padding: 4px 8px;
-                font-size: 10px;
-            }
-            /* Mobile theme toggle — sits below the 48px nav bar */
-            #theme-toggle-bar {
-                top: 52px; /* 48px nav + 4px gap */
-                right: 5px;
-                transition: top 0.08s linear;
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                font-size: 14px;
+                line-height: 1;
             }
         }
 
@@ -1803,7 +1846,11 @@
             box-sizing: border-box;
         }
         @media (min-width: 1024px) {
-            #nav-row-1 { padding: 0 24px; padding-right: 140px; } /* clear fixed theme toggle */
+            #nav-row-1 { padding: 0 24px; }
+        }
+        #nav-right { display: flex; gap: 24px; align-items: center; }
+        @media (max-width: 767px) {
+            #nav-right { gap: 16px; }
         }
         .nav-link {
             font-family: Oswald, sans-serif;
@@ -2183,15 +2230,6 @@
             overflow: hidden;
         }
         .card-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .card-num {
-            position: absolute;
-            top: 8px; left: 8px;
-            background: rgba(0,0,0,0.75);
-            color: #fff;
-            font-family: Oswald, sans-serif;
-            font-size: 11px; font-weight: 400; letter-spacing: 1px;
-            padding: 3px 7px;
-        }
         .card-playing-badge {
             position: absolute;
             bottom: 8px; left: 8px;
@@ -2362,26 +2400,438 @@
         #back-to-live-btn:hover {
             border-color: white;
         }
+
+        /* ─── MOTION & EFFECTS ─── */
+        /* Anything that moves on its own sits under html.motion, which <head> sets only when the visitor
+           hasn't asked for reduced motion. Without it the page looks the same, it just holds still. */
+
+        /* Scroll reveal: [data-reveal] rises in once it scrolls into view. --reveal-delay staggers whatever
+           arrives together; the motion script removes the attribute afterwards so hovers keep their timing. */
+        html.motion [data-reveal] {
+            transition: opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transition-delay: var(--reveal-delay, 0s);
+        }
+        html.motion [data-reveal]:not(.is-in) {
+            opacity: 0;
+            transform: translateY(28px);
+        }
+
+        /* Section headings: an orange rule under each; with motion it draws in as the heading tunes in */
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 36px;
+            height: 2px;
+            margin: 12px auto 0;
+            background: #ff6600;
+        }
+        html.motion .section-title::after {
+            transform: scaleX(0);
+            transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.35s;
+        }
+        html.motion .section-title.tuned::after { transform: scaleX(1); }
+        .tune-glyph { color: #ff6600; }
+
+        /* Tagline band between Residents and About: a tilted strip of orange tape. Scrolling speeds it up,
+           scrolling back up runs it backwards. The wrapper's padding leaves room for the tilt. */
+        .ronaut-band-wrap {
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            padding: calc(1.8vw + 10px) 0;
+            margin: 10px 0 0;
+        }
+        .ronaut-band {
+            width: calc(100% + 16px);
+            margin-left: -8px;
+            background: #ff6600;
+            color: #0f0f0f;
+            transform: rotate(-2deg);
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        }
+        .ronaut-band-track {
+            display: flex;
+            width: max-content;
+        }
+        html.motion .ronaut-band-track { animation: band-scroll 40s linear infinite; }
+        .ronaut-band-group {
+            display: flex;
+            align-items: center;
+            gap: 26px;
+            padding: 11px 26px 11px 0;
+            font-family: Oswald, sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        /* A tiny record between the words */
+        .ronaut-band-group i {
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: radial-gradient(circle, #ff6600 0 22%, #0f0f0f 26% 100%);
+        }
+        @keyframes band-scroll { to { transform: translateX(-50%); } }
+        @media (min-width: 1024px) {
+            .ronaut-band-group { font-size: 18px; padding-top: 13px; padding-bottom: 13px; }
+        }
+
+        /* About wordmark: letters rise out of a mask, and do a Mexican wave on hover */
+        .ronaut-wordmark {
+            overflow: hidden;
+            padding: 14px 0 6px;
+        }
+        .ronaut-wordmark .wm-l { display: inline-block; }
+        .ronaut-wordmark .wm-sp { display: inline-block; width: 0.28em; }
+        html.motion .ronaut-wordmark .wm-l {
+            transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.9s ease;
+            transition-delay: calc(var(--i, 0) * 45ms);
+        }
+        html.motion .ronaut-wordmark:not(.is-in) .wm-l {
+            transform: translateY(105%);
+            opacity: 0;
+        }
+        @media (hover: hover) {
+            html.motion .ronaut-wordmark.is-in:hover .wm-l {
+                animation: wm-wave 0.7s ease calc(var(--i, 0) * 40ms);
+            }
+        }
+        @keyframes wm-wave {
+            0%, 100% { transform: none; }
+            35% { transform: translateY(-10px); color: #ff6600; }
+        }
+        @media (min-width: 1024px) {
+            .main-title { font-size: 60px; letter-spacing: 4px; }
+        }
+
+        /* ─── SET THUMBNAILS (Staff Picks + Sets grid) ─── */
+        /* Dressed like the YouTube thumbnails and the RNT opener: the frame blurred, darker and desaturated
+           (the opener's grade), the RO/NAUT/RADIO wordmark over it and RNT SESSIONS 016 in the corner (the
+           name is on the card below). Sizes are in container units, taken from the opener's 1920px stage
+           (100cqw = the card's width), so the design scales with the card. The picture is the record sleeve:
+           hovering the card slides it aside, the frame comes into focus and the oval record comes out. */
+        .rnt-thumb {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            container-type: inline-size;
+        }
+        .card-thumb-wrap.rnt-thumb { background: transparent; }
+        .rnt-sleeve {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #141414;
+            transform-origin: 0 50%;
+        }
+        .rnt-frame {
+            display: block;
+            width: 100%;
+            height: 100%;
+            transform: scale(1.12); /* keeps the blurred edges out of frame */
+            filter: blur(4px) saturate(0.72) brightness(0.72);
+            filter: blur(1.1cqw) saturate(0.72) brightness(0.72);
+        }
+        .rnt-frame img {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            object-fit: cover;
+            display: block;
+            background: #141414;
+        }
+        .rnt-cover {
+            position: absolute;
+            inset: 0;
+            color: #fff;
+            text-align: left;
+            pointer-events: none;
+            background:
+                linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent 45%),
+                radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.35));
+        }
+        .rnt-cover-mark {
+            position: absolute;
+            left: 50%;
+            top: 45%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            font-family: 'Archivo Black', 'Arial Black', sans-serif;
+            font-size: 36px;
+            font-size: 9.9cqw;
+            line-height: 0.884;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+        }
+        .rnt-cover-mark em {
+            display: flex;
+            align-items: center;
+            gap: 1.9cqw;
+            margin-top: 1.8cqw;
+            font-family: 'Space Mono', 'Courier New', monospace;
+            font-style: normal;
+            font-size: 7px;
+            font-size: max(6px, 2cqw);
+            line-height: 1;
+            letter-spacing: 0.52cqw;
+        }
+        .rnt-cover-mark em i {
+            width: 5cqw;
+            height: max(2px, 0.42cqw);
+            background: #ff6600;
+        }
+        .rnt-cover-foot {
+            position: absolute;
+            left: 4.5%;
+            bottom: 6.5%;
+            font-family: 'Space Mono', 'Courier New', monospace;
+            font-size: 9px;
+            font-size: max(8px, 2.6cqw);
+            line-height: 1;
+            letter-spacing: 0.15em;
+            color: #ff6600;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+        }
+        /* The record is the oval logo (the Sets loader artwork). Rendered square, the drawn ellipse becomes a
+           true circle; tilted back 58deg it's the original oval again, so it can spin like a record on a
+           platter (cos 58 = the artwork's height/width) instead of tumbling like a flat ellipse. */
+        .rnt-vinyl {
+            position: absolute;
+            z-index: 0;
+            top: 50%;
+            right: 0.5%;
+            width: 68%;
+            aspect-ratio: 560 / 296;
+            perspective: 900px;
+            transform: translate(-45%, -50%);
+            filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+        }
+        .rnt-vinyl img {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            margin: -50% 0 0;
+            object-fit: fill;   /* stretch, don't crop (the card img rules say cover) */
+            background: none;
+            transform: rotateX(58deg);
+        }
+        /* Where YouTube puts the duration, over the record */
+        .rnt-play {
+            position: absolute;
+            z-index: 2;
+            right: 8px;
+            bottom: 8px;
+            padding: 6px 10px;
+            background: #ff6600;
+            color: #0f0f0f;
+            font-family: Oswald, sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0;
+            transform: translateY(6px);
+            pointer-events: none;
+        }
+        /* Sets grid: the cover carries the number now; the Playing tag moves to the top corner */
+        .card-thumb-wrap .card-playing-badge { top: 8px; bottom: auto; z-index: 3; }
+        .set-card.active .card-thumb-wrap::after { z-index: 3; }
+        html.motion .rnt-sleeve { transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.55s ease; }
+        html.motion .rnt-frame { transition: filter 0.6s ease; }
+        html.motion .rnt-vinyl { transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        html.motion .rnt-play { transition: opacity 0.3s ease 0.15s, transform 0.3s ease 0.15s; }
+        html.motion .rnt-vinyl img { animation: vinyl-spin 1.8s linear infinite paused; } /* 33 1/3 rpm */
+        @media (hover: hover) {
+            .pick-card:hover { box-shadow: none; }
+            .set-card:hover { opacity: 1; }
+            .pick-card:hover .rnt-sleeve, .set-card:hover .rnt-sleeve {
+                transform: scale(0.72);
+                box-shadow: 10px 0 22px rgba(0, 0, 0, 0.35);
+            }
+            /* Focus pull, like the opener's snap */
+            .pick-card:hover .rnt-frame, .set-card:hover .rnt-frame {
+                filter: blur(0.3cqw) saturate(0.9) brightness(0.7);
+            }
+            .pick-card:hover .rnt-vinyl, .set-card:hover .rnt-vinyl { transform: translate(0, -50%); }
+            .pick-card:hover .rnt-vinyl img, .set-card:hover .rnt-vinyl img { animation-play-state: running; }
+            .pick-card:hover .rnt-play, .set-card:hover .rnt-play { opacity: 1; transform: none; }
+        }
+        /* Genre filter: the cards left standing pop back in */
+        html.motion .pick-card.pop {
+            animation: pick-pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+            animation-delay: var(--pop-delay, 0s);
+        }
+        @keyframes pick-pop { from { opacity: 0; transform: translateY(14px) scale(0.97); } }
+
+        /* Programme: equaliser bars on what's on air */
+        .eq {
+            display: inline-flex;
+            align-items: flex-end;
+            gap: 2px;
+            width: 14px;
+            height: 13px;
+            flex-shrink: 0;
+        }
+        .eq i {
+            flex: 1;
+            height: 100%;
+            background: #ff6600;
+            transform-origin: 50% 100%;
+        }
+        .eq i:nth-child(1) { transform: scaleY(0.55); }
+        .eq i:nth-child(2) { transform: scaleY(1); }
+        .eq i:nth-child(3) { transform: scaleY(0.4); }
+        .eq i:nth-child(4) { transform: scaleY(0.75); }
+        html.motion .eq i { animation: eq-bounce 0.9s ease-in-out infinite alternate; }
+        html.motion .eq i:nth-child(2) { animation-duration: 0.65s; animation-delay: -0.4s; }
+        html.motion .eq i:nth-child(3) { animation-duration: 1.1s; animation-delay: -0.7s; }
+        html.motion .eq i:nth-child(4) { animation-duration: 0.8s; animation-delay: -0.2s; }
+        @keyframes eq-bounce {
+            from { transform: scaleY(0.2); }
+            to { transform: scaleY(1); }
+        }
+
+        /* LIVE: a sonar ping off the dot, on the player badge and the player bar */
+        #live-dot, #mini-player .mini-live-dot { position: relative; }
+        html.motion #live-dot::after,
+        html.motion #mini-player.is-live .mini-live-dot::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1px solid #ff6600;
+            animation: sonar 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        @keyframes sonar {
+            from { transform: scale(1); opacity: 0.9; }
+            to { transform: scale(2.6); opacity: 0; }
+        }
+
+        /* Nav disc: an orange groove runs round it at 33 1/3 while you're listening */
+        @property --mark-spin {
+            syntax: '<angle>';
+            inherits: false;
+            initial-value: 0deg;
+        }
+        html.motion.is-playing .nav-mark {
+            border-color: transparent;
+            background:
+                linear-gradient(#ffffff, #ffffff) padding-box,
+                conic-gradient(from var(--mark-spin), #ff6600 0 28%, #0f0f0f 28% 100%) border-box;
+            animation: mark-spin 1.8s linear infinite;
+        }
+        @keyframes mark-spin { to { --mark-spin: 360deg; } }
+
+        /* Player bar: the title slides in when what's playing changes */
+        html.motion #mini-player .mini-title.swap { animation: title-swap 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        @keyframes title-swap {
+            from { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+        }
+
+        /* Residents: the separator fills orange under the row you point at */
+        .resident-row { position: relative; }
+        .resident-row::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -1px;
+            height: 1px;
+            background: #ff6600;
+            transform: scaleX(0);
+            transform-origin: 0 50%;
+        }
+        html.motion .resident-row::after { transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        html.motion .resident-row img { transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        html.motion .resident-row .name { transition: letter-spacing 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        html.motion .resident-row .arrow { transition: transform 0.3s ease, color 0.2s ease; }
+        .resident-row:hover::after { transform: scaleX(1); }
+        .resident-row:hover img { transform: scale(1.08) rotate(-3deg); }
+        .resident-row:hover .name { letter-spacing: 3px; }
+        .resident-row:hover .arrow { transform: translateX(6px); color: #ff6600; }
+
+        /* Resident panel: fades up, the photo wipes in, the text follows */
+        html.motion .resident-detail-panel.active { animation: panel-in 0.35s ease both; }
+        html.motion .resident-detail-panel.closing { animation: panel-out 0.22s ease both; }
+        html.motion .resident-detail-panel.active .detail-photo { animation: photo-wipe 0.9s cubic-bezier(0.7, 0, 0.2, 1) both; }
+        html.motion .resident-detail-panel.active .detail-content > * { animation: rise-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both; }
+        html.motion .resident-detail-panel.active .detail-content > :nth-child(2) { animation-delay: 0.27s; }
+        html.motion .resident-detail-panel.active .detail-content > :nth-child(3) { animation-delay: 0.34s; }
+        html.motion .resident-detail-panel.active .detail-content > :nth-child(4) { animation-delay: 0.41s; }
+        html.motion .resident-detail-panel.active .detail-content > :nth-child(5) { animation-delay: 0.48s; }
+        @keyframes panel-in { from { opacity: 0; } }
+        @keyframes panel-out { to { opacity: 0; } }
+        @keyframes photo-wipe {
+            from { clip-path: inset(0 100% 0 0); }
+            to { clip-path: inset(0 0 0 0); }
+        }
+        @keyframes rise-in { from { opacity: 0; transform: translateY(18px); } }
+
+        /* Outline buttons fill from the left instead of snapping */
+        #btn-share, #btn-share:hover,
+        .feat-btn:not(.close-btn), .feat-btn:not(.close-btn):hover,
+        .detail-links a, .detail-links a:hover {
+            background: transparent linear-gradient(var(--text-primary), var(--text-primary)) no-repeat 0 0 / 0% 100%;
+        }
+        [data-theme="dark"] .detail-links a, [data-theme="dark"] .detail-links a:hover {
+            background: transparent linear-gradient(#fff, #fff) no-repeat 0 0 / 0% 100%;
+        }
+        #btn-share:hover, .feat-btn:not(.close-btn):hover, .detail-links a:hover,
+        [data-theme="dark"] .detail-links a:hover { background-size: 100% 100%; }
+        #btn-share:disabled { background-size: 0% 100%; }
+        html.motion #btn-share, html.motion .feat-btn:not(.close-btn), html.motion .detail-links a {
+            transition: background-size 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.3s ease;
+        }
+
+        /* Upcoming shows: the date block lights up orange */
+        .event-date { transition: background-color 0.3s ease, color 0.3s ease; }
+        .event-card:hover .event-date { background: #ff6600; color: #0f0f0f; }
+
+        /* Chat: new lines slide in */
+        html.motion .chat-msg { animation: msg-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+        @keyframes msg-in { from { opacity: 0; transform: translateX(-8px); } }
+
+        /* Frosted nav and player bar: the page blurs as it scrolls under them */
+        @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+            #top-nav, #mini-player {
+                background: color-mix(in srgb, var(--bg-primary) 86%, transparent);
+                -webkit-backdrop-filter: blur(14px) saturate(1.3);
+                backdrop-filter: blur(14px) saturate(1.3);
+            }
+        }
+
+        /* Dark mode: separators and hovers that were drawn for the light theme */
+        [data-theme="dark"] .resident-row,
+        [data-theme="dark"] .resident-row:first-child { border-color: #555; }
+        [data-theme="dark"] .event-card { border-color: #333; }
+        [data-theme="dark"] #chat-toggle { border-color: #555; color: #bbb; }
+        [data-theme="dark"] #chat-toggle:hover { border-color: #f0f0f0; color: #f0f0f0; }
+        [data-theme="dark"] #chat-discord-link a:hover { color: #f0f0f0; }
     </style>
 </head>
 <body>
     <!-- Asteroid Background Canvas -->
     <canvas id="asteroid-canvas"></canvas>
 
-    <!-- Theme Toggle Bar (fixed top) -->
-    <div id="theme-toggle-bar">
-        <button id="btn-theme" title="Toggle dark/light mode">
-            <span class="theme-icon-light"><span class="theme-symbol">&#9728;&#65038;</span><span class="theme-text"> Light Mode</span></span>
-            <span class="theme-icon-dark"><span class="theme-symbol">&#9790;&#65038;</span><span class="theme-text"> Dark Mode</span></span>
-        </button>
-    </div>
-
     <!-- Top Nav: Row 1 = brand/links, Row 2 = player bar (always visible) -->
     <div id="top-nav">
-        <!-- Row 1: brand + nav links -->
+        <!-- Row 1: brand + nav links + theme toggle -->
         <div id="nav-row-1">
             <button class="nav-link active" id="nav-live-btn" onclick="showView('live')"><span class="nav-mark"><img src="assets/nav-surfer.png" alt="" /></span><span class="nav-brand-text">Ronaut Radio</span></button>
-            <div style="display:flex; gap:24px; align-items:center;">
+            <div id="nav-right">
                 <div id="nav-section-links">
                     <button class="nav-section-link" onclick="scrollToSection('programme-chat-row')">Programme</button>
                     <button class="nav-section-link" onclick="scrollToSection('featured-residents')">Residents</button>
@@ -2389,6 +2839,10 @@
                     <button class="nav-section-link" onclick="scrollToSection('upcoming-shows-section')">Events</button>
                 </div>
                 <button class="nav-link" id="nav-sets-btn" onclick="showView('sets')">Sets</button>
+                <button id="btn-theme" title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
+                    <span class="theme-icon-light"><span class="theme-symbol">&#9728;&#65038;</span><span class="theme-text"> Light Mode</span></span>
+                    <span class="theme-icon-dark"><span class="theme-symbol">&#9790;&#65038;</span><span class="theme-text"> Dark Mode</span></span>
+                </button>
             </div>
         </div>
         <!-- Video frame: scroll-triggered, spans full nav height (desktop only) -->
@@ -2487,7 +2941,7 @@
     <!-- PROGRAMME + CHAT STACKED -->
     <div id="programme-chat-row">
         <div id="programme-section">
-            <h2>PROGRAMME</h2>
+            <h2 class="section-title" data-tune>PROGRAMME</h2>
             <div id="programme-date"></div>
             <div id="programme-live-message">Currently streaming live. Programme resumes after the live session.</div>
             <div id="programme-list"></div>
@@ -2520,7 +2974,7 @@
 
     <!-- FEATURED RESIDENTS -->
     <div id="featured-residents">
-        <h2>FEATURED RESIDENTS</h2>
+        <h2 class="section-title" data-tune>FEATURED RESIDENTS</h2>
         <div id="residents-list"></div>
     </div>
 
@@ -2534,6 +2988,20 @@
             <div class="detail-bio" id="detail-bio"></div>
             <div class="detail-links" id="detail-links"></div>
             <div class="detail-sets" id="detail-sets"></div>
+        </div>
+    </div>
+
+    <!-- TAGLINE BAND (decorative: the same words are in the About tagline below) -->
+    <div class="ronaut-band-wrap" aria-hidden="true">
+        <div class="ronaut-band">
+            <div class="ronaut-band-track">
+                <div class="ronaut-band-group">
+                    <span>Los Angeles</span><i></i><span>Vinyl Only</span><i></i><span>Live Shows</span><i></i><span>24/7</span><i></i><span>Independent</span><i></i><span>Non-Profit</span><i></i><span>Underground Music</span><i></i>
+                </div>
+                <div class="ronaut-band-group">
+                    <span>Los Angeles</span><i></i><span>Vinyl Only</span><i></i><span>Live Shows</span><i></i><span>24/7</span><i></i><span>Independent</span><i></i><span>Non-Profit</span><i></i><span>Underground Music</span><i></i>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2555,7 +3023,7 @@
 
     <!-- STAFF PICKS -->
     <div id="staff-picks">
-        <h2>STAFF PICKS</h2>
+        <h2 class="section-title" data-tune>STAFF PICKS</h2>
         <div id="genre-filter"></div>
         <div id="picks-grid"><div id="picks-loading">
             <div class="vinyl-wrap"><img class="vinyl-loader" src="assets/vinyl-loader.png" alt="" /></div>
@@ -2565,7 +3033,7 @@
 
     <!-- UPCOMING SHOWS SECTION -->
     <div id="upcoming-shows-section" class="w-container" style="margin-top: 60px; margin-bottom: 40px;">
-      <h2 style="font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;">UPCOMING SHOWS</h2>
+      <h2 class="section-title" data-tune style="font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;">UPCOMING SHOWS</h2>
       <div style="text-align: center; margin-bottom: 30px;">
         <a href="https://calendar.google.com/calendar/u/0?cid=cm9uYXV0cmFkaW9AZ21haWwuY29t" target="_blank" class="cal-btn">Subscribe to All</a>
         <a href="https://stream.ronautradio.la/api/calendar.ics" download="ronaut-radio.ics" class="cal-btn">Download .ics</a>
@@ -2576,7 +3044,7 @@
     
     <!-- RELEASES -->
     <div id="releases-section">
-        <h2>RELEASES</h2>
+        <h2 class="section-title" data-tune>RELEASES</h2>
         <div class="release-card">
             <iframe title="Teapot EP by EMAMI" style="border: 0; width: 100%; max-width: 700px; height: 472px;"
                 src="https://bandcamp.com/EmbeddedPlayer/album=1421363698/size=large/bgcol=0f0f0f/linkcol=ff6600/artwork=small/tracklist=true/"
@@ -2625,7 +3093,7 @@
         </div>
         <!-- Page Header -->
         <div id="sets-page-header">
-            <h1>Sets</h1>
+            <h1 data-tune>Sets</h1>
             <span id="sets-total-count"></span>
         </div>
         <!-- Genre Filter -->
@@ -2674,6 +3142,228 @@
         <div class="footer-copy">&copy; 2026 Ronaut Radio &mdash; Los Angeles</div>
     </footer>
 
+    <!-- Page motion: scroll reveals, headings tuning in, the tagline band, playback cues. Runs before the
+         CDN scripts below so the reveal content is flagged before the first paint. Styles: MOTION & EFFECTS. -->
+    <script>
+    (function() {
+        var html = document.documentElement;
+        if (!html.classList.contains('motion')) return; // reduced motion, or no IntersectionObserver
+        window.RonautMotion = true;
+
+        try {
+            // ── Scroll reveal ────────────────────────────────────────────────
+            // Whatever enters the viewport in the same batch gets staggered, top to bottom, left to right
+            var io = new IntersectionObserver(function(entries) {
+                entries.filter(function(e) { return e.isIntersecting; }).sort(function(a, b) {
+                    return (a.boundingClientRect.top - b.boundingClientRect.top) || (a.boundingClientRect.left - b.boundingClientRect.left);
+                }).forEach(function(e, i) {
+                    io.unobserve(e.target);
+                    e.target._onIn(e.target, Math.min(i, 8) * 0.07);
+                });
+            }, { rootMargin: '0px 0px -6% 0px' });
+
+            function watch(el, onIn) {
+                el._onIn = onIn;
+                io.observe(el);
+            }
+
+            function reveal(el, delay) {
+                el.style.setProperty('--reveal-delay', delay + 's');
+                el.classList.add('is-in');
+                // Hand the element back to its own transitions (card hovers etc.) once it has landed
+                setTimeout(function() {
+                    el.removeAttribute('data-reveal');
+                    el.classList.remove('is-in');
+                    el.style.removeProperty('--reveal-delay');
+                }, (delay + 0.8) * 1000);
+            }
+
+            function watchReveal(el) {
+                if (el.hasAttribute('data-reveal')) return;
+                el.setAttribute('data-reveal', '');
+                watch(el, reveal);
+            }
+
+            ['#programme-date', '#chat-column', '.ronaut-band-wrap', '.main-title + p', '.share-container',
+             '#live-view .paragraph', '#genre-filter', '#upcoming-shows-section .cal-btn', '.release-card'
+            ].forEach(function(sel) {
+                document.querySelectorAll(sel).forEach(watchReveal);
+            });
+
+            // Lists the page fills in from the API: reveal the first batch only, so the programme's
+            // 30-second refresh (and the Sets grid re-rendering on every pick) don't replay it
+            function watchList(id, selector) {
+                var box = document.getElementById(id);
+                if (!box) return;
+                var mo = new MutationObserver(function() {
+                    var items = box.querySelectorAll(selector);
+                    if (!items.length) return;
+                    items.forEach(watchReveal);
+                    mo.disconnect();
+                });
+                mo.observe(box, { childList: true });
+            }
+            watchList('programme-list', '.programme-item');
+            watchList('residents-list', '.resident-row');
+            watchList('picks-grid', '.pick-card');
+            watchList('upcoming-events', '.event-card');
+            watchList('sets-grid', '.set-card');
+
+            // ── Headings tune in: letters scramble like a dial finding the station, then settle ──
+            var GLYPHS = 'ABCDEHKNOPRSUVXZ0123456789';
+            function tuneIn(el) {
+                var text = el.textContent;
+                if (!text.trim()) return;
+                el.setAttribute('aria-label', text);
+                var start = performance.now();
+                var dur = 550 + text.length * 30;
+                var lastStep = -1;
+                requestAnimationFrame(function frame(now) {
+                    var t = Math.min((now - start) / dur, 1);
+                    var step = Math.floor((now - start) / 55); // new glyphs ~18 times a second
+                    if (step !== lastStep) {
+                        lastStep = step;
+                        var out = '';
+                        for (var i = 0; i < text.length; i++) {
+                            var c = text.charAt(i);
+                            if (c === ' ' || t >= 0.2 + 0.8 * (i + 1) / text.length) {
+                                out += c.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+                            } else {
+                                out += '<span class="tune-glyph">' + GLYPHS.charAt(Math.floor(Math.random() * GLYPHS.length)) + '</span>';
+                            }
+                        }
+                        el.innerHTML = out;
+                    }
+                    if (t < 1) {
+                        requestAnimationFrame(frame);
+                    } else {
+                        el.textContent = text;
+                        el.removeAttribute('aria-label');
+                    }
+                });
+            }
+            document.querySelectorAll('[data-tune]').forEach(function(h) {
+                watch(h, function(el, delay) {
+                    setTimeout(function() {
+                        el.classList.add('tuned'); // draws the orange rule under .section-title
+                        tuneIn(el);
+                    }, delay * 1000);
+                });
+            });
+
+            // ── About wordmark: one span per letter, they rise in order (and wave on hover) ──
+            var wordmark = document.querySelector('#live-view .main-title');
+            if (wordmark) {
+                var word = wordmark.textContent;
+                wordmark.setAttribute('aria-label', word);
+                wordmark.innerHTML = word.split('').map(function(c, i) {
+                    return c === ' '
+                        ? '<span class="wm-sp" aria-hidden="true"></span>'
+                        : '<span class="wm-l" aria-hidden="true" style="--i:' + i + '">' + c + '</span>';
+                }).join('');
+                wordmark.classList.add('ronaut-wordmark');
+                watch(wordmark, function(el) { el.classList.add('is-in'); });
+            }
+
+            // ── Tagline band: long enough to loop without a gap; scrolling drives its speed ──
+            var track = document.querySelector('.ronaut-band-track');
+            if (track && track.getAnimations) {
+                var groups = track.querySelectorAll('.ronaut-band-group');
+                var unit = groups[0].innerHTML;
+                // 1.6x the widest viewport we expect, since Oswald may not have loaded yet (it's narrower)
+                var need = Math.max(window.innerWidth, 1280) * 1.6;
+                for (var n = 0; groups[0].offsetWidth < need && n < 6; n++) {
+                    groups[0].insertAdjacentHTML('beforeend', unit);
+                }
+                groups[1].innerHTML = groups[0].innerHTML;
+
+                var bandAnim = track.getAnimations()[0];
+                var bandVisible = false, bandRunning = false;
+                var lastY = window.pageYOffset, dir = 1, boost = 0;
+                function bandTick() {
+                    var y = window.pageYOffset, v = y - lastY;
+                    lastY = y;
+                    if (v) dir = v > 0 ? 1 : -1;
+                    boost = Math.max(boost * 0.92, Math.min(Math.abs(v) * 0.12, 6));
+                    bandAnim.playbackRate = dir * (1 + boost);
+                    if (bandVisible) requestAnimationFrame(bandTick);
+                    else bandRunning = false;
+                }
+                if (bandAnim) {
+                    // Start deep into the loop: running backwards would otherwise stop dead at 0:00
+                    bandAnim.currentTime = 40000 * 1000;
+                    new IntersectionObserver(function(entries) {
+                        bandVisible = entries[0].isIntersecting;
+                        if (bandVisible && !bandRunning) {
+                            bandRunning = true;
+                            lastY = window.pageYOffset;
+                            requestAnimationFrame(bandTick);
+                        }
+                    }).observe(track);
+                }
+            }
+
+            // ── Genre filter on Staff Picks: the cards left standing pop back in ──
+            var genreFilter = document.getElementById('genre-filter');
+            if (genreFilter) {
+                genreFilter.addEventListener('click', function(e) {
+                    if (!e.target.closest('.genre-btn')) return;
+                    requestAnimationFrame(function() { // after the page's own handler has hidden/shown cards
+                        var i = 0;
+                        document.querySelectorAll('#picks-grid .pick-card').forEach(function(card) {
+                            if (card.style.display === 'none') return;
+                            card.classList.remove('pop');
+                            void card.offsetWidth; // restart the animation
+                            card.style.setProperty('--pop-delay', Math.min(i++, 9) * 0.05 + 's');
+                            card.classList.add('pop');
+                        });
+                    });
+                });
+                document.getElementById('picks-grid').addEventListener('animationend', function(e) {
+                    if (e.target.classList.contains('pop')) e.target.classList.remove('pop');
+                });
+            }
+
+            // ── Listening? The nav disc's groove spins while something plays with sound ──
+            var players = [document.getElementById('ronaut-player'), document.getElementById('sets-featured-video')];
+            function syncPlaying() {
+                html.classList.toggle('is-playing', players.some(function(v) {
+                    return v && !v.paused && !v.ended && !v.muted && v.volume > 0;
+                }));
+            }
+            players.forEach(function(v) {
+                if (!v) return;
+                ['play', 'playing', 'pause', 'ended', 'emptied', 'volumechange'].forEach(function(ev) {
+                    v.addEventListener(ev, syncPlaying);
+                });
+            });
+
+            // ── Player bar: sonar on the dot while LIVE, and the title slides in when it changes ──
+            var mini = document.getElementById('mini-player');
+            var miniInfo = mini && mini.querySelector('.mini-info');
+            if (miniInfo) {
+                var miniStatus = miniInfo.querySelector('.mini-status');
+                var miniTitle = miniInfo.querySelector('.mini-title');
+                var miniTitleText = miniInfo.querySelector('.mini-title-inner');
+                var lastTitle = miniTitleText.textContent;
+                new MutationObserver(function() {
+                    mini.classList.toggle('is-live', miniStatus.textContent.trim().toUpperCase() === 'LIVE');
+                    var title = miniTitleText.textContent;
+                    if (title === lastTitle) return; // now-playing rewrites the same title every 10s
+                    lastTitle = title;
+                    miniTitle.classList.remove('swap');
+                    void miniTitle.offsetWidth;
+                    miniTitle.classList.add('swap');
+                }).observe(miniInfo, { childList: true, characterData: true, subtree: true });
+            }
+        } catch (err) {
+            // Never leave content hidden behind a half-set-up animation
+            console.error('Page motion off:', err);
+            html.classList.remove('motion');
+        }
+    })();
+    </script>
+
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src='https://unpkg.com/popper.js/dist/umd/popper.min.js'></script>
@@ -2698,6 +3388,25 @@
         var div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // Set thumbnail, dressed like the YouTube ones: the frame blurred like the RNT opener, the RO/NAUT/RADIO
+    // wordmark and RNT SESSIONS 016 (the name is on the card below). The picture is the sleeve the oval
+    // record logo comes out of on hover.
+    // Goes inside a 16:9 box with the rnt-thumb class (Staff Picks cards and the Sets grid; SET THUMBNAILS styles).
+    function rntSleeveHtml(thumbUrl, title, filename) {
+        function attr(v) { return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+        var num = ((filename || '').match(/\[(\d+)\]/) || String(title || '').match(/^\s*(\d+)\s*[-–—:|]/) || [])[1] || '';
+        if (num && num.length < 3) num = ('00' + num).slice(-3);
+        return '<div class="rnt-sleeve">' +
+                '<span class="rnt-frame"><img src="' + attr(thumbUrl) + '" alt="' + attr(title) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" /></span>' +
+                '<div class="rnt-cover" aria-hidden="true">' +
+                    '<div class="rnt-cover-mark"><span>RO</span><span>NAUT</span><span>RADIO</span><em><i></i>EST 2025</em></div>' +
+                    (num ? '<div class="rnt-cover-foot">RNT SESSIONS ' + num + '</div>' : '') +
+                '</div>' +
+            '</div>' +
+            '<span class="rnt-vinyl" aria-hidden="true"><img src="assets/vinyl-loader.png" alt="" /></span>' +
+            '<span class="rnt-play" aria-hidden="true">&#9654; Play set</span>';
     }
 
     function initHls(video) {
@@ -3138,6 +3847,30 @@
             });
         }
         window.updateMiniTitleMarquee = updateMiniTitleMarquee; // playPick lives outside this handler
+        // Re-measure when the title's room changes (mobile thumbnail sliding in, window resize)
+        if (window.ResizeObserver) {
+            var miniTitleBox = document.querySelector('#mini-player .mini-title');
+            if (miniTitleBox) new ResizeObserver(updateMiniTitleMarquee).observe(miniTitleBox);
+        }
+
+        // Browser tab and lock screen follow the player bar, whatever is playing (live, rotation, a pick, a set)
+        (function() {
+            var info = document.querySelector('#mini-player .mini-info');
+            if (!info || !window.MutationObserver) return;
+            var statusEl = info.querySelector('.mini-status');
+            var titleEl = info.querySelector('.mini-title-inner');
+            function syncNowPlaying() {
+                var status = statusEl.textContent.trim().toUpperCase();
+                var title = titleEl.textContent.trim();
+                if (!title || title === 'Loading...' || status === 'OFFLINE') {
+                    document.title = 'Ronaut Radio';
+                    return;
+                }
+                document.title = (status === 'LIVE' ? '● LIVE' : title) + ' · Ronaut Radio';
+                updateMediaSession(title, 'Ronaut Radio');
+            }
+            new MutationObserver(syncNowPlaying).observe(info, { childList: true, characterData: true, subtree: true });
+        })();
         // ──────────────────────────────────────────────────────────────────
 
         // Media Session API for iOS Control Center / Lock Screen controls
@@ -3350,7 +4083,7 @@
                         if (duration > 0) {
                             html += '<div class="progress-line" style="left:' + progressPct.toFixed(1) + '%"></div>';
                         }
-                        html += '<span class="track-name"><span class="now-playing-dot"></span>' + escapeHtml(data.current.display_name) + '</span>';
+                        html += '<span class="track-name"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' + escapeHtml(data.current.display_name) + '</span>';
                         html += '<span class="track-time">NOW</span>';
                         html += '</div>';
                     }
@@ -4363,13 +5096,25 @@
                     });
                 });
 
+                clearTimeout(closeTimer);
+                detailPanel.classList.remove('closing');
                 detailPanel.classList.add('active');
                 document.body.style.overflow = 'hidden';
             }
 
+            // With motion on the panel fades out before it goes (it animates in on open)
+            var closeTimer = null;
             function closeDetail() {
-                detailPanel.classList.remove('active');
                 document.body.style.overflow = '';
+                if (!document.documentElement.classList.contains('motion')) {
+                    detailPanel.classList.remove('active');
+                    return;
+                }
+                if (detailPanel.classList.contains('closing')) return;
+                detailPanel.classList.add('closing');
+                closeTimer = setTimeout(function() {
+                    detailPanel.classList.remove('active', 'closing');
+                }, 220);
             }
 
             detailClose.addEventListener('click', closeDetail);
@@ -4444,7 +5189,7 @@
 
                         var genreAttr = pick.genres && pick.genres.length > 0 ? pick.genres.join(',').toLowerCase() : '';
                         html += '<div class="pick-card" data-url="' + encodedUrl + '" data-title="' + escapeHtml(title) + '" data-genres="' + escapeHtml(genreAttr) + '">';
-                        html += '<img src="' + encodePickPath('https://stream.ronautradio.la' + pick.thumbnail) + '" alt="' + escapeHtml(title) + '" loading="lazy" />';
+                        html += '<div class="rnt-thumb">' + rntSleeveHtml(encodePickPath('https://stream.ronautradio.la' + pick.thumbnail), title, pick.filename) + '</div>';
                         html += '<div class="pick-title">' + escapeHtml(title) + '</div>';
                         if (pick.description) {
                             html += '<div class="pick-desc">' + escapeHtml(pick.description) + '</div>';
@@ -4696,14 +5441,12 @@
                 }
                 grid.innerHTML = filtered.map(function(set) {
                     var slug = setsGetSlug(set);
-                    var num = setsGetNumber(set.filename);
                     var genres = (set.genres || []).join(' · ');
                     var isActive = slug === setsViewActiveSlug;
                     var thumbUrl = API + set.thumbnail;
                     return '<div class="set-card' + (isActive ? ' active' : '') + '" onclick="setsViewSelectBySlug(\'' + setsEsc(slug) + '\')">' +
-                        '<div class="card-thumb-wrap">' +
-                        '<img src="' + setsEsc(thumbUrl) + '" alt="' + setsEsc(set.title) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
-                        (num ? '<span class="card-num">' + setsEsc(num) + '</span>' : '') +
+                        '<div class="card-thumb-wrap rnt-thumb">' +
+                        rntSleeveHtml(thumbUrl, set.title, set.filename) +
                         (isActive ? '<span class="card-playing-badge">&#9654; Playing</span>' : '') +
                         '</div>' +
                         '<div class="card-title">' + setsEsc(set.title) + '</div>' +
@@ -5052,13 +5795,13 @@
         (function() {
             var themeBtn = document.getElementById('btn-theme');
             var html = document.documentElement;
+            var themeColor = document.querySelector('meta[name="theme-color"]');
 
-            // Check for saved theme — default is always dark
-            var savedTheme = localStorage.getItem('ronaut_theme');
-            if (savedTheme) {
-                html.setAttribute('data-theme', savedTheme);
-            } else {
-                html.setAttribute('data-theme', 'dark');
+            // The saved theme (default dark) is already set by the script in <head>.
+            // theme-color tints the phone browser's address bar to match the page.
+            function applyTheme(theme) {
+                html.setAttribute('data-theme', theme);
+                if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#111111' : '#f4f4f4');
             }
 
             // Toggle theme on button click (with smooth crossfade)
@@ -5066,7 +5809,7 @@
                 document.documentElement.classList.add('theme-fade');
                 var currentTheme = html.getAttribute('data-theme');
                 var newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                html.setAttribute('data-theme', newTheme);
+                applyTheme(newTheme);
                 localStorage.setItem('ronaut_theme', newTheme);
                 setTimeout(function() { document.documentElement.classList.remove('theme-fade'); }, 400);
             });
@@ -5075,7 +5818,7 @@
             if (window.matchMedia) {
                 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
                     if (!localStorage.getItem('ronaut_theme')) {
-                        html.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+                        applyTheme(e.matches ? 'dark' : 'light');
                     }
                 });
             }
@@ -5864,28 +6607,32 @@
     })();
     </script>
 
-    <!-- Mobile: scroll-driven dark mode toggle position -->
+    <!-- Player: flag when the native controls are likely up (paused, or pointer active in the last 3s) -->
     <script>
     (function() {
-        if (window.innerWidth >= 768) return;
-        var themeBar = document.getElementById('theme-toggle-bar');
-        var playerEl = document.getElementById('top-player-container');
-        if (!themeBar || !playerEl) return;
+        var container = document.getElementById('player-container');
+        var video = document.getElementById('ronaut-player');
+        if (!container || !video) return;
 
-        var rafPending = false;
-        function positionThemeToggle() {
-            if (rafPending) return;
-            rafPending = true;
-            requestAnimationFrame(function() {
-                var playerBottom = playerEl.getBoundingClientRect().bottom;
-                themeBar.style.top = Math.max(52, playerBottom + 6) + 'px'; /* min 52px = below 48px nav */
-                rafPending = false;
-            });
+        var activeTimer = null;
+        function update() {
+            container.classList.toggle('controls-up', video.paused || activeTimer !== null);
+        }
+        function poke() {
+            clearTimeout(activeTimer);
+            activeTimer = setTimeout(function() { activeTimer = null; update(); }, 3000); /* ~ native auto-hide */
+            update();
         }
 
-        window.addEventListener('scroll', positionThemeToggle, { passive: true });
-        // Run once after layout settles
-        setTimeout(positionThemeToggle, 100);
+        ['play', 'playing', 'pause', 'emptied'].forEach(function(e) { video.addEventListener(e, update); });
+        container.addEventListener('mousemove', poke);
+        container.addEventListener('touchstart', poke, { passive: true });
+        container.addEventListener('mouseleave', function() {
+            clearTimeout(activeTimer);
+            activeTimer = null;
+            update();
+        });
+        update();
     })();
     </script>
     <script>
