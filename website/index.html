@@ -2432,55 +2432,6 @@
         html.motion .section-title.tuned::after { transform: scaleX(1); }
         .tune-glyph { color: #ff6600; }
 
-        /* Tagline band between Residents and About: a tilted strip of orange tape. Scrolling speeds it up,
-           scrolling back up runs it backwards. The wrapper's padding leaves room for the tilt. */
-        .ronaut-band-wrap {
-            position: relative;
-            z-index: 1;
-            overflow: hidden;
-            padding: calc(1.8vw + 10px) 0;
-            margin: 10px 0 0;
-        }
-        .ronaut-band {
-            width: calc(100% + 16px);
-            margin-left: -8px;
-            background: #ff6600;
-            color: #0f0f0f;
-            transform: rotate(-2deg);
-            overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-        }
-        .ronaut-band-track {
-            display: flex;
-            width: max-content;
-        }
-        html.motion .ronaut-band-track { animation: band-scroll 40s linear infinite; }
-        .ronaut-band-group {
-            display: flex;
-            align-items: center;
-            gap: 26px;
-            padding: 11px 26px 11px 0;
-            font-family: Oswald, sans-serif;
-            font-size: 15px;
-            font-weight: 500;
-            line-height: 1;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-        /* A tiny record between the words */
-        .ronaut-band-group i {
-            width: 13px;
-            height: 13px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            background: radial-gradient(circle, #ff6600 0 22%, #0f0f0f 26% 100%);
-        }
-        @keyframes band-scroll { to { transform: translateX(-50%); } }
-        @media (min-width: 1024px) {
-            .ronaut-band-group { font-size: 18px; padding-top: 13px; padding-bottom: 13px; }
-        }
-
         /* About wordmark: letters rise out of a mask, and do a Mexican wave on hover */
         .ronaut-wordmark {
             overflow: hidden;
@@ -2991,20 +2942,6 @@
         </div>
     </div>
 
-    <!-- TAGLINE BAND (decorative: the same words are in the About tagline below) -->
-    <div class="ronaut-band-wrap" aria-hidden="true">
-        <div class="ronaut-band">
-            <div class="ronaut-band-track">
-                <div class="ronaut-band-group">
-                    <span>Los Angeles</span><i></i><span>Vinyl Only</span><i></i><span>Live Shows</span><i></i><span>24/7</span><i></i><span>Independent</span><i></i><span>Non-Profit</span><i></i><span>Underground Music</span><i></i>
-                </div>
-                <div class="ronaut-band-group">
-                    <span>Los Angeles</span><i></i><span>Vinyl Only</span><i></i><span>Live Shows</span><i></i><span>24/7</span><i></i><span>Independent</span><i></i><span>Non-Profit</span><i></i><span>Underground Music</span><i></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- ABOUT SECTION -->
     <div class="w-container" style="margin-top: 40px; margin-bottom: 30px;">
         <h1 class="main-title">RONAUT RADIO</h1>
@@ -3142,7 +3079,7 @@
         <div class="footer-copy">&copy; 2026 Ronaut Radio &mdash; Los Angeles</div>
     </footer>
 
-    <!-- Page motion: scroll reveals, headings tuning in, the tagline band, playback cues. Runs before the
+    <!-- Page motion: scroll reveals, headings tuning in, playback cues. Runs before the
          CDN scripts below so the reveal content is flagged before the first paint. Styles: MOTION & EFFECTS. -->
     <script>
     (function() {
@@ -3184,7 +3121,7 @@
                 watch(el, reveal);
             }
 
-            ['#programme-date', '#chat-column', '.ronaut-band-wrap', '.main-title + p', '.share-container',
+            ['#programme-date', '#chat-column', '.main-title + p', '.share-container',
              '#live-view .paragraph', '#genre-filter', '#upcoming-shows-section .cal-btn', '.release-card'
             ].forEach(function(sel) {
                 document.querySelectorAll(sel).forEach(watchReveal);
@@ -3263,44 +3200,6 @@
                 }).join('');
                 wordmark.classList.add('ronaut-wordmark');
                 watch(wordmark, function(el) { el.classList.add('is-in'); });
-            }
-
-            // ── Tagline band: long enough to loop without a gap; scrolling drives its speed ──
-            var track = document.querySelector('.ronaut-band-track');
-            if (track && track.getAnimations) {
-                var groups = track.querySelectorAll('.ronaut-band-group');
-                var unit = groups[0].innerHTML;
-                // 1.6x the widest viewport we expect, since Oswald may not have loaded yet (it's narrower)
-                var need = Math.max(window.innerWidth, 1280) * 1.6;
-                for (var n = 0; groups[0].offsetWidth < need && n < 6; n++) {
-                    groups[0].insertAdjacentHTML('beforeend', unit);
-                }
-                groups[1].innerHTML = groups[0].innerHTML;
-
-                var bandAnim = track.getAnimations()[0];
-                var bandVisible = false, bandRunning = false;
-                var lastY = window.pageYOffset, dir = 1, boost = 0;
-                function bandTick() {
-                    var y = window.pageYOffset, v = y - lastY;
-                    lastY = y;
-                    if (v) dir = v > 0 ? 1 : -1;
-                    boost = Math.max(boost * 0.92, Math.min(Math.abs(v) * 0.12, 6));
-                    bandAnim.playbackRate = dir * (1 + boost);
-                    if (bandVisible) requestAnimationFrame(bandTick);
-                    else bandRunning = false;
-                }
-                if (bandAnim) {
-                    // Start deep into the loop: running backwards would otherwise stop dead at 0:00
-                    bandAnim.currentTime = 40000 * 1000;
-                    new IntersectionObserver(function(entries) {
-                        bandVisible = entries[0].isIntersecting;
-                        if (bandVisible && !bandRunning) {
-                            bandRunning = true;
-                            lastY = window.pageYOffset;
-                            requestAnimationFrame(bandTick);
-                        }
-                    }).observe(track);
-                }
             }
 
             // ── Genre filter on Staff Picks: the cards left standing pop back in ──
