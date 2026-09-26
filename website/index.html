@@ -379,10 +379,13 @@
         #next-live-banner {
             color: white;
             font-size: 14px;
+            line-height: 1.35;
+            text-align: left;
             position: absolute;
             top: 15px;
             left: 20px;
-            white-space: nowrap;
+            /* wrap short of the LIVE badge / listener count in the right corner */
+            max-width: calc(100% - 140px);
             overflow: hidden;
             opacity: 0;
             transition: opacity 0.5s ease;
@@ -728,6 +731,11 @@
 
         #live-badge.active {
             display: flex;
+        }
+        /* Both live in the top-right corner: stack the listener count under the badge */
+        #live-badge.active ~ #listener-count {
+            top: 56px;
+            right: 15px;
         }
 
         #live-dot {
