@@ -3594,9 +3594,7 @@
             var setOverlay = document.getElementById('set-playing-overlay');
             if (setOverlay) setOverlay.classList.remove('visible');
 
-            // Pause live stream to avoid audio overlap
-            var liveVideo = document.getElementById('ronaut-player');
-            if (liveVideo && !liveVideo.paused) liveVideo.pause();
+            // Live keeps playing while browsing; setsLoadFeaturedPlayer pauses it once a set starts
 
             // Ensure mini video is initialized (desktop: always visible; mobile: show bar)
             if (window._ronautMiniInit) window._ronautMiniInit();
@@ -5459,6 +5457,9 @@
             function setsLoadFeaturedPlayer(set) {
                 var video = document.getElementById('sets-featured-video');
                 if (!video) return;
+                // A set is starting: pause live so the two don't overlap (before the opener's ident plays)
+                var liveVideo = document.getElementById('ronaut-player');
+                if (liveVideo && !liveVideo.paused) liveVideo.pause();
                 if (setsViewHlsInstance) { setsViewHlsInstance.destroy(); setsViewHlsInstance = null; }
                 video.src = '';
                 video.poster = API + set.thumbnail;
