@@ -519,6 +519,8 @@
             .rr-grid > li { flex: 0 0 42%; scroll-snap-align: start; }
             .rr-meta { letter-spacing: 0.5px; }
             .rr-grid.is-loading { min-height: 230px; }
+            /* the row scrolls sideways, so keep every card visible: a hidden card at the edge would hide the swipe cue */
+            html.motion .rr-grid > li[data-reveal]:not(.is-in) { opacity: 1; transform: none; }
         }
         .rr-card { display: block; text-decoration: none; color: inherit; }
         .rr-disc {
@@ -3205,7 +3207,7 @@
             }
 
             ['#programme-date', '#chat-column', '.main-title + p', '.share-container',
-             '#live-view .paragraph', '#genre-filter', '#upcoming-shows-section .cal-btn', '.release-card'
+             '#live-view .paragraph', '#genre-filter', '#upcoming-shows-section .cal-btn', '.release-link'
             ].forEach(function(sel) {
                 document.querySelectorAll(sel).forEach(watchReveal);
             });
@@ -3228,6 +3230,7 @@
             watchList('picks-grid', '.pick-card');
             watchList('upcoming-events', '.event-card');
             watchList('sets-grid', '.set-card');
+            watchList('releases-grid', 'li');
 
             // ── Headings tune in: letters scramble like a dial finding the station, then settle ──
             var GLYPHS = 'ABCDEHKNOPRSUVXZ0123456789';
@@ -6666,8 +6669,8 @@
     </script>
     <script>
     /* Releases: the Ronaut Records catalogue from the label site's feed (newest first). A plain script tag,
-       so no CORS; if it can't load, the section keeps its "All releases" link. Cards skip data-reveal on
-       purpose: the motion script only watches what's in the page at load. */
+       so no CORS; if it can't load, the section keeps its "All releases" link. The motion script's
+       watchList('releases-grid') gives the cards the same rise-in as the other lists. */
     (function() {
         var grid = document.getElementById('releases-grid');
         if (!grid) return;
