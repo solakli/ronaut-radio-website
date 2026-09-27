@@ -474,7 +474,9 @@
             background: transparent;
         }
 
-        /* Releases section */
+        /* Releases section: the Ronaut Records catalogue as records, the same discs as ronautrecords.la.
+           Cards come from ronautrecords.la/embed/releases.js; each opens its release page in a new tab so
+           the stream keeps playing. Grid on desktop, swipeable row on phones. */
         #releases-section {
             margin-top: 60px;
             text-align: center;
@@ -488,14 +490,87 @@
             text-transform: uppercase;
             margin-bottom: 25px;
         }
-        .release-card {
-            display: inline-block;
-            max-width: 700px;
-            width: calc(100% - 48px);
+        .rr-grid {
+            list-style: none;
+            margin: 0 auto;
+            padding: 0 24px;
+            max-width: 1100px;
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 32px 22px;
+            text-align: left;
+        }
+        .rr-grid.is-loading { min-height: 470px; } /* two rows, so nothing jumps when the feed lands */
+        @media (max-width: 1023px) {
+            .rr-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
+        @media (max-width: 767px) {
+            .rr-grid {
+                display: flex;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                gap: 16px;
+                padding: 4px 16px 12px;
+                scroll-padding-inline: 16px; /* snap to the padded edge, not the screen edge */
+                scrollbar-width: none;
+            }
+            .rr-grid::-webkit-scrollbar { display: none; }
+            .rr-grid > li { flex: 0 0 42%; scroll-snap-align: start; }
+            .rr-meta { letter-spacing: 0.5px; }
+            .rr-grid.is-loading { min-height: 230px; }
+        }
+        .rr-card { display: block; text-decoration: none; color: inherit; }
+        .rr-disc {
+            display: block;
+            border-radius: 50%;
+            padding: 4.5%;
+            background:
+                conic-gradient(from 25deg, transparent 0 20deg, rgba(255,255,255,.13) 45deg, transparent 75deg 200deg, rgba(255,255,255,.09) 225deg, transparent 255deg),
+                repeating-radial-gradient(circle, #121212 0 1.2px, #1b1b1b 1.2px 2.6px);
+            box-shadow: 0 0 0 1px rgba(255,255,255,.07) inset, 0 16px 28px -18px rgba(0,0,0,.7);
+            transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        /* the covers' spindle hole sits slightly off-centre, so records spin around it */
+        .rr-disc img { display: block; width: 100%; height: auto; border-radius: 50%; transform-origin: 50.6% 49.37%; }
+        .rr-card:hover .rr-disc { transform: translateY(-4px); }
+        html.motion .rr-card:hover .rr-disc img,
+        html.motion .rr-card:focus-visible .rr-disc img { animation: rr-spin 1.8s linear infinite; } /* 33⅓ rpm */
+        @keyframes rr-spin { to { transform: rotate(360deg); } }
+        .rr-meta {
+            display: block;
+            margin-top: 12px;
+            font-family: 'Space Mono', 'Courier New', monospace;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .rr-title {
+            display: block;
+            margin-top: 2px;
+            font-family: Oswald, sans-serif;
+            font-size: 17px;
+            font-weight: 500;
+            line-height: 1.15;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            overflow-wrap: anywhere;
+            transition: color 0.15s;
+        }
+        .rr-card:hover .rr-title { color: #ff6600; }
+        .rr-artist {
+            display: block;
+            font-family: Oswald, sans-serif;
+            font-size: 12px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
         }
         .release-link {
             display: block;
-            margin-top: 10px;
+            margin-top: 28px;
             font-family: 'Space Mono', 'Courier New', monospace;
             font-size: 10px;
             letter-spacing: 2px;
@@ -2993,17 +3068,11 @@
       <p id="no-upcoming" style="display: none;">Nothing scheduled &mdash; the rotation plays on</p>
     </div>
     
-    <!-- RELEASES -->
+    <!-- RELEASES: the Ronaut Records catalogue, drawn from ronautrecords.la/embed/releases.js (newest first) -->
     <div id="releases-section">
         <h2 class="section-title" data-tune>RELEASES</h2>
-        <div class="release-card">
-            <iframe title="Teapot EP by EMAMI" style="border: 0; width: 100%; max-width: 700px; height: 472px;"
-                src="https://bandcamp.com/EmbeddedPlayer/album=1421363698/size=large/bgcol=0f0f0f/linkcol=ff6600/artwork=small/tracklist=true/"
-                loading="lazy" seamless>
-                <a href="https://emami.bandcamp.com/album/teapot-ep">Teapot EP by EMAMI</a>
-            </iframe>
-            <a class="release-link" href="https://emami.bandcamp.com/album/teapot-ep" target="_blank" rel="noopener">EMAMI &mdash; Teapot EP &nbsp;&#9656;&nbsp; Bandcamp</a>
-        </div>
+        <ul id="releases-grid" class="rr-grid" aria-label="Ronaut Records releases"></ul>
+        <a class="release-link" href="https://ronautrecords.la/releases/" target="_blank" rel="noopener">All releases &nbsp;&#9656;&nbsp; Ronaut Records</a>
     </div>
 
     <div class="section">
@@ -6593,6 +6662,58 @@
             update();
         });
         update();
+    })();
+    </script>
+    <script>
+    /* Releases: the Ronaut Records catalogue from the label site's feed (newest first). A plain script tag,
+       so no CORS; if it can't load, the section keeps its "All releases" link. Cards skip data-reveal on
+       purpose: the motion script only watches what's in the page at load. */
+    (function() {
+        var grid = document.getElementById('releases-grid');
+        if (!grid) return;
+        grid.classList.add('is-loading');
+        function line(cls, text) {
+            var el = document.createElement('span');
+            el.className = cls;
+            el.textContent = text;
+            return el;
+        }
+        function render(feed) {
+            grid.classList.remove('is-loading');
+            if (!feed || !feed.releases || !feed.releases.length) { grid.hidden = true; return; }
+            feed.releases.forEach(function(r) {
+                var li = document.createElement('li');
+                var a = document.createElement('a');
+                a.className = 'rr-card';
+                a.href = r.url;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                var disc = document.createElement('span');
+                disc.className = 'rr-disc';
+                var img = document.createElement('img');
+                img.src = r.art['480'];
+                img.srcset = r.art['480'] + ' 480w, ' + r.art['960'] + ' 960w';
+                img.sizes = '(min-width: 1024px) 160px, (min-width: 768px) 22vw, 40vw';
+                img.width = 480;
+                img.height = 480;
+                img.loading = 'lazy';
+                img.decoding = 'async';
+                img.alt = '';
+                disc.appendChild(img);
+                a.appendChild(disc);
+                a.appendChild(line('rr-meta', r.date.replace(/-/g, '.') + ' \u00b7 ' + r.format));
+                a.appendChild(line('rr-title', r.title));
+                a.appendChild(line('rr-artist', r.artist));
+                li.appendChild(a);
+                grid.appendChild(li);
+            });
+        }
+        var feed = document.createElement('script');
+        feed.src = 'https://ronautrecords.la/embed/releases.js';
+        feed.async = true;
+        feed.onload = function() { render(window.RONAUT_RELEASES); };
+        feed.onerror = function() { grid.classList.remove('is-loading'); grid.hidden = true; };
+        document.head.appendChild(feed);
     })();
     </script>
     <script>
