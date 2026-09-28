@@ -5,8 +5,10 @@
  * Ported from the Claude Design file "Ronaut Radio Logo Concepts" → Ronaut/watermark/intros.jsx
  * (CenterWordmark, OnAir, Disc), laid out on a 1920×1080 stage scaled over the video.
  *
- *   RNTOpener.start(video, container, url)   call right before the site calls video.play() for a set
- *                                            that starts from the top; returns false when it skips
+ *   RNTOpener.start(video, container, url, identVolume)
+ *                                            call right before the site calls video.play() for a set
+ *                                            that starts from the top; returns false when it skips.
+ *                                            identVolume: the set's ident level (linear), if known
  *   RNTOpener.cancel()                       stop it and hand the video back untouched
  *
  * During the intro the set plays muted, blurred and wavy from 0:00 while the ident plays. At the snap it
@@ -23,8 +25,10 @@
   var AIR_C0 = LOCK - 1.24;     // On Air's t=1.24 (ON AIR solid) lands on the snap
   var END = LOCK + 3.2;         // badge gone
   // Ident level per set: about 1 LU over the set's first two minutes, never louder than the file, at most
-  // 12 dB down (same rule as the YouTube uploads). Keyed by the set's HLS slug.
-  var IDENT_VOLUME = window.RNT_IDENT_VOLUME || {};
+  // 12 dB down (same rule as the YouTube uploads). It comes from the caller (/api/sets' ident_volume, once the
+  // API serves one), else window.RNT_IDENT_VOLUME in index.html, keyed by the set's HLS slug. A set in neither,
+  // e.g. a new one, gets about the median of the table (0.47); the old default of 0.8 was ~4.6 dB louder.
+  var DEFAULT_VOLUME = 0.5;
 
   var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
   var lerp = function (a, b, u) { return a + (b - a) * u; };
@@ -288,7 +292,7 @@
     return m ? decodeURIComponent(m[1]) : '';
   }
 
-  function start(video, container, url) {
+  function start(video, container, url, identVolume) {
     cancel();
     if (!video || !container) return false;
     if (reduceMotion || window.RNT_OPENER_OFF) return false;
@@ -304,8 +308,8 @@
     // the ident starts inside the tap that pressed play, so phones allow its sound
     s.ident = new Audio(IDENT_URL);
     s.ident.preload = 'auto';
-    var vol = IDENT_VOLUME[slugOf(url)];
-    s.ident.volume = clamp((typeof vol === 'number' ? vol : 0.8) * (video.volume || 1), 0, 1);
+    var vol = typeof identVolume === 'number' ? identVolume : (window.RNT_IDENT_VOLUME || {})[slugOf(url)];
+    s.ident.volume = clamp((typeof vol === 'number' ? vol : DEFAULT_VOLUME) * (video.volume || 1), 0, 1);
     // the ident's own events keep time too: timers get throttled hard in background tabs, audio events don't,
     // so the set comes in on cue (the ident ends exactly at the snap) even if the tab is hidden
     s.onIdent = function () { logic(s); };

@@ -2175,6 +2175,14 @@
             margin-bottom: 10px;
             color: var(--text-muted);
         }
+        .tl-empty {
+            margin: 0;
+            font-size: 12px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
         .tl-item {
             font-size: 12px;
             font-weight: 300;
@@ -3366,6 +3374,7 @@
     var isPlayingPick = false;
     var currentPickTitle = '';
     var currentVodUrl = ''; // Store VOD URL for mini player
+    var currentPickArt = null; // the pick's thumbnail, for the lock screen
 
     // Sets view state
     var setsViewLoaded = false;
@@ -3380,6 +3389,166 @@
         div.textContent = text;
         return div.innerHTML;
     }
+
+    // Sets catalogue: /api/sets, fetched once for Staff Picks, the Sets page and the names below.
+    // The stream, the programme and the residents name sets by file ("Ronaut[018]-Andrea-Emami-...",
+    // "018 - Andrea-Emami-..."); setsCatalogFind() maps those to the staff pick, for its title and thumbnail.
+    var SETS_API = 'https://stream.ronautradio.la';
+    var setsCatalogPromise = null;
+    var setsCatalogByNum = null, setsCatalogBySlug = null;
+
+    function setNumberOf(name) {
+        var m = /\[(\d+)\]/.exec(name || '') || /^\s*(\d+)\s+-\s/.exec(name || '');
+        return m ? parseInt(m[1], 10) : null;
+    }
+
+    // The API's _normalize_set_name: the HLS and share slug ("Ronaut[023]-2-Rolls.mp4" and "023 - 2-Rolls" → 2rolls)
+    function setSlugOf(name) {
+        return String(name || '').replace(/^.*\//, '').replace(/\.(mp4|m3u8)$/i, '').trim()
+            .replace(/^(ronaut\[\d+\]\s*[-_ ]*|\d+\s+-\s+)/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+    }
+
+    function fetchSetsCatalog() {
+        if (!setsCatalogPromise) {
+            setsCatalogPromise = fetch(SETS_API + '/api/sets').then(function(res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            }).then(function(data) {
+                var byNum = {}, bySlug = {};
+                (data.sets || []).forEach(function(s) {
+                    var n = setNumberOf(s.filename);
+                    if (n !== null) byNum[n] = s;
+                    bySlug[setSlugOf(s.filename)] = s;
+                    if (s.url) bySlug[setSlugOf(s.url)] = s;
+                });
+                setsCatalogByNum = byNum;
+                setsCatalogBySlug = bySlug;
+                return data;
+            });
+            setsCatalogPromise.catch(function() { setsCatalogPromise = null; }); // the next caller tries again
+        }
+        return setsCatalogPromise;
+    }
+
+    // The staff pick for a file name, programme name or set URL: null while the catalogue loads, or if unknown
+    function setsCatalogFind(name) {
+        if (!setsCatalogBySlug || !name) return null;
+        var n = setNumberOf(name);
+        return (n !== null && setsCatalogByNum[n]) || setsCatalogBySlug[setSlugOf(name)] || null;
+    }
+
+    // What to call a set: its staff-pick title, else the file name without the number and dashes
+    function setDisplayName(name) {
+        var pick = setsCatalogFind(name);
+        if (pick && pick.title) return pick.title;
+        var plain = String(name || '').replace(/^.*\//, '').replace(/\.mp4$/i, '')
+            .replace(/^(ronaut\[\d+\]\s*[-_ ]*|\d+\s+-\s+)/i, '').replace(/[-_]+/g, ' ').trim();
+        return plain || String(name || '');
+    }
+
+    function setThumbUrl(pick) {
+        if (!pick || !pick.thumbnail) return null;
+        var parts = pick.thumbnail.split('/');
+        parts[parts.length - 1] = encodeURIComponent(parts[parts.length - 1]);
+        return SETS_API + parts.join('/');
+    }
+
+    // VOD plays (/api/vod-play): one per set loaded into a player, logged when it really starts playing after
+    // someone has used the page. A shared link opens a set without a tap, and link-preview bots render the page.
+    function logVodPlayOnPlay(video, url) {
+        if (!video._vodPlayBound) {
+            video._vodPlayBound = true;
+            video.addEventListener('play', function() {
+                var name = video._vodPlayName, act = navigator.userActivation;
+                if (!name || (act && !act.hasBeenActive)) return;
+                video._vodPlayName = null;
+                fetch(SETS_API + '/api/vod-play', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ set_name: name })
+                }).catch(function(e) { console.log('VOD tracking error', e); });
+            });
+        }
+        video._vodPlayName = url ? String(url).replace('/sets/', '').replace('.mp4', '') : null;
+    }
+
+    // Lock screen / Control Center (Media Session). Its buttons drive whichever player is active: the live
+    // player (the stream, or a pick in it) or the Sets page player; bind() moves them when that changes.
+    // The artwork is the set's thumbnail, or the station logo for the live broadcast and anything unknown.
+    var RonautMedia = (function() {
+        var ms = 'mediaSession' in navigator ? navigator.mediaSession : null;
+        var LOGO = 'https://ronautradio.la/assets/favicon.png';
+        var EVENTS = ['play', 'playing', 'pause', 'waiting', 'seeked', 'ratechange', 'durationchange', 'loadedmetadata'];
+        var video = null, seekable = false, art = null, meta = null, shown = '';
+
+        function setHandler(action, fn) {
+            try { ms.setActionHandler(action, fn); } catch (e) {} // not every browser knows every action
+        }
+        function sync() {
+            if (!video) return;
+            ms.playbackState = video.paused ? 'paused' : 'playing';
+            var d = video.duration;
+            if (seekable && d && isFinite(d)) {
+                try {
+                    ms.setPositionState({ duration: d, playbackRate: video.playbackRate || 1, position: Math.min(video.currentTime, d) });
+                } catch (e) {}
+            }
+        }
+        function show() {
+            if (!meta || !window.MediaMetadata) return;
+            var key = meta.title + '|' + meta.artist + '|' + art;
+            if (key === shown) return; // now-playing rewrites the same title every 10s
+            shown = key;
+            ms.metadata = new MediaMetadata({
+                title: meta.title,
+                artist: meta.artist,
+                album: 'Ronaut Radio',
+                artwork: art ? [{ src: art, type: 'image/jpeg' }] : [{ src: LOGO, sizes: '512x512', type: 'image/png' }]
+            });
+        }
+        return {
+            // v: the player the buttons control. vod: it holds a set (seek buttons, scrub bar).
+            // opts.unmute: play unmutes it (the live player autoplays muted, a pick in it shouldn't stay so)
+            bind: function(v, vod, opts) {
+                if (!ms || !v) return;
+                if (video) EVENTS.forEach(function(e) { video.removeEventListener(e, sync); });
+                video = v;
+                seekable = !!vod;
+                EVENTS.forEach(function(e) { v.addEventListener(e, sync); });
+                var unmute = !!(opts && opts.unmute);
+                setHandler('play', function() {
+                    if (unmute) { v.muted = false; v.volume = 1; }
+                    v.play().catch(function(e) { console.log('Play prevented', e); });
+                });
+                setHandler('pause', function() { v.pause(); });
+                setHandler('stop', function() { v.pause(); });
+                setHandler('seekbackward', seekable ? function(d) {
+                    v.currentTime = Math.max(v.currentTime - ((d && d.seekOffset) || 10), 0);
+                } : null);
+                setHandler('seekforward', seekable ? function(d) {
+                    v.currentTime = Math.min(v.currentTime + ((d && d.seekOffset) || 10), v.duration || Infinity);
+                } : null);
+                setHandler('seekto', seekable ? function(d) {
+                    if (d.seekTime === undefined) return;
+                    if (d.fastSeek && typeof v.fastSeek === 'function') v.fastSeek(d.seekTime);
+                    else v.currentTime = d.seekTime;
+                } : null);
+                if (!seekable) { try { ms.setPositionState(); } catch (e) {} } // the stream has no position
+                sync();
+            },
+            // the set's thumbnail URL, or null for the logo
+            artwork: function(url) {
+                if (!ms) return;
+                art = url || null;
+                show();
+            },
+            metadata: function(title, artist) {
+                if (!ms) return;
+                meta = { title: title || 'Ronaut Radio', artist: artist || 'Los Angeles • Vinyl Only' };
+                show();
+            }
+        };
+    })();
 
     // Set thumbnail, dressed like the YouTube ones: the frame blurred like the RNT opener, the RO/NAUT/RADIO
     // wordmark and RNT SESSIONS 016 (the name is on the card below). The picture is the sleeve the oval
@@ -3473,6 +3642,11 @@
         var video = document.getElementById('ronaut-player');
         var ticker = document.getElementById('ticker');
         var backBtn = document.getElementById('back-to-live');
+        var pick = setsCatalogFind(url);
+        if (pick && pick.title) title = pick.title; // residents' links name the file
+
+        // One set at a time: a set still going on the Sets page stops
+        if (setsPlayerLoaded()) stopSetsPlayer();
 
         // Destroy HLS instance
         if (hlsInstance) {
@@ -3490,7 +3664,7 @@
         var isHls = url && url.indexOf('.m3u8') !== -1;
         currentVodUrl = fullUrl; // Store for mini player
         // RNT opener: ident + wordmark + ON AIR before the set, when it starts from the top
-        if (!(startTime > 1) && window.RNTOpener) RNTOpener.start(video, document.getElementById('player-container'), url);
+        if (!(startTime > 1) && window.RNTOpener) RNTOpener.start(video, document.getElementById('player-container'), url, pick && pick.ident_volume);
 
         if (isHls && Hls.isSupported()) {
             // Use HLS.js for m3u8 files
@@ -3543,115 +3717,38 @@
         isPlayingPick = true;
         currentPickTitle = title; // Store for mini player
 
-        // Update Media Session for iOS Control Center
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: title,
-                artist: 'Ronaut Radio • Staff Pick',
-                album: 'Ronaut Radio',
-                artwork: [
-                    { src: 'https://ronautradio.la/assets/favicon.png', sizes: '512x512', type: 'image/png' }
-                ]
+        // Lock screen / Control Center: this player, as a set (seek buttons, scrub bar), with its thumbnail
+        currentPickArt = setThumbUrl(pick);
+        RonautMedia.bind(video, true, { unmute: true });
+        RonautMedia.artwork(currentPickArt);
+
+        // Once per page: these follow isPlayingPick, so every pick shares them
+        if (!video._pickListeners) {
+            video._pickListeners = true;
+            // Resume playback after seek completes (critical for iOS background)
+            video.addEventListener('seeked', function() {
+                // Always try to resume after seek in VOD mode
+                if (isPlayingPick) {
+                    video.muted = false;
+                    video.volume = 1;
+                    video.play().catch(function(e) { console.log('Resume after seeked', e); });
+                }
             });
-            // Re-register action handlers for VOD
-            navigator.mediaSession.setActionHandler('play', function() {
-                video.muted = false;
-                video.volume = 1;
-                video.play().catch(function(e) { console.log('Play prevented', e); });
-            });
-            navigator.mediaSession.setActionHandler('pause', function() {
-                video.pause();
-            });
-            navigator.mediaSession.setActionHandler('seekbackward', function() {
-                video.currentTime = Math.max(video.currentTime - 10, 0);
-            });
-            navigator.mediaSession.setActionHandler('seekforward', function() {
-                video.currentTime = Math.min(video.currentTime + 10, video.duration);
-            });
-            // Enable Control Center scrub bar
-            navigator.mediaSession.setActionHandler('seekto', function(details) {
-                if (details.seekTime !== undefined) {
-                    // Use fastSeek if available (better for scrubbing)
-                    if (details.fastSeek && typeof video.fastSeek === 'function') {
-                        video.fastSeek(details.seekTime);
-                    } else {
-                        video.currentTime = details.seekTime;
-                    }
-                    updatePositionState();
+
+            // Handle iOS backgrounding - try to keep playing
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden' && isPlayingPick && !video.paused) {
+                    // Store that we were playing
+                    video.dataset.wasPlaying = 'true';
+                } else if (document.visibilityState === 'visible' && video.dataset.wasPlaying === 'true') {
+                    video.dataset.wasPlaying = '';
+                    video.play().catch(function(e) {});
                 }
             });
         }
 
-        // Update position state for iOS Control Center scrub bar
-        function updatePositionState() {
-            if ('mediaSession' in navigator && video.duration && !isNaN(video.duration)) {
-                try {
-                    navigator.mediaSession.setPositionState({
-                        duration: video.duration,
-                        playbackRate: video.playbackRate || 1,
-                        position: video.currentTime
-                    });
-                } catch (e) { /* ignore errors */ }
-            }
-        }
-
-        // Set position state when duration is known
-        video.addEventListener('loadedmetadata', function() {
-            updatePositionState();
-        });
-
-        // Resume playback after seek completes (critical for iOS background)
-        var wasPlayingBeforeSeek = false;
-        video.addEventListener('seeking', function() {
-            wasPlayingBeforeSeek = !video.paused;
-        });
-        video.addEventListener('seeked', function() {
-            updatePositionState();
-            // Always try to resume after seek in VOD mode
-            if (isPlayingPick) {
-                video.muted = false;
-                video.volume = 1;
-                video.play().then(function() {
-                    if ('mediaSession' in navigator) {
-                        navigator.mediaSession.playbackState = 'playing';
-                    }
-                }).catch(function(e) { console.log('Resume after seeked', e); });
-            }
-        });
-
-        // Handle iOS backgrounding - try to keep playing
-        document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'hidden' && isPlayingPick && !video.paused) {
-                // Store that we were playing
-                video.dataset.wasPlaying = 'true';
-            } else if (document.visibilityState === 'visible' && video.dataset.wasPlaying === 'true') {
-                video.dataset.wasPlaying = '';
-                video.play().catch(function(e) {});
-            }
-        });
-
-        video.addEventListener('durationchange', function() {
-            updatePositionState();
-        });
-
-        // Update position state periodically during playback
-        var positionInterval = setInterval(function() {
-            if (video.paused || video.ended) return;
-            updatePositionState();
-        }, 1000);
-
-        // Clean up interval when switching back to live
-        video.addEventListener('emptied', function() {
-            clearInterval(positionInterval);
-        }, { once: true });
-
-        // Log VOD play for analytics
-        var setName = url.replace('/sets/', '').replace('.mp4', '');
-        fetch('https://stream.ronautradio.la/api/vod-play', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ set_name: setName })
-        }).catch(function(e) { console.log('VOD tracking error', e); });
+        // Log the VOD play when it really plays (not when a link merely loads it)
+        logVodPlayOnPlay(video, url);
 
         // Update mini player title for VOD
         var miniStatus = document.querySelector('#mini-player .mini-status');
@@ -3681,6 +3778,9 @@
         isPlayingPick = false;
         currentPickTitle = '';
         currentVodUrl = ''; // Clear VOD URL
+        currentPickArt = null;
+        logVodPlayOnPlay(video, null); // a pick that never played isn't logged when the stream plays
+        RonautMedia.bind(video, false);
 
         // Switch to demo mode for HLS (real audio analysis often fails with MSE)
         if (window.RonautAudio && window.RonautAudio.setDemoMode) {
@@ -3734,18 +3834,22 @@
             // Ensure mini video is initialized (desktop: always visible; mobile: show bar)
             if (window._ronautMiniInit) window._ronautMiniInit();
 
-            // Load sets then auto-select slug if provided
-            if (!setsViewLoaded) {
-                loadSetsView().then(function() {
-                    if (slug) setsViewSelectBySlug(slug);
-                });
-            } else {
-                if (slug) setsViewSelectBySlug(slug);
-            }
-
             if (pushState) {
                 var url = '/?view=sets' + (slug ? '&set=' + encodeURIComponent(slug) : '');
                 window.history.pushState({ view: 'sets', slug: slug || null }, '', url);
+            }
+
+            // Open the set the URL names. The URL is already right (the push above, a first load, Back or
+            // Forward), so selecting it replaces the history entry instead of adding one, and Back can leave.
+            if (!setsViewLoaded) {
+                loadSetsView().then(function() {
+                    // unless Back/Forward moved on while the sets loaded
+                    if (slug && currentView === 'sets' && new URLSearchParams(window.location.search).get('set') === slug) {
+                        setsViewSelectBySlug(slug, 'replace');
+                    }
+                });
+            } else if (slug) {
+                setsViewSelectBySlug(slug, 'replace');
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -3757,7 +3861,7 @@
 
             // Check if a set is actively playing — if so, keep it going in background
             var featVid = document.getElementById('sets-featured-video');
-            var setIsPlaying = setsViewHlsInstance && featVid && !featVid.paused;
+            var setIsPlaying = setsPlayerLoaded() && featVid && !featVid.paused;
 
             if (setIsPlaying) {
                 // Show blank player with "Back to Ronaut Live" button
@@ -3772,24 +3876,41 @@
     }
 
     function resumeLiveFromSet() {
+        stopSetsPlayer();
+
+        // Resume live stream
+        var liveVideo = document.getElementById('ronaut-player');
+        if (liveVideo && liveVideo.paused) liveVideo.play().catch(function(){});
+    }
+
+    // The Sets page player has a set in it (playing or paused)
+    function setsPlayerLoaded() {
+        var featVid = document.getElementById('sets-featured-video');
+        return !!(setsViewHlsInstance || (featVid && featVid.getAttribute('src')));
+    }
+
+    // Empty the Sets page player and hand the player bar and lock screen back to the live player. The set's
+    // panel closes too: it would otherwise stay up on the Sets page with nothing left to play.
+    function stopSetsPlayer() {
         if (window.RNTOpener) RNTOpener.cancel();
         // Revert mini player back to live stream first
         if (window._ronautMiniSetActive) {
             window._ronautMiniSetActive(document.getElementById('ronaut-player'), null);
         }
 
-        // Stop sets player
         if (setsViewHlsInstance) { setsViewHlsInstance.destroy(); setsViewHlsInstance = null; }
         var featVid = document.getElementById('sets-featured-video');
-        if (featVid) { featVid.pause(); featVid.src = ''; }
+        if (featVid) { featVid.pause(); featVid.src = ''; logVodPlayOnPlay(featVid, null); }
+        var featSection = document.getElementById('sets-featured-section');
+        if (featSection) featSection.style.display = 'none';
+        if (setsViewActiveSlug) {
+            setsViewActiveSlug = null;
+            if (window._setsViewRenderGrid) window._setsViewRenderGrid();
+        }
 
         // Hide overlay
         var overlay = document.getElementById('set-playing-overlay');
         if (overlay) overlay.classList.remove('visible');
-
-        // Resume live stream
-        var liveVideo = document.getElementById('ronaut-player');
-        if (liveVideo && liveVideo.paused) liveVideo.play().catch(function(){});
     }
 
     // Help ID Modal
@@ -3851,12 +3972,6 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         // ── Aesthetic helpers ──────────────────────────────────────────────
-        var programmeGenreMap = {};
-
-        function normalizeForMatch(s) {
-            return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        }
-
         function formatCountdown(startTs) {
             var diff = Math.floor(startTs - Date.now() / 1000);
             if (diff < 90) return 'soon';
@@ -3908,32 +4023,9 @@
         })();
         // ──────────────────────────────────────────────────────────────────
 
-        // Media Session API for iOS Control Center / Lock Screen controls
+        // Media Session API for iOS Control Center / Lock Screen controls (artwork: RonautMedia.artwork)
         function updateMediaSession(title, artist) {
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: title || 'Ronaut Radio',
-                    artist: artist || 'Los Angeles • Vinyl Only',
-                    album: 'Ronaut Radio',
-                    artwork: [
-                        { src: 'https://ronautradio.la/assets/favicon.png', sizes: '512x512', type: 'image/png' }
-                    ]
-                });
-            }
-        }
-
-        function setupMediaSessionHandlers(video) {
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.setActionHandler('play', function() {
-                    video.play().catch(function(e) { console.log('Play prevented', e); });
-                });
-                navigator.mediaSession.setActionHandler('pause', function() {
-                    video.pause();
-                });
-                navigator.mediaSession.setActionHandler('stop', function() {
-                    video.pause();
-                });
-            }
+            RonautMedia.metadata(title, artist);
         }
 
         // Player, Now Playing, and Programme
@@ -3944,8 +4036,8 @@
             const programmeList = document.getElementById('programme-list');
             const programmeLiveMsg = document.getElementById('programme-live-message');
 
-            // Setup Media Session handlers
-            setupMediaSessionHandlers(video);
+            // Lock screen controls start on the live player
+            RonautMedia.bind(video, false);
 
             let currentMode = 'offline';
 
@@ -3995,6 +4087,7 @@
                 try {
                     var res = await fetch("https://stream.ronautradio.la/api/now-playing");
                     var data = await res.json();
+                    if (isPlayingPick || window._miniInSetsMode) return; // a pick or set started meanwhile
                     currentMode = data.mode || 'offline';
 
                     var miniStatus = document.querySelector('#mini-player .mini-status');
@@ -4009,6 +4102,7 @@
                         ticker.textContent = 'LIVE BROADCAST';
                         ticker.style.display = 'block';
                         if (currentTrackEl) currentTrackEl.style.display = 'none';
+                        RonautMedia.artwork(null);
                         if (miniStatus) miniStatus.textContent = 'LIVE';
                         if (miniTitle) { miniTitle.textContent = 'Live Broadcast'; updateMiniTitleMarquee(); }
                         updateMediaSession('Live Broadcast', 'Ronaut Radio');
@@ -4020,12 +4114,17 @@
                         liveBadge.classList.remove('active');
                         liveBadge.style.display = 'none';
                         if (data.now_playing && data.now_playing !== 'Offline') {
-                            ticker.textContent = 'Now Playing: ' + data.now_playing;
+                            // The stream names the file ("Ronaut[018]-Andrea-Emami-..."): show the set's title
+                            var airing = setsCatalogFind(data.now_playing) || setsCatalogFind(data.file);
+                            var airingName = airing && airing.title ? airing.title : setDisplayName(data.now_playing);
+                            ticker.textContent = 'Now Playing: ' + airingName;
                             ticker.style.display = 'block';
+                            RonautMedia.artwork(setThumbUrl(airing));
                             if (miniStatus) miniStatus.textContent = 'NOW PLAYING';
-                            if (miniTitle) { miniTitle.textContent = data.now_playing; updateMiniTitleMarquee(); }
-                            updateMediaSession(data.now_playing, 'Ronaut Radio');
+                            if (miniTitle) { miniTitle.textContent = airingName; updateMiniTitleMarquee(); }
+                            updateMediaSession(airingName, 'Ronaut Radio');
                         } else {
+                            RonautMedia.artwork(null);
                             ticker.textContent = 'Stream offline';
                             ticker.style.display = 'block';
                             if (miniStatus) miniStatus.textContent = 'OFFLINE';
@@ -4101,7 +4200,7 @@
                             var recent = data.recent[r];
                             var recentTime = formatTime(recent.ended_at - recent.duration);
                             html += '<div class="programme-item programme-past">';
-                            html += '<span class="track-name">' + escapeHtml(recent.display_name) + '</span>';
+                            html += '<span class="track-name">' + escapeHtml(setDisplayName(recent.display_name)) + '</span>';
                             html += '<span class="track-time">' + recentTime + '</span>';
                             html += '</div>';
                         }
@@ -4118,7 +4217,7 @@
                         if (duration > 0) {
                             html += '<div class="progress-line" style="left:' + progressPct.toFixed(1) + '%"></div>';
                         }
-                        html += '<span class="track-name"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' + escapeHtml(data.current.display_name) + '</span>';
+                        html += '<span class="track-name"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>' + escapeHtml(setDisplayName(data.current.display_name)) + '</span>';
                         html += '<span class="track-time">NOW</span>';
                         html += '</div>';
                     }
@@ -4128,12 +4227,12 @@
                             var track = data.upcoming[i];
                             var timeStr = formatTime(track.estimated_start);
                             var countdown = formatCountdown(track.estimated_start);
-                            var lookupKey = normalizeForMatch(track.display_name.replace(/^\d+\s*-\s*/, ''));
-                            var gArr = programmeGenreMap[lookupKey];
+                            var trackSet = setsCatalogFind(track.display_name);
+                            var gArr = trackSet && trackSet.genres;
                             var hoverText = countdown;
                             if (gArr && gArr.length > 0) hoverText += ' · ' + gArr.slice(0, 2).join(' · ');
                             html += '<div class="programme-item">';
-                            html += '<span class="track-name">' + escapeHtml(track.display_name) + '</span>';
+                            html += '<span class="track-name">' + escapeHtml(setDisplayName(track.display_name)) + '</span>';
                             html += '<span class="track-time">' + timeStr + '</span>';
                             html += '<span class="track-hover-info">' + escapeHtml(hoverText) + '</span>';
                             html += '</div>';
@@ -4156,9 +4255,17 @@
                 }
             }
 
-            // Initial calls — programme needs currentMode from now-playing first
-            updateNowPlaying().then(function() {
+            // Initial calls — programme needs currentMode from now-playing first. Both wait (up to 1.5s) for the
+            // sets catalogue, so sets come up under their titles instead of switching over from file names.
+            new Promise(function(resolve) {
+                fetchSetsCatalog().then(resolve, resolve);
+                setTimeout(resolve, 1500);
+            }).then(updateNowPlaying).then(function() {
                 updateProgramme();
+                // Slower than that: redraw once it's in
+                if (!setsCatalogBySlug) {
+                    fetchSetsCatalog().then(function() { return updateNowPlaying(); }).then(updateProgramme).catch(function() {});
+                }
             });
 
             // Poll: now-playing every 10s, programme every 30s
@@ -4614,6 +4721,11 @@
                     bindActiveVideoEvents(video);
                     updateMiniPlayerButtons();
 
+                    // The lock screen follows: the set with its thumbnail, or the live player (which may hold a pick)
+                    RonautMedia.bind(videoEl, !!info || isPlayingPick, !info && isPlayingPick ? { unmute: true } : null);
+                    if (info) RonautMedia.artwork(info.thumb || null);
+                    else if (isPlayingPick) RonautMedia.artwork(currentPickArt);
+
                     // Update mini video frame
                     if (info && info.hlsUrl) {
                         // Switching to a VOD set
@@ -5049,7 +5161,7 @@
                     for (var i = 0; i < residentsData.length; i++) {
                         var r = residentsData[i];
                         html += '<div class="resident-row" data-index="' + i + '">';
-                        html += '<img src="https://stream.ronautradio.la' + r.photo + '" alt="' + escapeHtml(r.name) + '" onerror="this.src=\'https://stream.ronautradio.la/residents/logo.png\'" />';
+                        html += '<img src="https://stream.ronautradio.la' + r.photo + '" alt="' + escapeHtml(r.name) + '" onerror="this.onerror=null;this.src=\'https://stream.ronautradio.la/residents/logo.png\'" />';
                         html += '<span class="name">' + escapeHtml(r.name) + '</span>';
                         html += '<span class="arrow">&#8250;</span>';
                         html += '</div>';
@@ -5109,8 +5221,8 @@
                     setsHtml += '<div class="detail-sets-title">Listen to their sets</div>';
                     for (var j = 0; j < r.sets.length; j++) {
                         var setFile = r.sets[j];
-                        var setName = setFile.replace('.mp4', '');
-                        setsHtml += '<span class="detail-set-link" data-url="/sets/' + setFile + '" data-title="' + escapeHtml(setName) + '">' + escapeHtml(setName) + '</span>';
+                        var setName = setDisplayName(setFile); // "Ronaut[008]-Fede.mp4" → Fede
+                        setsHtml += '<span class="detail-set-link" data-url="/sets/' + setFile + '" data-title="' + escapeHtml(setName).replace(/"/g, '&quot;') + '">' + escapeHtml(setName) + '</span>';
                     }
                 }
                 document.getElementById('detail-sets').innerHTML = setsHtml;
@@ -5181,35 +5293,8 @@
 
             async function loadStaffPicks() {
                 try {
-                    var res = await fetch('https://stream.ronautradio.la/api/sets');
-                    var data = await res.json();
+                    var data = await fetchSetsCatalog(); // the programme's hover genres come from it too
                     if (!data.sets || data.sets.length === 0) return;
-
-                    // Build genre lookup for programme hover
-                    programmeGenreMap = {};
-                    for (var gi = 0; gi < data.sets.length; gi++) {
-                        var ps = data.sets[gi];
-                        if (!ps.genres || !ps.genres.length) continue;
-                        var g2 = ps.genres.slice(0, 2);
-                        var fnKey = normalizeForMatch(String(ps.filename || '').replace(/^Ronaut\[\d+\]-?/i, '').replace(/\.mp4$/i, ''));
-                        var titleKey = normalizeForMatch(ps.title || '');
-                        if (fnKey) programmeGenreMap[fnKey] = g2;
-                        if (titleKey && !programmeGenreMap[titleKey]) programmeGenreMap[titleKey] = g2;
-                    }
-                    // Patch genres into already-rendered programme items (no re-fetch)
-                    setTimeout(function() {
-                        var progItems = document.querySelectorAll('.programme-item:not(.now-playing):not(.programme-past)');
-                        for (var pi = 0; pi < progItems.length; pi++) {
-                            var hoverEl = progItems[pi].querySelector('.track-hover-info');
-                            var nameEl = progItems[pi].querySelector('.track-name');
-                            if (!hoverEl || !nameEl) continue;
-                            var pKey = normalizeForMatch(nameEl.textContent.replace(/^\d+\s*-\s*/, ''));
-                            var pGenres = programmeGenreMap[pKey];
-                            if (pGenres && pGenres.length && hoverEl.textContent.indexOf('\xb7') === -1) {
-                                hoverEl.textContent = hoverEl.textContent + ' \xb7 ' + pGenres.join(' \xb7 ');
-                            }
-                        }
-                    }, 200);
 
                     var html = '';
                     for (var i = 0; i < data.sets.length; i++) {
@@ -5240,7 +5325,7 @@
                             if (unidCount > 0) {
                                 label += (label ? ' + ' : '') + unidCount + ' unidentified';
                             }
-                            html += '<div class="pick-tracklist-toggle" data-url="' + encodedUrl + '">' + label + '</div>';
+                            html += '<div class="pick-tracklist-toggle" data-url="' + encodedUrl + '" data-label="' + label + '">' + label + '</div>';
                             html += '<div class="pick-tracklist" id="tracklist-' + i + '">';
                             // Merge and sort by start_time
                             var allTracks = [];
@@ -5354,8 +5439,9 @@
                             e.stopPropagation();
                             var tracklist = this.nextElementSibling;
                             tracklist.classList.toggle('open');
+                            // closed again: the label it started with ("Tracklist (7) + 5 unidentified")
                             this.textContent = tracklist.classList.contains('open') ?
-                                'Hide Tracklist' : 'Tracklist (' + tracklist.children.length + ')';
+                                'Hide Tracklist' : this.getAttribute('data-label');
                         });
                     }
 
@@ -5384,10 +5470,12 @@
                             openHelpIdModal(setName, startTime, timeRange);
                         });
                     }
-                    // Handle ?set= URL param — direct shareable link to any set (staff pick or unlisted)
+                    // Old shared links, /?set=<slug> on the main page: play the set in the live player. A Sets page
+                    // link (?view=sets&set=, where the share page sends people) is the Sets page's to open; doing it
+                    // here as well loaded the set a second time, into the hidden live player.
                     var urlParams = new URLSearchParams(window.location.search);
                     var setParam = urlParams.get('set');
-                    if (setParam) {
+                    if (setParam && urlParams.get('view') !== 'sets' && currentView !== 'sets') {
                         var directUrl = '/hls-vod/' + setParam + '.m3u8';
                         var matchedSet = data.sets.find(function(s) { return s.url === directUrl; });
                         var directTitle = urlParams.get('title') || (matchedSet ? displayPickTitle(matchedSet) : setParam);
@@ -5427,9 +5515,9 @@
 
             window.loadSetsView = async function() {
                 try {
-                    var res = await fetch(API + '/api/sets');
-                    var data = await res.json();
-                    setsViewAllSets = (data.sets || []).sort(function(a, b) {
+                    var data = await fetchSetsCatalog();
+                    // a copy: Staff Picks shows the same list in its own order
+                    setsViewAllSets = (data.sets || []).slice().sort(function(a, b) {
                         return parseInt(setsGetNumber(b.filename) || '0') - parseInt(setsGetNumber(a.filename) || '0');
                     });
                     setsViewLoaded = true;
@@ -5448,8 +5536,9 @@
                 });
                 var el = document.getElementById('sets-genre-filter');
                 if (!el) return;
+                // The genre goes in data-genre, not into an onclick string: "Jungle/Drum'n'bass" broke that
                 el.innerHTML = genres.map(function(g) {
-                    return '<button class="genre-btn' + (g === setsViewActiveGenre ? ' active' : '') + '" onclick="setsFilterGenre(\'' + setsEsc(g) + '\')">' + setsEsc(g === 'all' ? 'All' : g) + '</button>';
+                    return '<button class="genre-btn' + (g === setsViewActiveGenre ? ' active' : '') + '" data-genre="' + setsEsc(g) + '">' + setsEsc(g === 'all' ? 'All' : g) + '</button>';
                 }).join('');
             }
 
@@ -5458,6 +5547,14 @@
                 setsRenderFilters();
                 setsRenderGrid();
             };
+
+            var setsGenreFilterEl = document.getElementById('sets-genre-filter');
+            if (setsGenreFilterEl) {
+                setsGenreFilterEl.addEventListener('click', function(e) {
+                    var btn = e.target.closest('.genre-btn');
+                    if (btn) setsFilterGenre(btn.getAttribute('data-genre'));
+                });
+            }
 
             function setsRenderGrid() {
                 var filtered = setsViewActiveGenre === 'all' ? setsViewAllSets : setsViewAllSets.filter(function(s) {
@@ -5488,18 +5585,25 @@
                 }).join('');
             }
 
-            window.setsViewSelectBySlug = function(slug) {
+            window._setsViewRenderGrid = setsRenderGrid; // stopSetsPlayer clears the Playing badge
+
+            // historyMode: 'push' when someone picks a set on this page (the grid's cards; the default), 'replace'
+            // when the URL already names it (showView: a first load, Back/Forward, a Staff Picks card). A set
+            // that's still in the player isn't restarted then, e.g. Back to a set that kept playing under Live.
+            window.setsViewSelectBySlug = function(slug, historyMode) {
                 var found = setsViewAllSets.find(function(s) { return setsGetSlug(s) === slug; });
-                if (found) setsViewSelectSet(found, true);
+                if (!found) return;
+                if (historyMode === 'replace' && slug === setsViewActiveSlug && setsPlayerLoaded()) return;
+                setsViewSelectSet(found, historyMode || 'push');
             };
 
-            function setsViewSelectSet(set, pushHistory) {
+            function setsViewSelectSet(set, historyMode) {
                 var slug = setsGetSlug(set);
                 setsViewActiveSlug = slug;
 
-                if (pushHistory) {
-                    window.history.pushState({ view: 'sets', slug: slug }, '', '/?view=sets&set=' + encodeURIComponent(slug));
-                }
+                var setUrl = '/?view=sets&set=' + encodeURIComponent(slug);
+                if (historyMode === 'push') window.history.pushState({ view: 'sets', slug: slug }, '', setUrl);
+                else if (historyMode === 'replace') window.history.replaceState({ view: 'sets', slug: slug }, '', setUrl);
 
                 var numEl = document.getElementById('sets-feat-number');
                 var titleEl = document.getElementById('sets-feat-title');
@@ -5562,7 +5666,13 @@
                                 : '');
                         tlEl.style.display = '';
                     } else {
-                        tlEl.style.display = 'none';
+                        // A new set has no tracklist for its first ~15 minutes, while its tracks are identified
+                        var identifying = !(set.tracklist || []).length && !(set.unidentified || []).length;
+                        tlEl.innerHTML = '<div class="tl-header">Tracklist</div>' +
+                            '<p class="tl-empty">' + (identifying
+                                ? 'The tracks are being identified. Check back in a few minutes.'
+                                : 'No tracks identified yet.') + '</p>';
+                        tlEl.style.display = '';
                     }
                 }
 
@@ -5578,7 +5688,8 @@
                     window._ronautMiniSetActive(featVid, {
                         status: setNum ? 'SET ' + setNum : 'NOW PLAYING',
                         title: set.title || '',
-                        hlsUrl: API + set.url
+                        hlsUrl: API + set.url,
+                        thumb: setThumbUrl(set) // lock screen artwork
                     });
                 }
 
@@ -5593,7 +5704,8 @@
                 video.src = '';
                 video.poster = API + set.thumbnail;
                 // RNT opener: ident + wordmark + ON AIR before the set (a deep link's seek ends it)
-                if (window.RNTOpener) RNTOpener.start(video, document.getElementById('sets-featured-video-wrap'), set.url);
+                if (window.RNTOpener) RNTOpener.start(video, document.getElementById('sets-featured-video-wrap'), set.url, set.ident_volume);
+                logVodPlayOnPlay(video, set.url);
 
                 var fullUrl = API + set.url;
                 if (set.url && set.url.indexOf('.m3u8') !== -1 && Hls.isSupported()) {
@@ -5628,19 +5740,8 @@
             };
 
             window.setsCloseFeatured = function() {
-                if (window.RNTOpener) RNTOpener.cancel();
-                if (setsViewHlsInstance) { setsViewHlsInstance.destroy(); setsViewHlsInstance = null; }
-                var video = document.getElementById('sets-featured-video');
-                if (video) { video.pause(); video.src = ''; }
-                var featSection = document.getElementById('sets-featured-section');
-                if (featSection) featSection.style.display = 'none';
-                setsViewActiveSlug = null;
+                stopSetsPlayer(); // also reverts the player bar to the live stream
                 window.history.pushState({ view: 'sets' }, '', '/?view=sets');
-                setsRenderGrid();
-                // Revert mini player back to live stream
-                if (window._ronautMiniSetActive) {
-                    window._ronautMiniSetActive(document.getElementById('ronaut-player'), null);
-                }
             };
 
             window.setsCopyLink = function() {
@@ -6776,7 +6877,8 @@
         }
     </script>
     <!-- RNT opener (assets/rnt-opener.js): the ident, tape-peel wordmark and ON AIR badge before a set.
-         Ident level per set (HLS slug): ~1 LU over the set's first two minutes, never above the file, max 12 dB down. -->
+         Ident level per set (HLS slug): ~1 LU over the set's first two minutes, never above the file, max 12 dB down.
+         A set missing here plays it at 0.5, about the median (youtube/new_set.py prints a new set's entry). -->
     <script>window.RNT_IDENT_VOLUME = {"2rolls": 0.313, "andrea": 0.759, "andreaemamiemiromerflippart1": 0.631, "andreaemamiemiromerflippart2": 1.0, "andreaemamiemiromerflippart3": 0.841, "ayse": 0.473, "b2b2b": 0.251, "blendbrett": 0.513, "blendbrett2": 0.977, "cenadebut": 0.412, "emami": 0.251, "emamilive": 0.501, "emir": 0.251, "emiromer": 0.832, "fede": 0.282, "mostlyvinyllaomerneoke": 1.0, "omersandreayogi": 0.49, "omersarsenal": 0.417, "omerscaswell": 1.0, "sssundayandrea": 0.335, "talmadge1": 0.251, "thursnight": 0.394, "weho": 0.389};</script>
     <script src="/assets/rnt-opener.js" defer></script>
 </body>
