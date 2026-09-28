@@ -6453,7 +6453,14 @@
         var SURFER_MIN = isMobile ? 80 : 110; // Detailed line art turns to mush much smaller
         var SURFER_MAX = isMobile ? 110 : 170;
 
-        // hero = the rare close-up flyby; the rest of the flock loops forever
+        // hero = the rare close-up flyby; the rest of the flock loops forever.
+        // Motion (Sep 2026): they surf, they don't fall. Each rider glides on a
+        // shallow heading across the sky, carving a slow S-curve as it goes,
+        // banking into every turn and pumping: quickest coming down the face,
+        // easing off through the top. The carve is measured in distance
+        // travelled, so far (slow) riders carve lazily and near ones quicker.
+        // Spray trails off the tail of the board, opposite to where it's going.
+        var TWO_PI = Math.PI * 2;
         function FlyingSurfer(hero, scatter) {
             this.hero = hero;
             this.init(scatter);
@@ -6463,63 +6470,84 @@
                 this.pose = 'og-dj';
                 this.size = Math.min(240, canvas.width * 0.45); // Big, but not a wall on phones
                 this.opacity = 0.9;
-                this.speed = 1.2;
+                this.speed = 1.3;
                 this.parallax = 0.25; // Very reactive to scrolling
+                this.dir = 1; // The OG's flames trail left, so he always rides right
+                this.carveAmp = this.size * 0.3;
+                this.carveLen = this.size * 3.5; // One full S every 3.5 body-lengths
             } else {
                 var depth = Math.random();
                 this.pose = SURFER_POSES[Math.floor(Math.random() * SURFER_POSES.length)];
                 this.size = SURFER_MIN + depth * (SURFER_MAX - SURFER_MIN);
                 this.opacity = 0.5 + depth * 0.4;
-                this.speed = 0.5 + depth * 1.0;
+                this.speed = 0.5 + depth * 0.9;
                 this.parallax = 0.05 + depth * 0.15; // Near ones move more on scroll
+                this.dir = Math.random() < 0.35 ? -1 : 1; // A few ride back the other way (mirrored)
+                this.carveAmp = this.size * (0.22 + Math.random() * 0.14);
+                this.carveLen = this.size * (3.5 + Math.random() * 2);
             }
+            // Shallow heading, 6-14 degrees below level, the way the boards are drawn
+            var pitch = 0.17 + (Math.random() - 0.5) * 0.14;
+            this.heading = this.dir === 1 ? pitch : Math.PI - pitch;
+            // Unit vector across the heading, always pointing down, so the carve
+            // and the pump agree on which way is "down the face" for both directions
+            this.nx = -Math.sin(this.heading) * this.dir;
+            this.ny = Math.cos(this.heading) * this.dir;
+            this.phase = Math.random() * TWO_PI;
             if (scatter) {
-                // First load: start mid-flight so the flock doesn't arrive in a clump
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-            } else if (Math.random() > 0.5) {
-                // Spawn from top
-                this.x = Math.random() * canvas.width * 0.6;
-                this.y = -this.size - Math.random() * 100;
+                // First load: start mid-ride so the flock doesn't arrive in a clump
+                this.bx = Math.random() * canvas.width;
+                this.by = this.carveAmp + Math.random() * (canvas.height * 0.7);
             } else {
-                // Spawn from left
-                this.x = -this.size - Math.random() * 50;
-                this.y = Math.random() * canvas.height * 0.4;
+                // Come in from the side they're riding from, somewhere in the top 3/4
+                this.bx = this.dir === 1 ? -this.size - Math.random() * 120
+                                         : canvas.width + this.size + Math.random() * 120;
+                this.by = this.carveAmp + Math.random() * (canvas.height * 0.65);
             }
-            this.angle = Math.PI * 0.25 + (Math.random() - 0.5) * 0.15;
-            this.vx = Math.cos(this.angle) * this.speed;
-            this.vy = Math.sin(this.angle) * this.speed;
+            var carve = Math.sin(this.phase) * this.carveAmp;
+            this.x = this.bx + this.nx * carve;
+            this.y = this.by + this.ny * carve;
+            this.vx = Math.cos(this.heading) * this.speed;
+            this.vy = Math.sin(this.heading) * this.speed;
+            this.bank = 0;
             this.speedLines = [];
             this.debris = [];
             this.trailTimer = 0;
             this.trailInterval = this.hero ? 3 : 5;
             this.active = true;
         };
+        // Tail of the board in world space: upper-left of the art, mirrored for
+        // left-riders, tilted with the bank
+        FlyingSurfer.prototype.tailPoint = function() {
+            var lx = -0.3 * this.size * this.dir;
+            var ly = 0.08 * this.size;
+            var a = this.bank * this.dir;
+            return {
+                x: this.x + lx * Math.cos(a) - ly * Math.sin(a),
+                y: this.y + lx * Math.sin(a) + ly * Math.cos(a)
+            };
+        };
         FlyingSurfer.prototype.emitSpeedLines = function() {
-            var trailAngle = this.angle + Math.PI;
-            // Spawn from surfboard (bottom of image)
-            var boardY = this.y + this.size * 0.4;
-            var boardX = this.x;
+            var trailAngle = Math.atan2(this.vy, this.vx) + Math.PI;
+            var tail = this.tailPoint();
             for (var i = 0; i < (this.hero ? 2 : 1); i++) {
-                var edgeOffset = (Math.random() - 0.5) * this.size * 0.5; // Narrower, just board width
-                var backOffset = this.size * 0.1 + Math.random() * this.size * 0.1;
-                var spawnX = boardX + Math.cos(trailAngle) * backOffset + edgeOffset;
-                var spawnY = boardY + Math.sin(trailAngle) * backOffset;
+                var spread = (Math.random() - 0.5) * this.size * 0.25; // Across the trail, about board width
+                var back = Math.random() * this.size * 0.1;
+                var spawnX = tail.x + Math.cos(trailAngle) * back - Math.sin(trailAngle) * spread;
+                var spawnY = tail.y + Math.sin(trailAngle) * back + Math.cos(trailAngle) * spread;
                 var line = new SpeedLine(spawnX, spawnY, 0, 0, trailAngle + (Math.random() - 0.5) * 0.2);
                 line.alpha = this.opacity;
                 this.speedLines.push(line);
             }
         };
         FlyingSurfer.prototype.emitDebris = function() {
-            var trailAngle = this.angle + Math.PI;
-            var boardY = this.y + this.size * 0.4;
-            var boardX = this.x;
+            var trailAngle = Math.atan2(this.vy, this.vx) + Math.PI;
+            var tail = this.tailPoint();
             for (var i = 0; i < (this.hero ? 2 : 1); i++) {
-                var edgeOffset = (Math.random() - 0.5) * this.size * 0.4; // Board width
-                var backOffset = this.size * 0.05 + Math.random() * this.size * 0.1;
-                var spawnX = boardX + Math.cos(trailAngle) * backOffset + edgeOffset;
-                var spawnY = boardY + Math.sin(trailAngle) * backOffset;
-                var driftAngle = trailAngle + (Math.random() - 0.5) * 0.3;
+                var spread = (Math.random() - 0.5) * this.size * 0.2;
+                var spawnX = tail.x - Math.sin(trailAngle) * spread;
+                var spawnY = tail.y + Math.cos(trailAngle) * spread;
+                var driftAngle = trailAngle + (Math.random() - 0.5) * 0.5;
                 var vx = Math.cos(driftAngle) * (Math.random() * 0.5 + 0.2);
                 var vy = Math.sin(driftAngle) * (Math.random() * 0.5 + 0.2);
                 var bit = new DebrisParticle(spawnX, spawnY, vx, vy);
@@ -6528,9 +6556,28 @@
             }
         };
         FlyingSurfer.prototype.update = function(scrollDelta) {
-            var scrollBoost = scrollDelta ? scrollDelta * this.parallax : 0;
-            this.x += this.vx + Math.cos(this.angle) * scrollBoost;
-            this.y += this.vy + Math.sin(this.angle) * scrollBoost;
+            var px = this.x, py = this.y;
+
+            // Pump: quickest coming down the face (carve heading down), easing off
+            // through the top of the turn
+            var pump = 1 + 0.3 * Math.cos(this.phase);
+            var step = this.speed * pump + (scrollDelta ? scrollDelta * this.parallax : 0);
+            this.bx += Math.cos(this.heading) * step;
+            this.by += Math.sin(this.heading) * step;
+            // The carve advances with distance, so scrolling carves them too
+            this.phase += (step / this.carveLen) * TWO_PI;
+
+            // Carve across the heading, and bank the board into the turn
+            var carve = Math.sin(this.phase) * this.carveAmp;
+            this.x = this.bx + this.nx * carve;
+            this.y = this.by + this.ny * carve;
+            var slope = Math.cos(this.phase) * this.carveAmp * TWO_PI / this.carveLen;
+            var lean = Math.atan(slope) * 0.6;
+            this.bank = Math.max(-0.3, Math.min(0.3, lean));
+
+            // Real velocity this frame, for the spray direction
+            this.vx = this.x - px;
+            this.vy = this.y - py;
 
             this.trailTimer++;
             if (this.trailTimer >= this.trailInterval) {
@@ -6549,7 +6596,9 @@
             }
 
             // Off screen: the hero is done, flock members come back as a new pose
-            if (this.x > canvas.width + this.size * 2 || this.y > canvas.height + this.size * 2) {
+            var gone = this.dir === 1 ? this.x > canvas.width + this.size * 2
+                                      : this.x < -this.size * 2;
+            if (gone || this.y > canvas.height + this.size * 2) {
                 if (this.hero) this.active = false;
                 else this.init(false);
             }
@@ -6570,7 +6619,9 @@
             ctx.save();
             ctx.globalAlpha = this.opacity;
             ctx.translate(this.x, this.y);
-            // Standing upright - no rotation
+            // Lean into the carve; left-riders are the same art flipped
+            ctx.rotate(this.bank * this.dir);
+            ctx.scale(this.dir, 1);
             if (this.hero) {
                 // The close-up gets a halo so it separates from the page
                 if (dark) {
