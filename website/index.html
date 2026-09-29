@@ -2412,6 +2412,49 @@
             pointer-events: none;
         }
 
+        /* Sky behind the meteors: stars and planets, painted once, so it's a still layer.
+           100vh is the tallest viewport on phones, so the URL bar sliding doesn't repaint it */
+        #sky-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -3;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+        #sky-canvas.ready { opacity: 1; }
+        /* The sun/moon and the small moon: moved by transforms as you scroll */
+        .sky-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -2;
+            pointer-events: none;
+            transform-origin: 50% 50%;
+            will-change: transform;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+        .sky-layer.ready { opacity: var(--sky-alpha, 1); }
+        #sky-hero { transform-origin: 0 0; }
+        .sky-part { position: absolute; }
+        #sky-shade { will-change: transform; }
+        /* The moon's round window: its shadow slides across inside it (the phase) */
+        #sky-disc { border-radius: 50%; overflow: hidden; }
+        #sky-shade { position: absolute; }
+        /* The share band (one button) and Upcoming Shows (a heading, two buttons, a narrow list) don't
+           need the solid panel the text-heavy sections have. The share band is full width, so its
+           panel cut a stripe through the sun/moon in the margin */
+        .share-container, #upcoming-shows-section { background: transparent; }
+        /* The small moon's far side of the orbit: behind the sun, still over the stars */
+        #sky-orbiter.behind { z-index: -3; }
+        @media (prefers-reduced-motion: reduce) {
+            #sky-canvas, .sky-layer { transition: none; }
+        }
+
         /* Smooth theme crossfade */
         html.theme-fade, html.theme-fade * {
             transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease !important;
@@ -2870,7 +2913,8 @@
     </style>
 </head>
 <body>
-    <!-- Asteroid Background Canvas -->
+    <!-- Sky (stars, planets; the sun/moon layers are added by its script) and, over it, the Asteroid Background Canvas -->
+    <canvas id="sky-canvas" aria-hidden="true"></canvas>
     <canvas id="asteroid-canvas"></canvas>
 
     <!-- Top Nav: Row 1 = brand/links, Row 2 = player bar (always visible) -->
@@ -6234,6 +6278,704 @@
     });
     </script>
 
+    <!-- Sky (Sep 2026): stars, planets, and a sun (light theme) or moon (dark theme) that comes
+         closer as you scroll. All of it sits behind the meteors and surfers. -->
+    <script>
+    (function() {
+        // Kept cheap on purpose:
+        // - Stars, the ringed planet and the far dwarf are painted once into #sky-canvas (again only
+        //   on a resize or a theme switch), so they cost nothing per frame.
+        // - The sun/moon has its own canvases. Scrolling moves, scales and spins them with CSS
+        //   transforms (compositor work, no repaint); they're repainted only when the size has
+        //   drifted ~12% from the last paint (so the scaled bitmap stays sharp) or the moon's phase
+        //   has moved on: a few dozen small repaints over a whole page.
+        // - Per frame: a handful of twinkling stars and the odd shooting star, drawn by the meteor
+        //   loop through RonautSky.drawMotion().
+        // Reduced motion: the still sky and the sun/moon stay put; nothing twinkles, shoots or
+        // follows the scroll.
+        var canvas = document.getElementById('sky-canvas');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var TWO_PI = Math.PI * 2;
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function isDarkMode() {
+            return document.documentElement.getAttribute('data-theme') === 'dark';
+        }
+
+        // One seed per visit, so a repaint draws the same sky
+        var seed = (Math.random() * 4294967296) >>> 0;
+        function rng(s) {
+            return function() {
+                s = (s + 0x6D2B79F5) | 0;
+                var t = Math.imul(s ^ (s >>> 15), 1 | s);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        // Comic-book twinkle: four points joined by inward curves
+        function sparklePath(c, x, y, s) {
+            var k = s * 0.16;
+            c.beginPath();
+            c.moveTo(x, y - s);
+            c.quadraticCurveTo(x + k, y - k, x + s, y);
+            c.quadraticCurveTo(x + k, y + k, x, y + s);
+            c.quadraticCurveTo(x - k, y + k, x - s, y);
+            c.quadraticCurveTo(x - k, y - k, x, y - s);
+            c.closePath();
+        }
+
+        // Diagonal ink hatching over whatever is clipped, for the shadow side of a body
+        function hatch(c, x, y, r, gap, style, width) {
+            c.strokeStyle = style;
+            c.lineWidth = width;
+            c.beginPath();
+            for (var d = -r * 2; d <= r * 2; d += gap) {
+                c.moveTo(x + d - r, y - r);
+                c.lineTo(x + d + r, y + r);
+            }
+            c.stroke();
+        }
+
+        // The shadow side: everything on the disc that falls inside a second disc pushed down and
+        // right, away from the light (upper left, like the meteors). push 0 = all shadow,
+        // ~1 = half lit, 2.1+ = no shadow (full)
+        function terminator(c, x, y, r, push, dark, shade) {
+            if (push >= 2.08) return;
+            var sx = x + r * push * 0.8, sy = y + r * push * 0.6;
+            c.save();
+            c.beginPath();
+            c.arc(sx, sy, r * 1.04, 0, TWO_PI);
+            c.clip();
+            c.fillStyle = shade;
+            c.fillRect(x - r, y - r, r * 2, r * 2);
+            hatch(c, x, y, r, (dark ? 4 : 3.2) * Math.max(1, r / 90), dark ? 'rgba(255, 255, 255, 0.13)' : 'rgba(0, 0, 0, 0.42)', Math.max(1, r / 110));
+            c.restore();
+        }
+
+        function paintStars(c, w, h, dark) {
+            var rand = rng(seed);
+            var count = Math.round(w * h / (dark ? 3600 : 6500));
+            for (var i = 0; i < count; i++) {
+                // Four draws per star whatever it turns out to be, so a resize keeps the same stars
+                var x = rand() * w, y = rand() * h, mag = rand(), tint = rand();
+                var r = 0.35 + mag * mag * mag * 0.95;
+                var a = 0.18 + mag * 0.62;
+                if (dark) {
+                    c.fillStyle = tint < 0.1 ? 'rgba(255, 214, 180, ' + a + ')'
+                                : tint < 0.16 ? 'rgba(206, 222, 255, ' + a + ')'
+                                : 'rgba(255, 255, 255, ' + a + ')';
+                } else {
+                    c.fillStyle = 'rgba(0, 0, 0, ' + (a * 0.55) + ')';
+                }
+                c.beginPath();
+                c.arc(x, y, r, 0, TWO_PI);
+                c.fill();
+                // The brightest few get a glow and a cross, like a lens catching them
+                if (dark && mag > 0.975) {
+                    var g = c.createRadialGradient(x, y, 0, x, y, r * 7);
+                    g.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
+                    g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    c.fillStyle = g;
+                    c.fillRect(x - r * 7, y - r * 7, r * 14, r * 14);
+                    c.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+                    c.lineWidth = 0.6;
+                    c.beginPath();
+                    c.moveTo(x - r * 6, y); c.lineTo(x + r * 6, y);
+                    c.moveTo(x, y - r * 6); c.lineTo(x, y + r * 6);
+                    c.stroke();
+                }
+            }
+            // A few comic sparkles
+            var sparkles = Math.max(4, Math.round(w * h / 110000));
+            for (var j = 0; j < sparkles; j++) {
+                var sx = rand() * w, sy = rand() * h, ss = 3.5 + rand() * 4.5, sa = 0.45 + rand() * 0.4;
+                sparklePath(c, sx, sy, ss);
+                c.fillStyle = dark ? 'rgba(255, 255, 255, ' + sa + ')' : 'rgba(0, 0, 0, ' + (sa * 0.7) + ')';
+                c.fill();
+            }
+        }
+
+        // The ringed planet, in the same Berg Audio line as the sun: a pale body in fine ink, no
+        // colour, no glow. Grooves across the ring like a record's, bands, a hatched shadow side.
+        function paintPlanet(c, p, dark) {
+            var r = p.r;
+            var ink = dark ? 'rgba(255, 255, 255, 0.92)' : '#111111';
+            var fine = 'rgba(17, 17, 17, ' + (dark ? 0.4 : 0.45) + ')';
+            c.save();
+            c.globalAlpha = p.alpha;
+            c.translate(p.x, p.y);
+            c.rotate(-0.4);
+            // The ring in two halves: the back half behind the planet, the front half over it
+            function ring(from, to) {
+                c.beginPath();
+                c.ellipse(0, 0, r * 2.1, r * 0.6, 0, from, to);
+                c.ellipse(0, 0, r * 1.42, r * 0.36, 0, to, from, true);
+                c.closePath();
+                c.fillStyle = dark ? '#9d9d9d' : '#ffffff';
+                c.fill();
+                c.strokeStyle = fine;
+                c.lineWidth = 0.7;
+                for (var k = 1; k <= 3; k++) {
+                    c.beginPath();
+                    c.ellipse(0, 0, r * (1.42 + 0.17 * k), r * (0.36 + 0.06 * k), 0, from, to);
+                    c.stroke();
+                }
+                c.strokeStyle = ink;
+                c.lineWidth = 1.3;
+                c.beginPath();
+                c.ellipse(0, 0, r * 2.1, r * 0.6, 0, from, to);
+                c.stroke();
+                c.lineWidth = 1;
+                c.beginPath();
+                c.ellipse(0, 0, r * 1.42, r * 0.36, 0, from, to);
+                c.stroke();
+            }
+            ring(Math.PI, TWO_PI);
+            c.beginPath();
+            c.arc(0, 0, r, 0, TWO_PI);
+            c.fillStyle = dark ? '#c4c4c4' : '#ffffff';
+            c.fill();
+            c.save();
+            c.clip();
+            // Bands: fine lines following the curve
+            c.strokeStyle = fine;
+            c.lineWidth = 0.8;
+            for (var b = -2; b <= 2; b++) {
+                c.beginPath();
+                c.ellipse(0, b * r * 0.3 - r * 0.1, r * 1.3, r * 0.28, 0, 0.15, Math.PI - 0.15);
+                c.stroke();
+            }
+            terminator(c, 0, 0, r, 1.1, dark, dark ? 'rgba(17, 17, 17, 0.55)' : 'rgba(0, 0, 0, 0.04)');
+            c.restore();
+            c.beginPath();
+            c.arc(0, 0, r, 0, TWO_PI);
+            c.strokeStyle = ink;
+            c.lineWidth = 1.5;
+            c.stroke();
+            ring(0, Math.PI);
+            c.restore();
+        }
+
+        // A far-off little world, for depth
+        function paintDwarf(c, d, dark) {
+            c.save();
+            c.globalAlpha = dark ? 0.6 : 0.75;
+            c.beginPath();
+            c.arc(d.x, d.y, d.r, 0, TWO_PI);
+            c.fillStyle = dark ? '#a9a9a9' : '#e9e9e9';
+            c.fill();
+            c.save();
+            c.clip();
+            terminator(c, d.x, d.y, d.r, 0.9, dark, dark ? 'rgba(17, 17, 17, 0.7)' : 'rgba(0, 0, 0, 0.15)');
+            c.restore();
+            c.beginPath();
+            c.arc(d.x, d.y, d.r, 0, TWO_PI);
+            c.strokeStyle = dark ? '#ffffff' : '#000000';
+            c.lineWidth = 1.5;
+            c.stroke();
+            c.restore();
+        }
+
+        // Craters: squashed toward the rim, and in shadow on the wall that faces away from the
+        // light. Same craters at every size, so the moon looks the same as it comes closer.
+        function paintCraters(c, x, y, r, dark, rand, count) {
+            for (var i = 0; i < count; i++) {
+                var ang = rand() * TWO_PI, dist = Math.sqrt(rand()) * r * 0.84, cr = r * (0.035 + rand() * 0.1);
+                var cx = x + Math.cos(ang) * dist, cy = y + Math.sin(ang) * dist;
+                var squash = Math.sqrt(Math.max(0.2, 1 - (dist / r) * (dist / r)));
+                c.save();
+                c.beginPath();
+                c.ellipse(cx, cy, cr * squash, cr, ang, 0, TWO_PI);
+                c.fillStyle = dark ? '#7d7d7d' : '#c4c4c4';
+                c.fill();
+                c.strokeStyle = dark ? 'rgba(255, 255, 255, 0.55)' : 'rgba(0, 0, 0, 0.55)';
+                c.lineWidth = Math.max(1, r / 90);
+                c.stroke();
+                c.clip();
+                c.beginPath();
+                c.ellipse(cx + cr * 0.3, cy + cr * 0.3, cr * squash, cr, ang, 0, TWO_PI);
+                c.fillStyle = dark ? '#b3b3b3' : '#ebebeb';
+                c.fill();
+                c.restore();
+            }
+        }
+
+        // The moon at (x, y), radius r, lit from the upper left; push = phase (see terminator)
+        function paintMoon(c, x, y, r, push, dark, halo) {
+            var rand = rng(seed ^ 0x51ed27);
+            if (halo) {
+                // Moonlight, kept tight so it stays clear of the content panels
+                var hg = c.createRadialGradient(x, y, r * 0.95, x, y, r * 1.22);
+                hg.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+                hg.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                c.fillStyle = hg;
+                c.beginPath();
+                c.arc(x, y, r * 1.22, 0, TWO_PI);
+                c.fill();
+            }
+            c.save();
+            c.beginPath();
+            c.arc(x, y, r, 0, TWO_PI);
+            var g = c.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r * 1.05);
+            if (dark) {
+                g.addColorStop(0, '#d9d9d9');
+                g.addColorStop(0.7, '#adadad');
+                g.addColorStop(1, '#838383');
+            } else {
+                g.addColorStop(0, '#ffffff');
+                g.addColorStop(0.7, '#f2f2f2');
+                g.addColorStop(1, '#dadada');
+            }
+            c.fillStyle = g;
+            c.fill();
+            c.save();
+            c.clip();
+            // Seas: soft-edged darker patches
+            for (var s = 0; s < 4; s++) {
+                var sx = x + (rand() - 0.6) * r * 1.1, sy = y + (rand() - 0.55) * r * 1.1, sr = r * (0.2 + rand() * 0.22);
+                var sg = c.createRadialGradient(sx, sy, 0, sx, sy, sr);
+                sg.addColorStop(0, dark ? 'rgba(70, 70, 70, 0.3)' : 'rgba(0, 0, 0, 0.07)');
+                sg.addColorStop(1, dark ? 'rgba(70, 70, 70, 0)' : 'rgba(0, 0, 0, 0)');
+                c.fillStyle = sg;
+                c.fillRect(sx - sr, sy - sr, sr * 2, sr * 2);
+            }
+            paintCraters(c, x, y, r, dark, rand, 14);
+            terminator(c, x, y, r, push, dark, dark ? 'rgba(17, 17, 17, 0.84)' : 'rgba(0, 0, 0, 0.07)');
+            c.restore();
+            // Bold outline, heavier as it gets closer
+            c.beginPath();
+            c.arc(x, y, r, 0, TWO_PI);
+            c.strokeStyle = dark ? '#ffffff' : '#000000';
+            c.lineWidth = 1.6 + r * 0.016;
+            c.stroke();
+            c.restore();
+        }
+
+        // The sun, Berg Audio style: white paper and fine black ink, no colour. A stippled glow
+        // bunched at the rim, engraved grooves (as much a record as a sun), hatching on the far
+        // edge for roundness, a fine outline.
+        function paintSun(c, x, y, r) {
+            var rand = rng(seed ^ 0x5a17);
+            // Stipple: tiny dots in a few alpha steps, one fill per step
+            var dots = Math.round(r * 7), steps = 5, sets = [];
+            for (var s = 0; s < steps; s++) sets.push([]);
+            for (var i = 0; i < dots; i++) {
+                var a = rand() * TWO_PI, t = rand(), sz = 0.6 + rand() * 0.9;
+                var d = r * (1.035 + 0.17 * t * t);
+                sets[Math.min(steps - 1, Math.floor(t * steps))].push(x + Math.cos(a) * d, y + Math.sin(a) * d, sz);
+            }
+            c.fillStyle = '#111111';
+            for (var k = 0; k < steps; k++) {
+                c.globalAlpha = 0.55 * (1 - k / steps);
+                c.beginPath();
+                for (var j = 0; j < sets[k].length; j += 3) c.rect(sets[k][j], sets[k][j + 1], sets[k][j + 2], sets[k][j + 2]);
+                c.fill();
+            }
+            c.globalAlpha = 1;
+            // The disc
+            c.save();
+            c.beginPath();
+            c.arc(x, y, r, 0, TWO_PI);
+            c.fillStyle = '#ffffff';
+            c.fill();
+            c.clip();
+            // Engraved grooves: fine concentric rings, broken here and there
+            var gap = Math.max(2.4, r / 24);
+            c.lineWidth = Math.max(0.55, r / 400);
+            for (var rr = r * 0.18; rr < r * 0.96; rr += gap * (0.75 + rand() * 0.5)) {
+                var a0 = rand() * TWO_PI, span = TWO_PI * (0.55 + rand() * 0.45);
+                c.strokeStyle = 'rgba(17, 17, 17, ' + (0.12 + rand() * 0.18).toFixed(3) + ')';
+                c.beginPath();
+                c.arc(x, y, rr, a0, a0 + span);
+                c.stroke();
+            }
+            // Hatching on the far (lower right) edge: the disc minus a copy nudged toward the light
+            c.beginPath();
+            c.rect(x - r * 2, y - r * 2, r * 4, r * 4);
+            c.arc(x - r * 0.12, y - r * 0.09, r * 0.98, 0, TWO_PI);
+            c.clip('evenodd');
+            hatch(c, x, y, r, Math.max(2.2, r / 30), 'rgba(17, 17, 17, 0.5)', Math.max(0.6, r / 320));
+            c.restore();
+            // Fine outline
+            c.beginPath();
+            c.arc(x, y, r, 0, TWO_PI);
+            c.strokeStyle = '#111111';
+            c.lineWidth = 1.1 + r * 0.006;
+            c.stroke();
+        }
+
+        // ---- The sun (light theme) or moon (dark theme): the big one that comes closer ----
+        // #sky-hero holds its layers and is moved and scaled as one: the body and, for the moon, a
+        // round window with its shadow in it, which slides across to change the phase. In the
+        // light theme a small moon (#sky-orbiter) goes round the sun, slipping behind it for half
+        // of each orbit.
+        function part(tag, id, cls) {
+            var el = document.createElement(tag);
+            el.id = id;
+            el.className = cls;
+            el.setAttribute('aria-hidden', 'true');
+            return el;
+        }
+        var hero = part('div', 'sky-hero', 'sky-layer');
+        var body = part('canvas', 'sky-body', 'sky-part');
+        var disc = part('div', 'sky-disc', 'sky-part');
+        var shade = part('canvas', 'sky-shade', '');
+        disc.appendChild(shade);
+        hero.appendChild(body);
+        hero.appendChild(disc);
+        var orbiter = part('canvas', 'sky-orbiter', 'sky-layer');
+        canvas.parentNode.insertBefore(orbiter, canvas.nextSibling);
+        canvas.parentNode.insertBefore(hero, canvas.nextSibling);
+
+        // Where it is at scroll progress p (0 = top of the page, 1 = bottom): it climbs and grows,
+        // slowly at first, then faster, like something you're flying toward.
+        function bodyPath(w, h, p) {
+            var margin = (w - 940) / 2;
+            var e = p * p * (3 - 2 * p);
+            var g = Math.pow(p, 1.4);
+            var r0, r1, x0, x1, y0, y1;
+            if (margin >= 170) {
+                // In the right-hand margin, ending big enough to loom over the content
+                r0 = Math.max(44, Math.min(90, margin * 0.28));
+                r1 = Math.min(h * 0.33, margin * 1.15);
+                x0 = w - margin / 2; x1 = w - margin * 0.35;
+                y0 = h * 0.6; y1 = h * 0.42;
+            } else {
+                // Phones and small windows: at the right edge, partly off screen
+                r0 = Math.max(38, Math.min(60, w * 0.13));
+                r1 = Math.min(w * 0.42, h * 0.25);
+                x0 = w - r0 * 0.2; x1 = w - r1 * 0.15;
+                y0 = h * 0.3; y1 = h * 0.36;
+            }
+            return { x: x0 + (x1 - x0) * e, y: y0 + (y1 - y0) * e, r: r0 + (r1 - r0) * g, wide: margin >= 170, e: e };
+        }
+        function moonPhase(e) { return 0.45 + 1.75 * e; } // thin crescent at the top, full at the bottom
+
+        // Size a canvas (CSS px) with a sharp, capped bitmap; returns its context in CSS px
+        function sizeCanvas(el, css) {
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            var px = Math.min(1800, Math.round(css * dpr));
+            el.style.width = el.style.height = (px ? css : 0) + 'px';
+            el.width = el.height = px;
+            if (!px) return null;
+            var c = el.getContext('2d');
+            c.setTransform(px / css, 0, 0, px / css, 0, 0);
+            return c;
+        }
+        function setBox(el, left, top, size) {
+            el.style.left = left + 'px';
+            el.style.top = top + 'px';
+            el.style.width = el.style.height = size + 'px';
+        }
+
+        var heroDark = null, heroR = 0, heroC = 0, heroRi = 0, heroW = 0, heroH = 0, heroAt = null;
+        var orbitR = 0, heroAlpha = null, lastHeroPaint = 0, lastScrollAt = 0, catchUp = null;
+        // Paint the layers for a body of radius r. Only size and theme need a repaint; the moon's
+        // phase is the shadow layer's position, set in placeHero.
+        function paintHero(r, dark) {
+            var E = dark ? 1.25 : 1.22; // how far the layers reach, in radii (moonlight / stipple)
+            var C = E * r;
+            hero.style.width = hero.style.height = (2 * C) + 'px';
+            if (dark) {
+                sizeCanvas(orbiter, 0);
+                // The face: moonlight, disc, seas, craters, outline (no shadow, see below)
+                setBox(body, 0, 0, 2 * C);
+                paintMoon(sizeCanvas(body, 2 * C), C, C, r, 3, true, true);
+                // The shadow: a dark hatched disc in a round window just inside the outline
+                var ri = r - (1.6 + r * 0.016) / 2, sr = ri * 1.04;
+                disc.style.display = '';
+                setBox(disc, C - ri, C - ri, 2 * ri);
+                shade.style.left = shade.style.top = (ri - sr) + 'px';
+                var sc = sizeCanvas(shade, 2 * sr);
+                sc.beginPath();
+                sc.arc(sr, sr, sr, 0, TWO_PI);
+                sc.fillStyle = 'rgba(17, 17, 17, 0.84)';
+                sc.fill();
+                sc.clip();
+                hatch(sc, sr, sr, sr, 4 * Math.max(1, r / 90), 'rgba(255, 255, 255, 0.13)', Math.max(1, r / 110));
+                heroRi = ri;
+            } else {
+                disc.style.display = 'none';
+                sizeCanvas(shade, 0);
+                setBox(body, 0, 0, 2 * C);
+                paintSun(sizeCanvas(body, 2 * C), C, C, r);
+                // The orbiting moon: lit from its upper left, turned to face the sun when placed
+                var or = r * 0.19, oh = or * 1.08;
+                paintMoon(sizeCanvas(orbiter, oh * 2), oh, oh, or, 1.0, false, false);
+                orbitR = oh;
+            }
+            heroR = r; heroC = C; heroDark = dark;
+        }
+
+        var maxScroll = 1;
+        function measureScroll() {
+            maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+        }
+        function progress() {
+            if (reduceMotion) return 0.35;
+            return Math.min(1, Math.max(0, (window.pageYOffset || 0) / maxScroll));
+        }
+
+        // Put the body where the scroll says. Moving, scaling, turning and the moon's phase are all
+        // CSS transforms; a repaint happens only when the size has drifted far enough that the
+        // scaled bitmap would get soft.
+        // Where the body is right now
+        function heroNow(dark) {
+            if (!heroW || !heroH) return null;
+            var p = progress();
+            var at = bodyPath(heroW, heroH, p);
+            // The sun's stippled glow reaches past its edge, so it rides a little further right to
+            // keep it out of the content column
+            if (!dark && at.wide) at.x += at.r * 0.2;
+            at.p = p;
+            return at;
+        }
+        function placeHero() {
+            var dark = isDarkMode();
+            var at = heroNow(dark);
+            if (!at) return;
+            var p = at.p;
+            // Mid-scroll the bitmap may stretch up to 25% before a repaint (it's moving, nobody can
+            // tell), at most five repaints a second; once the scroll settles it's repainted sharp
+            var drift = Math.max(at.r / heroR, heroR / at.r);
+            var now = performance.now();
+            var busy = now - lastScrollAt < 150;
+            if (dark !== heroDark || drift > (busy ? 1.25 : 1.08)) {
+                if (dark !== heroDark || !busy || drift > 1.5 || now - lastHeroPaint > 200) {
+                    paintHero(at.r, dark);
+                    lastHeroPaint = now;
+                }
+            }
+            if (busy) {
+                clearTimeout(catchUp);
+                catchUp = setTimeout(queuePlace, 180);
+            }
+            var s = at.r / heroR;
+            hero.style.transform = 'translate(' + (at.x - heroC * s).toFixed(1) + 'px,' + (at.y - heroC * s).toFixed(1) + 'px) scale(' + s.toFixed(4) + ')';
+            if (dark) {
+                // The shadow slides off down and right, away from the light: crescent, half, full
+                var push = moonPhase(at.e);
+                shade.style.transform = 'translate(' + (push * heroRi * 0.8).toFixed(1) + 'px,' + (push * heroRi * 0.6).toFixed(1) + 'px)';
+            } else {
+                // The small moon's orbit: a steep ellipse, so it stays near the margin the sun sits in,
+                // one and a half laps over the page
+                var r = at.r, phi = 0.6 + p * TWO_PI * 1.5, tilt = -1.15;
+                var ox = 1.7 * r * Math.cos(phi), oy = 0.42 * r * Math.sin(phi);
+                var mx = at.x + ox * Math.cos(tilt) - oy * Math.sin(tilt);
+                var my = at.y + ox * Math.sin(tilt) + oy * Math.cos(tilt);
+                var near = Math.sin(phi); // > 0: this side of the sun
+                var toSun = Math.atan2(at.y - my, at.x - mx) + Math.PI * 0.75; // its lit side (upper left) faces the sun
+                orbiter.style.transform = 'translate(' + (mx - orbitR).toFixed(1) + 'px,' + (my - orbitR).toFixed(1) + 'px) rotate(' + toSun.toFixed(3) + 'rad) scale(' + (s * (1 + 0.12 * near)).toFixed(4) + ')';
+                orbiter.classList.toggle('behind', near < 0);
+            }
+            heroAt = at;
+            // Faint where it passes behind text (no side margins). Set on the layers themselves,
+            // and only when it changes, so scrolling never restyles the page
+            var alpha = at.wide ? 1 : (dark ? 0.45 : 0.6);
+            if (alpha !== heroAlpha) {
+                heroAlpha = alpha;
+                hero.style.setProperty('--sky-alpha', alpha);
+                orbiter.style.setProperty('--sky-alpha', alpha);
+            }
+        }
+
+        var queued = false;
+        function placeHeroFrame() {
+            queued = false;
+            placeHero();
+        }
+        function queuePlace() {
+            if (queued) return;
+            queued = true;
+            requestAnimationFrame(placeHeroFrame);
+        }
+        if (!reduceMotion) {
+            window.addEventListener('scroll', function() {
+                lastScrollAt = performance.now();
+                queuePlace();
+            }, { passive: true });
+        }
+        // The page's height changes as content loads and between Live and Sets
+        if (window.ResizeObserver) {
+            new ResizeObserver(function() { measureScroll(); queuePlace(); }).observe(document.body);
+        }
+
+        // Twinkling stars: not painted here, the meteor loop draws them (see drawMotion)
+        var small = window.innerWidth < 768;
+        var twinkles = [];
+        var trand = rng(seed ^ 0x2545f491);
+        for (var i = 0; i < (small ? 7 : 14); i++) {
+            twinkles.push({
+                x: trand(), y: trand(),
+                size: small ? 5 + trand() * 5 : 7 + trand() * 9,
+                alpha: (0.55 + trand() * 0.45) * (small ? 0.8 : 1),
+                speed: 0.5 + trand() * 1.1, // radians a second: one twinkle every 3-12s
+                phase: trand() * TWO_PI,
+                hidden: false
+            });
+        }
+
+        // The still sky: stars, the ringed planet, the far dwarf
+        function skyLayout(w, h) {
+            var margin = (w - 940) / 2;
+            if (margin >= 170) {
+                var pr = Math.max(20, Math.min(40, margin * 0.12));
+                return {
+                    planet: { x: margin * 0.45, y: h * 0.72, r: pr, alpha: 0.72 },
+                    dwarf: { x: margin * 0.62, y: h * 0.3, r: Math.max(5, pr * 0.28) }
+                };
+            }
+            var pr2 = Math.max(13, Math.min(20, w * 0.045));
+            return {
+                planet: { x: pr2 * 1.2, y: h * 0.74, r: pr2, alpha: 0.5 },
+                dwarf: { x: w * 0.2, y: h * 0.13, r: 4 }
+            };
+        }
+        var paintedW = 0, paintedH = 0, paintedDark = null;
+        function behind(x, y, body, reach) {
+            var dx = x - body.x, dy = y - body.y, rr = body.r * reach;
+            return dx * dx + dy * dy < rr * rr;
+        }
+        function paint() {
+            var w = canvas.clientWidth, h = canvas.clientHeight;
+            if (!w || !h) return;
+            var dark = isDarkMode();
+            if (w === paintedW && h === paintedH && dark === paintedDark) return;
+            // Sharp on retina, but capped: past ~6 megapixels the stars can't tell
+            var dpr = Math.min(window.devicePixelRatio || 1, 2);
+            if (w * h * dpr * dpr > 6e6) dpr = Math.sqrt(6e6 / (w * h));
+            canvas.width = Math.round(w * dpr); // (setting the size also clears it)
+            canvas.height = Math.round(h * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            paintStars(ctx, w, h, dark);
+            var bodies = skyLayout(w, h);
+            bodies.planet.alpha *= dark ? 1 : 1.25;
+            paintDwarf(ctx, bodies.dwarf, dark);
+            paintPlanet(ctx, bodies.planet, dark);
+            // A star can't twinkle in front of the planet (and its ring)
+            for (var i = 0; i < twinkles.length; i++) {
+                var tw = twinkles[i];
+                tw.hidden = behind(tw.x * w, tw.y * h, bodies.planet, 2.3);
+            }
+            paintedW = w; paintedH = h; paintedDark = dark;
+            // The sun/moon uses the same frame of reference
+            heroW = w; heroH = h;
+            measureScroll();
+            placeHero();
+            canvas.classList.add('ready');
+            hero.classList.add('ready');
+            orbiter.classList.add('ready');
+        }
+
+        // After the page's first paint, when the browser is free
+        var idle = window.requestIdleCallback || function(cb) { return setTimeout(cb, 200); };
+        idle(paint, { timeout: 1500 });
+        var resizeTimer = null;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(paint, 200);
+        });
+        new MutationObserver(paint).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+        // ---- Motion, drawn by the meteor loop into its own canvas (1x, CSS pixels) ----
+        var sprites = {};
+        function twinkleSprite(dark) {
+            var key = dark ? 'dark' : 'light';
+            if (sprites[key]) return sprites[key];
+            var s = document.createElement('canvas');
+            s.width = s.height = 32;
+            var c = s.getContext('2d');
+            if (dark) {
+                var g = c.createRadialGradient(16, 16, 0, 16, 16, 16);
+                g.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                g.addColorStop(0.15, 'rgba(255, 255, 255, 0.45)');
+                g.addColorStop(0.4, 'rgba(255, 255, 255, 0.07)');
+                g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                c.fillStyle = g;
+                c.fillRect(0, 0, 32, 32);
+                sparklePath(c, 16, 16, 15);
+                c.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            } else {
+                sparklePath(c, 16, 16, 14);
+                c.fillStyle = '#111111';
+            }
+            c.fill();
+            return (sprites[key] = s);
+        }
+
+        var shooter = null;
+        var nextShot = performance.now() + 5000 + Math.random() * 8000;
+        function drawShooter(c, now, dark, w, h) {
+            if (!shooter) {
+                if (now < nextShot) return;
+                shooter = {
+                    x: w * (0.05 + Math.random() * 0.6),
+                    y: h * (0.05 + Math.random() * 0.4),
+                    ang: 0.42 + Math.random() * 0.3, // down and to the right, with the meteor shower
+                    speed: (small ? 650 : 1000) + Math.random() * 400, // px a second
+                    len: (small ? 70 : 120) + Math.random() * 70,
+                    born: now,
+                    life: 650 + Math.random() * 350
+                };
+            }
+            var k = (now - shooter.born) / shooter.life;
+            if (k >= 1) {
+                shooter = null;
+                nextShot = now + 8000 + Math.random() * 14000;
+                return;
+            }
+            var cos = Math.cos(shooter.ang), sin = Math.sin(shooter.ang);
+            var dist = shooter.speed * (now - shooter.born) / 1000;
+            var hx = shooter.x + cos * dist, hy = shooter.y + sin * dist;
+            var len = shooter.len * Math.min(1, k * 4);
+            var tx = hx - cos * len, ty = hy - sin * len;
+            var fade = Math.min(1, k * 8) * Math.min(1, (1 - k) * 2.5);
+            var col = dark ? '255, 255, 255' : '0, 0, 0';
+            var g = c.createLinearGradient(hx, hy, tx, ty);
+            g.addColorStop(0, 'rgba(' + col + ', ' + (0.9 * fade) + ')');
+            g.addColorStop(1, 'rgba(' + col + ', 0)');
+            // Tapered: widest at the head
+            var half = 1.2;
+            c.beginPath();
+            c.moveTo(hx - sin * half, hy + cos * half);
+            c.lineTo(tx, ty);
+            c.lineTo(hx + sin * half, hy - cos * half);
+            c.closePath();
+            c.fillStyle = g;
+            c.fill();
+            if (dark) {
+                c.globalAlpha = fade;
+                c.drawImage(twinkleSprite(true), hx - 7, hy - 7, 14, 14);
+                c.globalAlpha = 1;
+            }
+        }
+
+        function drawMotion(c, now, dark, w, h) {
+            var t = now / 1000;
+            var img = twinkleSprite(dark);
+            // Placed on the still sky's size, so they line up with it (both canvases start top left)
+            var sw = paintedW || w, sh = paintedH || h;
+            var hb = heroAt, reach = heroDark ? 1.25 : 1.43;
+            for (var i = 0; i < twinkles.length; i++) {
+                var tw = twinkles[i];
+                if (tw.hidden || (hb && behind(tw.x * sw, tw.y * sh, hb, reach))) continue;
+                // Mostly faint, flaring now and then
+                var v = 0.5 + 0.5 * Math.sin(t * tw.speed + tw.phase);
+                var s = tw.size * (0.5 + 0.5 * v);
+                c.globalAlpha = tw.alpha * (0.1 + 0.9 * v * v * v) * (dark ? 1 : 0.6);
+                c.drawImage(img, tw.x * sw - s / 2, tw.y * sh - s / 2, s, s);
+            }
+            c.globalAlpha = 1;
+            drawShooter(c, now, dark, w, h);
+        }
+
+        window.RonautSky = { drawMotion: drawMotion };
+    })();
+    </script>
+
+
     <!-- Asteroid Background Animation -->
     <script>
     (function() {
@@ -6835,6 +7577,8 @@
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Twinkling stars and the odd shooting star, behind the meteors and surfers
+            if (window.RonautSky) window.RonautSky.drawMotion(ctx, performance.now(), isDarkMode(), canvas.width, canvas.height);
             // Calculate delta for this frame
             var frameDelta = scrollOffset - lastScrollOffset;
             lastScrollOffset = scrollOffset;
