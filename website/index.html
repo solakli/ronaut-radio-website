@@ -5156,7 +5156,10 @@
                 if (links) html += '<div class="resident-links">' + links + '</div>';
                 if (r.sets && r.sets.length) {
                     html += '<div class="resident-sets"><span class="resident-sets-title">Listen</span>';
-                    r.sets.forEach(function(file) {
+                    // Their two most recent sets, by set number
+                    r.sets.slice().sort(function(a, b) {
+                        return (setNumberOf(b) || 0) - (setNumberOf(a) || 0);
+                    }).slice(0, 2).forEach(function(file) {
                         // The set's HLS, as Staff Picks play it, when the catalogue has it; the MP4 otherwise
                         var pick = setsCatalogFind(file);
                         var url = (pick && pick.url) || '/sets/' + file;
