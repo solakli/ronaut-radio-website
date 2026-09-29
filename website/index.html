@@ -1148,7 +1148,8 @@
             color: #000;
         }
 
-        /* Featured Residents - Simple list with detail panel */
+        /* Featured Residents: a list of names. A row opens in place to show the photo, bio, links and sets:
+           with a mouse by pointing at it, otherwise by a tap or Enter (script: "Featured Residents") */
         #featured-residents {
             max-width: 600px;
             margin: 40px auto 20px;
@@ -1170,15 +1171,13 @@
         #residents-list {
             display: flex;
             flex-direction: column;
+            --res-photo-w: 150px; /* the photo in an open row, a 2:3 portrait like the photos */
+            --res-photo-h: 225px;
         }
 
         .resident-row {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 12px 0;
+            position: relative;
             border-bottom: 1px solid #e0e0e0;
-            cursor: pointer;
             transition: background 0.2s;
         }
 
@@ -1186,18 +1185,52 @@
             border-top: 1px solid var(--border-color);
         }
 
-        .resident-row:hover {
+        .resident-row.open {
             background: var(--bg-secondary);
         }
 
-        .resident-row img {
+        @media (hover: hover) {
+            .resident-row:hover {
+                background: var(--bg-secondary);
+            }
+        }
+
+        .resident-head {
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            min-height: 74px;
+            margin: 0;
+            padding: 12px 0 12px 65px; /* the photo sits in the first 50px */
+            background: none;
+            border: 0;
+            border-radius: 0;
+            color: inherit;
+            font: inherit;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .resident-head:focus-visible {
+            outline: 1px solid #ff6600;
+            outline-offset: -1px;
+        }
+
+        /* One photo per row: the thumbnail, which grows into the portrait when the row opens */
+        .resident-photo {
+            position: absolute;
+            top: 12px;
+            left: 0;
             width: 50px;
             height: 50px;
             object-fit: cover;
-            flex-shrink: 0;
+            object-position: 50% 30%;
+            pointer-events: none;
         }
 
-        .resident-row .name {
+        .resident-head .name {
             font-family: Oswald, sans-serif;
             font-size: 16px;
             font-weight: 400;
@@ -1206,94 +1239,58 @@
             flex: 1;
         }
 
-        .resident-row .arrow {
+        .resident-head .arrow {
+            width: 10px;
             color: #999;
             font-size: 18px;
         }
 
-        /* Detail panel (fullscreen overlay on click) */
-        .resident-detail-panel {
-            display: none;
-            background: var(--bg-primary);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 9999;
-            overflow-y: auto;
+        .resident-row.open .name { letter-spacing: 3px; }
+        .resident-row.open .arrow { transform: rotate(90deg); color: #ff6600; }
+
+        /* The panel's grid row goes from 0fr to 1fr, so it opens to whatever height its content needs */
+        .resident-panel {
+            display: grid;
+            grid-template-rows: 0fr;
+            visibility: hidden;
         }
 
-        .resident-detail-panel.active {
-            display: flex;
+        .resident-row.open .resident-panel {
+            grid-template-rows: 1fr;
+            visibility: visible;
         }
 
-        .detail-close {
-            position: absolute;
-            top: 60px;
-            right: 25px;
-            font-size: 36px;
-            color: var(--text-primary);
-            cursor: pointer;
-            z-index: 10;
-            background: none;
-            border: none;
-            line-height: 1;
+        .resident-panel-clip {
+            min-height: 0;
+            overflow: hidden;
         }
 
-        .detail-photo {
-            flex: 0 0 45%;
-            background-size: cover;
-            background-position: center;
-        }
-
-        .detail-content {
-            flex: 1;
-            padding: 80px 50px;
+        .resident-panel-inner {
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            text-align: center;
+            gap: 16px;
+            padding: 0 14px 20px;
         }
 
-        .detail-label {
-            font-family: Oswald, sans-serif;
-            font-size: 11px;
-            font-weight: 500;
-            color: #d4a32a;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .detail-name {
-            font-family: Oswald, sans-serif;
-            font-size: 42px;
-            font-weight: 500;
-            color: var(--text-primary);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 25px;
-        }
-
-        .detail-bio {
+        .resident-bio {
+            margin: 0;
             font-family: Oswald, sans-serif;
             font-size: 14px;
             font-weight: 300;
-            color: var(--text-muted);
-            line-height: 1.8;
-            margin-bottom: 25px;
+            line-height: 1.7;
+            color: var(--text-secondary);
         }
 
-        .detail-links {
+        .resident-links {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 25px;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .detail-links a {
+        .resident-links a {
             font-family: Oswald, sans-serif;
             font-size: 11px;
             font-weight: 400;
@@ -1301,74 +1298,81 @@
             text-transform: uppercase;
             color: var(--text-primary);
             text-decoration: none;
-            padding: 8px 14px;
+            padding: 7px 12px;
             border: 1px solid var(--text-primary);
-            transition: all 0.2s;
         }
 
-        .detail-links a:hover {
-            background: var(--text-primary);
+        .resident-links a:hover {
             color: var(--bg-primary);
         }
 
-        [data-theme="dark"] .detail-links a {
+        [data-theme="dark"] .resident-links a {
             color: #fff;
             border-color: rgba(255, 255, 255, 0.5);
         }
-        [data-theme="dark"] .detail-links a:hover {
-            background: #fff;
+        [data-theme="dark"] .resident-links a:hover {
             color: #1a1a1a;
         }
 
-        .detail-sets-title {
+        .resident-sets {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .resident-sets-title {
+            margin-bottom: 4px;
             font-family: Oswald, sans-serif;
             font-size: 11px;
             font-weight: 400;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             text-transform: uppercase;
             color: #888;
-            margin-bottom: 10px;
         }
 
-        .detail-set-link {
-            display: inline-block;
+        .resident-set {
+            margin: 0;
+            padding: 2px 0;
+            background: none;
+            border: 0;
             font-family: Oswald, sans-serif;
             font-size: 14px;
             font-weight: 400;
-            color: #d4a32a;
-            text-decoration: underline;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-primary);
             cursor: pointer;
-            margin-right: 15px;
+            transition: color 0.2s;
         }
 
-        .detail-set-link:hover {
-            color: #e8b93a;
+        .resident-set::before {
+            content: '\25B6';
+            margin-right: 7px;
+            font-size: 9px;
+            vertical-align: 2px;
+            color: #ff6600;
         }
 
-        /* Mobile */
-        @media (max-width: 768px) {
-            .resident-detail-panel.active {
-                flex-direction: column;
+        .resident-set:hover,
+        .resident-set:focus-visible {
+            color: #ff6600;
+        }
+
+        /* Wide enough for the portrait: it grows beside the text, and the name moves over the text column */
+        @media (min-width: 560px) {
+            .resident-row.open .resident-photo {
+                width: var(--res-photo-w);
+                height: var(--res-photo-h);
             }
 
-            .detail-photo {
-                flex: 0 0 260px;
-                min-height: 260px;
-                width: 100%;
-                background-size: cover;
-                background-position: top center;
+            .resident-row.open .resident-head {
+                padding-left: calc(var(--res-photo-w) + 24px);
             }
 
-            .detail-content {
-                padding: 30px 20px;
-            }
-
-            .detail-name {
-                font-size: 28px;
-            }
-
-            .detail-bio {
-                font-size: 13px;
+            .resident-panel-inner {
+                min-height: calc(var(--res-photo-h) - 50px); /* the portrait ends 12px above the row's bottom */
+                padding: 0 25px 16px calc(var(--res-photo-w) + 24px); /* right: under the arrow, so the name centres over the text */
             }
         }
 
@@ -2790,8 +2794,9 @@
             from { opacity: 0; transform: translateY(8px); filter: blur(3px); }
         }
 
-        /* Residents: the separator fills orange under the row you point at */
-        .resident-row { position: relative; }
+        /* Residents: the separator fills orange under the row you point at, and stays under an open one.
+           Opening, the photo grows into the portrait, the name slides over the text and the text rises in.
+           Keep these under 0.6s: the script scrolls along with rows closing above the pointer for that long */
         .resident-row::after {
             content: '';
             position: absolute;
@@ -2803,45 +2808,37 @@
             transform: scaleX(0);
             transform-origin: 0 50%;
         }
-        html.motion .resident-row::after { transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        html.motion .resident-row img { transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        html.motion .resident-row .name { transition: letter-spacing 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
-        html.motion .resident-row .arrow { transition: transform 0.3s ease, color 0.2s ease; }
-        .resident-row:hover::after { transform: scaleX(1); }
-        .resident-row:hover img { transform: scale(1.08) rotate(-3deg); }
-        .resident-row:hover .name { letter-spacing: 3px; }
-        .resident-row:hover .arrow { transform: translateX(6px); color: #ff6600; }
-
-        /* Resident panel: fades up, the photo wipes in, the text follows */
-        html.motion .resident-detail-panel.active { animation: panel-in 0.35s ease both; }
-        html.motion .resident-detail-panel.closing { animation: panel-out 0.22s ease both; }
-        html.motion .resident-detail-panel.active .detail-photo { animation: photo-wipe 0.9s cubic-bezier(0.7, 0, 0.2, 1) both; }
-        html.motion .resident-detail-panel.active .detail-content > * { animation: rise-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both; }
-        html.motion .resident-detail-panel.active .detail-content > :nth-child(2) { animation-delay: 0.27s; }
-        html.motion .resident-detail-panel.active .detail-content > :nth-child(3) { animation-delay: 0.34s; }
-        html.motion .resident-detail-panel.active .detail-content > :nth-child(4) { animation-delay: 0.41s; }
-        html.motion .resident-detail-panel.active .detail-content > :nth-child(5) { animation-delay: 0.48s; }
-        @keyframes panel-in { from { opacity: 0; } }
-        @keyframes panel-out { to { opacity: 0; } }
-        @keyframes photo-wipe {
-            from { clip-path: inset(0 100% 0 0); }
-            to { clip-path: inset(0 0 0 0); }
+        .resident-row.open::after { transform: scaleX(1); }
+        @media (hover: hover) {
+            .resident-row:hover::after { transform: scaleX(1); }
+            .resident-row:hover .name { letter-spacing: 3px; }
+            .resident-row:not(.open):hover .arrow { transform: translateX(6px); color: #ff6600; }
         }
+        html.motion .resident-row::after { transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        html.motion .resident-photo { transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        html.motion .resident-head { transition: padding-left 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        html.motion .resident-head .name { transition: letter-spacing 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        html.motion .resident-head .arrow { transition: transform 0.3s ease, color 0.2s ease; }
+        html.motion .resident-panel { transition: grid-template-rows 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.45s; }
+        html.motion .resident-row.open .resident-panel { transition: grid-template-rows 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s; }
+        html.motion .resident-row.open .resident-panel-inner > * { animation: rise-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
+        html.motion .resident-row.open .resident-panel-inner > :nth-child(2) { animation-delay: 0.17s; }
+        html.motion .resident-row.open .resident-panel-inner > :nth-child(3) { animation-delay: 0.24s; }
         @keyframes rise-in { from { opacity: 0; transform: translateY(18px); } }
 
         /* Outline buttons fill from the left instead of snapping */
         #btn-share, #btn-share:hover,
         .feat-btn:not(.close-btn), .feat-btn:not(.close-btn):hover,
-        .detail-links a, .detail-links a:hover {
+        .resident-links a, .resident-links a:hover {
             background: transparent linear-gradient(var(--text-primary), var(--text-primary)) no-repeat 0 0 / 0% 100%;
         }
-        [data-theme="dark"] .detail-links a, [data-theme="dark"] .detail-links a:hover {
+        [data-theme="dark"] .resident-links a, [data-theme="dark"] .resident-links a:hover {
             background: transparent linear-gradient(#fff, #fff) no-repeat 0 0 / 0% 100%;
         }
-        #btn-share:hover, .feat-btn:not(.close-btn):hover, .detail-links a:hover,
-        [data-theme="dark"] .detail-links a:hover { background-size: 100% 100%; }
+        #btn-share:hover, .feat-btn:not(.close-btn):hover, .resident-links a:hover,
+        [data-theme="dark"] .resident-links a:hover { background-size: 100% 100%; }
         #btn-share:disabled { background-size: 0% 100%; }
-        html.motion #btn-share, html.motion .feat-btn:not(.close-btn), html.motion .detail-links a {
+        html.motion #btn-share, html.motion .feat-btn:not(.close-btn), html.motion .resident-links a {
             transition: background-size 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.3s ease;
         }
 
@@ -3026,19 +3023,6 @@
     <div id="featured-residents">
         <h2 class="section-title" data-tune>FEATURED RESIDENTS</h2>
         <div id="residents-list"></div>
-    </div>
-
-    <!-- Resident Detail Panel (fullscreen overlay) -->
-    <div class="resident-detail-panel" id="resident-detail">
-        <button class="detail-close">&times;</button>
-        <div class="detail-photo" id="detail-photo"></div>
-        <div class="detail-content">
-            <div class="detail-label">RESIDENT</div>
-            <div class="detail-name" id="detail-name"></div>
-            <div class="detail-bio" id="detail-bio"></div>
-            <div class="detail-links" id="detail-links"></div>
-            <div class="detail-sets" id="detail-sets"></div>
-        </div>
     </div>
 
     <!-- ABOUT SECTION -->
@@ -5139,135 +5123,179 @@
             })();
         })();
 
-        // Featured Residents - Simple list with detail panel
+        // Featured Residents: each row opens in place, the photo growing beside the bio, links and sets.
+        // A mouse opens a row by resting on it and closes it on leaving the list; a tap, Enter or Space toggles it.
         (function() {
             var residentsList = document.getElementById('residents-list');
-            var detailPanel = document.getElementById('resident-detail');
-            var detailClose = detailPanel.querySelector('.detail-close');
-            var residentsData = [];
+            var RES_BASE = 'https://stream.ronautradio.la';
+            var SOCIAL = [['instagram', 'Instagram'], ['soundcloud', 'Soundcloud'], ['ra', 'Resident Advisor'],
+                ['mixcloud', 'Mixcloud'], ['bandcamp', 'Bandcamp'], ['spotify', 'Spotify'],
+                ['linktree', 'Linktree'], ['website', 'Website']];
+            var OPEN_DELAY = 140;  // ms resting on a row before it opens, so sweeping across the list opens nothing
+            var CLOSE_DELAY = 300; // ms off the list before the row closes
+
+            function attr(text) {
+                return escapeHtml(text).replace(/"/g, '&quot;');
+            }
+
+            function residentHtml(r, i) {
+                var html = '<div class="resident-row">';
+                html += '<button type="button" class="resident-head" id="resident-head-' + i + '" aria-expanded="false" aria-controls="resident-panel-' + i + '">';
+                html += '<img class="resident-photo" src="' + attr(RES_BASE + r.photo) + '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'' + RES_BASE + '/residents/logo.png\'" />';
+                html += '<span class="name">' + escapeHtml(r.name) + '</span>';
+                html += '<span class="arrow" aria-hidden="true">&#8250;</span>';
+                html += '</button>';
+                html += '<div class="resident-panel" id="resident-panel-' + i + '" role="region" aria-labelledby="resident-head-' + i + '">';
+                html += '<div class="resident-panel-clip"><div class="resident-panel-inner">';
+                if (r.bio) html += '<p class="resident-bio">' + escapeHtml(r.bio) + '</p>';
+                var links = '';
+                SOCIAL.forEach(function(s) {
+                    var url = r.social && r.social[s[0]];
+                    if (url) links += '<a href="' + attr(url) + '" target="_blank" rel="noopener">' + s[1] + '</a>';
+                });
+                if (links) html += '<div class="resident-links">' + links + '</div>';
+                if (r.sets && r.sets.length) {
+                    html += '<div class="resident-sets"><span class="resident-sets-title">Listen</span>';
+                    r.sets.forEach(function(file) {
+                        // The set's HLS, as Staff Picks play it, when the catalogue has it; the MP4 otherwise
+                        var pick = setsCatalogFind(file);
+                        var url = (pick && pick.url) || '/sets/' + file;
+                        html += '<button type="button" class="resident-set" data-url="' + attr(url) + '">' + escapeHtml(setDisplayName(file)) + '</button>';
+                    });
+                    html += '</div>';
+                }
+                html += '</div></div></div></div>';
+                return html;
+            }
 
             async function loadResidents() {
                 try {
-                    var res = await fetch('https://stream.ronautradio.la/api/residents');
+                    var catalog = fetchSetsCatalog().catch(function() {}); // set titles and links; file names without it
+                    var res = await fetch(RES_BASE + '/api/residents');
                     var data = await res.json();
                     if (!data.residents || data.residents.length === 0) {
                         document.getElementById('featured-residents').style.display = 'none';
                         return;
                     }
-
-                    residentsData = data.residents;
-
-                    var html = '';
-                    for (var i = 0; i < residentsData.length; i++) {
-                        var r = residentsData[i];
-                        html += '<div class="resident-row" data-index="' + i + '">';
-                        html += '<img src="https://stream.ronautradio.la' + r.photo + '" alt="' + escapeHtml(r.name) + '" onerror="this.onerror=null;this.src=\'https://stream.ronautradio.la/residents/logo.png\'" />';
-                        html += '<span class="name">' + escapeHtml(r.name) + '</span>';
-                        html += '<span class="arrow">&#8250;</span>';
-                        html += '</div>';
-                    }
-                    residentsList.innerHTML = html;
-
-                    // Click to open detail panel
-                    var rows = residentsList.querySelectorAll('.resident-row');
-                    rows.forEach(function(row) {
-                        row.addEventListener('click', function() {
-                            var idx = parseInt(this.getAttribute('data-index'));
-                            openDetail(idx);
-                        });
-                    });
-
+                    await catalog;
+                    residentsList.innerHTML = data.residents.map(residentHtml).join('');
                 } catch (err) {
                     console.error('Failed to load residents:', err);
                     document.getElementById('featured-residents').style.display = 'none';
                 }
             }
 
-            function openDetail(idx) {
-                var r = residentsData[idx];
-                var photoUrl = 'https://stream.ronautradio.la' + r.photo;
-                var fallbackUrl = 'https://stream.ronautradio.la/residents/logo.png';
-                var detailPhoto = document.getElementById('detail-photo');
+            var pointed = null; // the row the mouse opened
+            var pending = null, pendingTimer = null, closeTimer = null;
+            var lastX = null, lastY = null, lastPointer = '';
+            var follow = 0;
 
-                // Try to load image, use fallback if fails
-                var img = new Image();
-                img.onload = function() {
-                    detailPhoto.style.backgroundImage = 'url(' + photoUrl + ')';
-                };
-                img.onerror = function() {
-                    detailPhoto.style.backgroundImage = 'url(' + fallbackUrl + ')';
-                };
-                img.src = photoUrl;
-                document.getElementById('detail-name').textContent = r.name;
-                document.getElementById('detail-bio').textContent = r.bio || '';
-
-                // Social links
-                var linksHtml = '';
-                if (r.social) {
-                    if (r.social.instagram) linksHtml += '<a href="' + r.social.instagram + '" target="_blank">Instagram</a>';
-                    if (r.social.soundcloud) linksHtml += '<a href="' + r.social.soundcloud + '" target="_blank">Soundcloud</a>';
-                    if (r.social.ra) linksHtml += '<a href="' + r.social.ra + '" target="_blank">Resident Advisor</a>';
-                    if (r.social.mixcloud) linksHtml += '<a href="' + r.social.mixcloud + '" target="_blank">Mixcloud</a>';
-                    if (r.social.bandcamp) linksHtml += '<a href="' + r.social.bandcamp + '" target="_blank">Bandcamp</a>';
-                    if (r.social.spotify) linksHtml += '<a href="' + r.social.spotify + '" target="_blank">Spotify</a>';
-                    if (r.social.linktree) linksHtml += '<a href="' + r.social.linktree + '" target="_blank">Linktree</a>';
-                    if (r.social.website) linksHtml += '<a href="' + r.social.website + '" target="_blank">Website</a>';
-                }
-                document.getElementById('detail-links').innerHTML = linksHtml;
-
-                // Sets
-                var setsHtml = '';
-                if (r.sets && r.sets.length > 0) {
-                    setsHtml += '<div class="detail-sets-title">Listen to their sets</div>';
-                    for (var j = 0; j < r.sets.length; j++) {
-                        var setFile = r.sets[j];
-                        var setName = setDisplayName(setFile); // "Ronaut[008]-Fede.mp4" → Fede
-                        setsHtml += '<span class="detail-set-link" data-url="/sets/' + setFile + '" data-title="' + escapeHtml(setName).replace(/"/g, '&quot;') + '">' + escapeHtml(setName) + '</span>';
-                    }
-                }
-                document.getElementById('detail-sets').innerHTML = setsHtml;
-
-                // Add click listeners for set links
-                var setLinks = document.querySelectorAll('#detail-sets .detail-set-link');
-                setLinks.forEach(function(link) {
-                    link.addEventListener('click', function() {
-                        var url = this.getAttribute('data-url');
-                        var title = this.getAttribute('data-title');
-                        closeDetail();
-                        if (typeof playPick === 'function') {
-                            playPick(url, title);
-                        }
-                    });
-                });
-
-                clearTimeout(closeTimer);
-                detailPanel.classList.remove('closing');
-                detailPanel.classList.add('active');
-                document.body.style.overflow = 'hidden';
+            function setOpen(row, open) {
+                if (row.classList.contains('open') === open) return;
+                var head = row.querySelector('.resident-head');
+                row.classList.toggle('open', open);
+                head.setAttribute('aria-expanded', open ? 'true' : 'false');
+                if (!open && row.contains(document.activeElement)) head.focus({ preventScroll: true }); // not lost to the page
             }
 
-            // With motion on the panel fades out before it goes (it animates in on open)
-            var closeTimer = null;
-            function closeDetail() {
-                document.body.style.overflow = '';
-                if (!document.documentElement.classList.contains('motion')) {
-                    detailPanel.classList.remove('active');
+            // Open one row and close the others. A row closing above it shortens the page above the pointer, and
+            // the row would slide up from under it (and the one below open instead), so scroll along with the
+            // change while the rows animate. Measured against the page, so your own scrolling isn't undone;
+            // each frame asks for all that's still owed, since the browser rounds every scroll a little.
+            function openOnly(row) {
+                var head = row.querySelector('.resident-head');
+                var start = head.getBoundingClientRect().top + window.scrollY, scrolled = 0;
+                residentsList.querySelectorAll('.resident-row.open').forEach(function(r) {
+                    if (r !== row) setOpen(r, false);
+                });
+                setOpen(row, true);
+                var root = document.documentElement, until = performance.now() + 600, id = ++follow;
+                root.style.overflowAnchor = 'none'; // the browser's scroll anchoring would correct it a second time
+                (function step() {
+                    if (id !== follow) return; // a newer row took over
+                    var moved = head.getBoundingClientRect().top + window.scrollY - start;
+                    if (moved !== scrolled) {
+                        var y = window.scrollY;
+                        window.scrollBy(0, moved - scrolled);
+                        scrolled += window.scrollY - y;
+                    }
+                    if (performance.now() < until) requestAnimationFrame(step);
+                    else root.style.overflowAnchor = '';
+                })();
+            }
+
+            function cancelPending() {
+                clearTimeout(pendingTimer);
+                pending = null;
+            }
+
+            // Mouse moves only, and only real ones: browsers also send a move when the page scrolls under a
+            // still pointer, and rows opening and closing under a scrolling page would make it jump
+            document.addEventListener('pointermove', function(e) {
+                if (e.pointerType !== 'mouse' || (e.clientX === lastX && e.clientY === lastY)) return;
+                lastX = e.clientX;
+                lastY = e.clientY;
+                var row = e.target.closest ? e.target.closest('.resident-row') : null;
+                if (row) {
+                    clearTimeout(closeTimer);
+                    closeTimer = null;
+                    if (row.classList.contains('open')) {
+                        cancelPending(); // anywhere on the open row keeps it
+                    } else if (row !== pending) {
+                        cancelPending();
+                        pending = row;
+                        pendingTimer = setTimeout(function() {
+                            pending = null;
+                            pointed = row;
+                            openOnly(row);
+                        }, OPEN_DELAY);
+                    }
                     return;
                 }
-                if (detailPanel.classList.contains('closing')) return;
-                detailPanel.classList.add('closing');
-                closeTimer = setTimeout(function() {
-                    detailPanel.classList.remove('active', 'closing');
-                }, 220);
-            }
-
-            detailClose.addEventListener('click', closeDetail);
-
-            // Close on escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && detailPanel.classList.contains('active')) {
-                    closeDetail();
+                cancelPending();
+                if (pointed && !closeTimer) {
+                    closeTimer = setTimeout(function() {
+                        closeTimer = null;
+                        if (pointed) setOpen(pointed, false);
+                        pointed = null;
+                    }, CLOSE_DELAY);
                 }
+            }, { passive: true });
+
+            residentsList.addEventListener('pointerdown', function(e) {
+                lastPointer = e.pointerType;
+            });
+
+            residentsList.addEventListener('click', function(e) {
+                var set = e.target.closest('.resident-set');
+                if (set) {
+                    playPick(set.getAttribute('data-url'), set.textContent);
+                    return;
+                }
+                var head = e.target.closest('.resident-head');
+                if (!head) return;
+                var row = head.parentNode;
+                cancelPending();
+                if (e.detail && lastPointer === 'mouse') {
+                    // Pointing has opened it or is about to: a click opens it now, and doesn't shut it
+                    if (!row.classList.contains('open')) {
+                        pointed = row;
+                        openOnly(row);
+                    }
+                    return;
+                }
+                // A tap, Enter or Space opens or closes this row and leaves the others as they are
+                if (row === pointed) pointed = null;
+                setOpen(row, !row.classList.contains('open'));
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key !== 'Escape' || !(pointed || residentsList.contains(document.activeElement))) return;
+                cancelPending();
+                residentsList.querySelectorAll('.resident-row.open').forEach(function(r) {
+                    setOpen(r, false);
+                });
+                pointed = null;
             });
 
             loadResidents();
