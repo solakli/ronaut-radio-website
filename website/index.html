@@ -3355,6 +3355,9 @@
     var LIVE_ABR = 'https://stream.ronautradio.la/live/abr/master.m3u8';
     var LIVE_LOW = 'https://stream.ronautradio.la/live/abr/low/index.m3u8';
     var LIVE_HLS = 'https://stream.ronautradio.la/live/hls/stream.m3u8';
+    // A share link opens the Sets page. The live stream is attached but loads nothing until something plays
+    // it (Back to Ronaut Live, the Live tab, the player bar, the lock screen); it used to play muted behind the set.
+    var liveWaiting = new URLSearchParams(window.location.search).get('view') === 'sets';
     var isPlayingPick = false;
     var currentPickTitle = '';
     var currentVodUrl = ''; // Store VOD URL for mini player
@@ -3554,17 +3557,36 @@
     }
 
     function initHls(video) {
+        // Share-link landing (liveWaiting): no autoplay, and the stream loads when something first plays it
+        function loadOnFirstPlay(start) {
+            video.removeAttribute('autoplay');
+            video.addEventListener('play', function onPlay() {
+                video.removeEventListener('play', onPlay);
+                liveWaiting = false;
+                start();
+                if (window.preloadMiniVideo) window.preloadMiniVideo(); // the phones' live preview waited too
+            });
+        }
+
         if (Hls.isSupported()) {
             var src = LIVE_ABR;
             // Wide screens start on 1080p: level 1, since hls.js sorts the master's levels by bitrate
             // (480p, 1080p). Phones start on 480p for a quick first frame and step up within seconds
             // when the connection allows.
-            hlsInstance = new Hls(window.innerWidth >= 1024 ? { startLevel: 1 } : {});
+            var config = window.innerWidth >= 1024 ? { startLevel: 1 } : {};
+            if (liveWaiting) config.autoStartLoad = false;
+            hlsInstance = new Hls(config);
             hlsInstance.loadSource(src);
             hlsInstance.attachMedia(video);
+            if (liveWaiting) {
+                var waitingHls = hlsInstance;
+                loadOnFirstPlay(function() {
+                    if (hlsInstance === waitingHls) waitingHls.startLoad(-1); // unless a set took the player first
+                });
+            }
 
             hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
-                video.play().catch(function(e) { console.log('Autoplay prevented', e); });
+                if (!liveWaiting) video.play().catch(function(e) { console.log('Autoplay prevented', e); });
             });
 
             // On fatal error, try to recover
@@ -3578,7 +3600,7 @@
                         return;
                     }
                     if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                        hlsInstance.startLoad();
+                        if (!liveWaiting) hlsInstance.startLoad(); // waiting, the first play starts it
                     } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
                         hlsInstance.recoverMediaError();
                     }
@@ -3590,8 +3612,13 @@
             video.addEventListener('error', function() {
                 if (video.src === LIVE_ABR) { video.src = LIVE_HLS; video.play().catch(function() {}); }
             }, { once: true });
-            video.src = LIVE_ABR;
-            video.play().catch(function(e) { console.log("Autoplay prevented", e); });
+            if (liveWaiting) {
+                loadOnFirstPlay(function() {}); // preload="none": Safari fetches nothing before play()
+                video.src = LIVE_ABR;
+            } else {
+                video.src = LIVE_ABR;
+                video.play().catch(function(e) { console.log("Autoplay prevented", e); });
+            }
         }
     }
 
@@ -4364,7 +4391,7 @@
 
                 // Pre-load mini video on mobile for instant display
                 function preloadMiniVideo() {
-                    if (!isMobile || miniPreloaded || isPlayingPick) return;
+                    if (!isMobile || miniPreloaded || isPlayingPick || liveWaiting) return;
                     miniPreloaded = true;
                     miniHlsInstance = loadLivePreview(miniVideo, function() {
                         miniVideo.muted = true;
