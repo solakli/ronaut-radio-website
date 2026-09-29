@@ -3378,8 +3378,8 @@
     }
 
     // Sets catalogue: /api/sets, fetched once for Staff Picks, the Sets page and the names below.
-    // The stream, the programme and the residents name sets by file ("Ronaut[018]-Andrea-Emami-...",
-    // "018 - Andrea-Emami-..."); setsCatalogFind() maps those to the staff pick, for its title and thumbnail.
+    // The stream and the residents name sets by file ("Ronaut[018]-Andrea-Emami-...", "018 - Andrea-Emami-..."),
+    // the programme by title; setsCatalogFind() maps any of those to the staff pick, for its title, thumbnail and genres.
     var SETS_API = 'https://stream.ronautradio.la';
     var setsCatalogPromise = null;
     var setsCatalogByNum = null, setsCatalogBySlug = null;
@@ -3407,6 +3407,11 @@
                     if (n !== null) byNum[n] = s;
                     bySlug[setSlugOf(s.filename)] = s;
                     if (s.url) bySlug[setSlugOf(s.url)] = s;
+                });
+                // The programme names sets by title ("Arsenal", "Flip pt. 2 – ..."); file names keep priority
+                (data.sets || []).forEach(function(s) {
+                    var t = s.title && setSlugOf(s.title);
+                    if (t && !bySlug[t]) bySlug[t] = s;
                 });
                 setsCatalogByNum = byNum;
                 setsCatalogBySlug = bySlug;
@@ -4094,12 +4099,13 @@
             }
 
             async function updateNowPlaying() {
-                if (isPlayingPick || window._miniInSetsMode) return; // Don't override ticker when playing a pick or VOD set
                 try {
                     var res = await fetch("https://stream.ronautradio.la/api/now-playing");
                     var data = await res.json();
-                    if (isPlayingPick || window._miniInSetsMode) return; // a pick or set started meanwhile
+                    // The programme needs the mode even while a pick or set plays here (after a share link it
+                    // stayed blank until the next refresh); the ticker and player bar are theirs meanwhile
                     currentMode = data.mode || 'offline';
+                    if (isPlayingPick || window._miniInSetsMode) return;
 
                     var miniStatus = document.querySelector('#mini-player .mini-status');
                     var miniTitle = document.querySelector('#mini-player .mini-title-inner');
@@ -4173,6 +4179,7 @@
                     }
                 } catch (err) {
                     console.error("Failed to fetch now playing:", err);
+                    if (isPlayingPick || window._miniInSetsMode) return;
                     ticker.textContent = 'Error loading track info.';
                     ticker.style.display = 'block';
                 }
