@@ -2463,11 +2463,12 @@
             #sky-canvas, .sky-layer { transition: none; }
         }
 
-        /* Glass panels: Programme, Residents and About sit in front of the sky like frosted glass, so
-           whatever flies behind them (meteors, surfers, the sun/moon) blurs instead of being cut off
-           at an invisible edge. "#live-view .glass" outranks the panels' own solid backgrounds.
+        /* Glass panels: Programme, Residents and About sit in front of the sky like rounded frosted
+           windows, so whatever flies behind them (meteors, surfers, the sun/moon) blurs instead of being
+           cut off at an invisible edge. "#live-view .glass" outranks the panels' own solid backgrounds.
            Without backdrop-filter, or when less transparency is asked for, they stay solid */
         #live-view .glass {
+            border-radius: 22px;
             box-shadow: inset 0 0 0 1px var(--glass-edge), inset 0 1px 0 0 var(--glass-hi), 0 18px 40px -24px var(--glass-lift);
         }
         @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
