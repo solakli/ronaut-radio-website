@@ -87,6 +87,10 @@
             --border-color: #ddd;
             --card-bg: #fff;
             --card-shadow: rgba(0, 0, 0, 0.1);
+            --glass-bg: rgba(244, 244, 244, 0.6);
+            --glass-edge: rgba(0, 0, 0, 0.12);
+            --glass-hi: rgba(255, 255, 255, 0.85);
+            --glass-lift: rgba(0, 0, 0, 0.1);
         }
 
         [data-theme="dark"] {
@@ -98,6 +102,10 @@
             --border-color: #2a2a2a;
             --card-bg: #1a1a1a;
             --card-shadow: rgba(0, 0, 0, 0.5);
+            --glass-bg: rgba(17, 17, 17, 0.55);
+            --glass-edge: rgba(255, 255, 255, 0.12);
+            --glass-hi: rgba(255, 255, 255, 0.16);
+            --glass-lift: rgba(0, 0, 0, 0.5);
         }
 
         body {
@@ -2446,7 +2454,7 @@
         #sky-disc { border-radius: 50%; overflow: hidden; }
         #sky-shade { position: absolute; }
         /* The share band (one button) and Upcoming Shows (a heading, two buttons, a narrow list) don't
-           need the solid panel the text-heavy sections have. The share band is full width, so its
+           need the panel the text-heavy sections have. The share band is full width, so its
            panel cut a stripe through the sun/moon in the margin */
         .share-container, #upcoming-shows-section { background: transparent; }
         /* The small moon's far side of the orbit: behind the sun, still over the stars */
@@ -2454,6 +2462,32 @@
         @media (prefers-reduced-motion: reduce) {
             #sky-canvas, .sky-layer { transition: none; }
         }
+
+        /* Glass panels: Programme, Residents and About sit in front of the sky like frosted glass, so
+           whatever flies behind them (meteors, surfers, the sun/moon) blurs instead of being cut off
+           at an invisible edge. "#live-view .glass" outranks the panels' own solid backgrounds.
+           Without backdrop-filter, or when less transparency is asked for, they stay solid */
+        #live-view .glass {
+            box-shadow: inset 0 0 0 1px var(--glass-edge), inset 0 1px 0 0 var(--glass-hi), 0 18px 40px -24px var(--glass-lift);
+        }
+        @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+            #live-view .glass {
+                background: var(--glass-bg);
+                -webkit-backdrop-filter: blur(14px);
+                backdrop-filter: blur(14px);
+            }
+        }
+        @media (prefers-reduced-transparency: reduce) {
+            #live-view .glass {
+                background: var(--bg-primary);
+                -webkit-backdrop-filter: none;
+                backdrop-filter: none;
+            }
+        }
+        /* Narrow screens: keep a strip of sky beside each panel so its edges show */
+        @media (max-width: 844px) { #programme-chat-row { margin-left: 12px; margin-right: 12px; } }
+        @media (max-width: 664px) { #featured-residents { margin-left: 12px; margin-right: 12px; } }
+        @media (max-width: 964px) { .w-container.glass { margin-left: 12px; margin-right: 12px; } }
 
         /* Smooth theme crossfade */
         html.theme-fade, html.theme-fade * {
@@ -3030,7 +3064,7 @@
     </div>
 
     <!-- PROGRAMME + CHAT STACKED -->
-    <div id="programme-chat-row">
+    <div id="programme-chat-row" class="glass">
         <div id="programme-section">
             <h2 class="section-title" data-tune>PROGRAMME</h2>
             <div id="programme-date"></div>
@@ -3064,13 +3098,13 @@
     </div>
 
     <!-- FEATURED RESIDENTS -->
-    <div id="featured-residents">
+    <div id="featured-residents" class="glass">
         <h2 class="section-title" data-tune>FEATURED RESIDENTS</h2>
         <div id="residents-list"></div>
     </div>
 
     <!-- ABOUT SECTION -->
-    <div class="w-container" style="margin-top: 40px; margin-bottom: 30px;">
+    <div class="w-container glass" style="margin-top: 40px; margin-bottom: 30px;">
         <h1 class="main-title">RONAUT RADIO</h1>
         <p style="font-size: 14px; font-weight: 400; letter-spacing: 1px; margin: 10px 0 0 0; text-transform: uppercase;">Los Angeles • Vinyl Only • Live Shows</p>
     </div>
@@ -3079,7 +3113,7 @@
         <button id="btn-share">Share the Stream</button>
     </div>
 
-    <div class="w-container">
+    <div class="w-container glass">
         <p class="paragraph">We are an independent, non-profit online radio station streaming 24/7 from Los Angeles. We broadcast vinyl sets from selectors across Los Angeles and San Diego.</p>
         <p class="paragraph">Ronaut Radio is a platform for local DJs and vinyl enthusiasts to share their sound, build community, and keep underground music moving.</p>
         <p class="paragraph"><strong>If you'd like to be featured or collaborate, <a href="mailto:ronautradio@gmail.com" style="color: #ff6600;">connect with us</a>.</strong></p>
